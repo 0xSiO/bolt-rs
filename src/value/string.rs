@@ -12,7 +12,7 @@ const MARKER_LARGE: u8 = 0xD2;
 
 #[derive(Eq, PartialEq, Hash)]
 pub struct String {
-    value: std::string::String,
+    pub(crate) value: std::string::String,
 }
 
 impl From<std::string::String> for String {
