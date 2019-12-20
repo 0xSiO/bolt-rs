@@ -17,7 +17,7 @@ where
     K: Serialize + Hash + Eq,
     V: Serialize,
 {
-    value: HashMap<K, V>,
+    pub(crate) value: HashMap<K, V>,
 }
 
 impl<K, V> From<HashMap<K, V>> for Map<K, V>
