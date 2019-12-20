@@ -7,6 +7,7 @@ use crate::serialize::{Serialize, SerializeError, SerializeResult};
 const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
 
+#[derive(Debug)]
 pub struct Boolean {
     value: bool,
 }

@@ -6,6 +6,7 @@ use crate::serialize::{Serialize, SerializeError, SerializeResult};
 
 const MARKER: u8 = 0xC0;
 
+#[derive(Debug)]
 pub struct Null;
 
 impl Serialize for Null {
