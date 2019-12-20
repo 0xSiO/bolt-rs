@@ -12,7 +12,7 @@ const MARKER_SMALL: u8 = 0xD8;
 const MARKER_MEDIUM: u8 = 0xD9;
 const MARKER_LARGE: u8 = 0xDA;
 
-struct Map<K, V>
+pub struct Map<K, V>
 where
     K: Serialize + Hash + Eq,
     V: Serialize,

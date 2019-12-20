@@ -1,5 +1,6 @@
 pub use self::boolean::Boolean;
 pub use self::integer::Integer;
+pub use self::map::Map;
 pub use self::null::Null;
 pub use self::string::String;
 
