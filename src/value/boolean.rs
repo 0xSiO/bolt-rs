@@ -1,15 +1,37 @@
-use crate::value::{MarkerResult, Value, ValueError};
+use crate::messaging::{MarkerResult, Serialize};
 
-struct Boolean {
+const MARKER_FALSE: u8 = 0xC2;
+const MARKER_TRUE: u8 = 0xC3;
+
+pub struct Boolean {
     value: bool
 }
 
-impl Value for Boolean {
+impl From<bool> for Boolean {
+    fn from(value: bool) -> Self {
+        Self { value }
+    }
+}
+
+impl Serialize for Boolean {
     fn get_marker(&self) -> MarkerResult {
         if self.value {
-            Ok(0xC3)
+            Ok(MARKER_TRUE)
         } else {
-            Ok(0xC2)
+            Ok(MARKER_FALSE)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::messaging::Serialize;
+
+    use super::{Boolean, MARKER_FALSE, MARKER_TRUE};
+
+    #[test]
+    fn is_valid() {
+        assert_eq!(Boolean::from(false).get_marker().unwrap(), MARKER_FALSE);
+        assert_eq!(Boolean::from(true).get_marker().unwrap(), MARKER_TRUE)
     }
 }
