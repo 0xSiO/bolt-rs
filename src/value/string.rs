@@ -10,6 +10,7 @@ const MARKER_SMALL: u8 = 0xD0;
 const MARKER_MEDIUM: u8 = 0xD1;
 const MARKER_LARGE: u8 = 0xD2;
 
+#[derive(Eq, PartialEq, Hash)]
 pub struct String {
     value: std::string::String
 }
