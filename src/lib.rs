@@ -1,6 +1,6 @@
 pub use self::client::Client;
 
 mod client;
-mod messaging;
+mod message;
 mod value;
 mod serialize;
