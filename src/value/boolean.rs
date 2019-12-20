@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use bytes::Bytes;
 
-use crate::messaging::{Serialize, SerializeError, SerializeResult};
+use crate::serialize::{Serialize, SerializeError, SerializeResult};
 
 const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
@@ -39,7 +39,7 @@ impl TryInto<Bytes> for Boolean {
 mod tests {
     use bytes::Bytes;
 
-    use crate::messaging::Serialize;
+    use crate::serialize::Serialize;
 
     use super::{Boolean, MARKER_FALSE, MARKER_TRUE};
 
