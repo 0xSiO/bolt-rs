@@ -1,6 +1,7 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::hash::Hash;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
@@ -13,7 +14,7 @@ const MARKER_LARGE: u8 = 0xDA;
 
 struct Map<K, V>
 where
-    K: Serialize,
+    K: Serialize + Hash + Eq,
     V: Serialize,
 {
     value: HashMap<K, V>,
@@ -21,7 +22,7 @@ where
 
 impl<K, V> From<HashMap<K, V>> for Map<K, V>
 where
-    K: Serialize,
+    K: Serialize + Hash + Eq,
     V: Serialize,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
@@ -31,7 +32,7 @@ where
 
 impl<K, V> Serialize for Map<K, V>
 where
-    K: Serialize,
+    K: Serialize + Hash + Eq,
     V: Serialize,
 {
     fn get_marker(&self) -> SerializeResult<u8> {
@@ -50,7 +51,7 @@ where
 
 impl<K, V> TryInto<Bytes> for Map<K, V>
 where
-    K: Serialize + TryInto<Bytes, Error = SerializeError>,
+    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
     V: Serialize + TryInto<Bytes, Error = SerializeError>,
 {
     type Error = SerializeError;
@@ -69,7 +70,7 @@ where
                 return Err(SerializeError::new(format!(
                     "Map length too long: {}",
                     self.value.len()
-                )))
+                )));
             }
         }
         for (key, value) in self.value {
