@@ -3,7 +3,7 @@ use std::mem;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
-use crate::messaging::{Serialize, SerializeError, SerializeResult};
+use crate::serialize::{Serialize, SerializeError, SerializeResult};
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -56,7 +56,7 @@ impl TryInto<Bytes> for String {
 mod tests {
     use bytes::Bytes;
 
-    use crate::messaging::Serialize;
+    use crate::serialize::Serialize;
 
     use super::{MARKER_LARGE, MARKER_MEDIUM, MARKER_SMALL, MARKER_TINY, String};
 
