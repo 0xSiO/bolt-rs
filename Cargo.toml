@@ -1,5 +1,6 @@
 [workspace]
 
 members = [
-    "rust-bolt"
+    "rust-bolt",
+    "rust-bolt-macros"
 ]
