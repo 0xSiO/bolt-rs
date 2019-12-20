@@ -5,3 +5,4 @@ pub use self::string::String;
 mod null;
 mod boolean;
 mod string;
+mod map;
