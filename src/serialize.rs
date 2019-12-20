@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
 use std::fmt;
+use std::fmt::{Debug, Display, Formatter};
 
 use bytes::Bytes;
 
@@ -11,7 +11,9 @@ pub trait Serialize {
     fn get_marker(&self) -> SerializeResult<u8>;
 
     fn try_into_bytes(self) -> SerializeResult<Bytes>
-        where Self: TryInto<Bytes, Error=SerializeError> {
+    where
+        Self: TryInto<Bytes, Error = SerializeError>,
+    {
         self.try_into()
     }
 }
