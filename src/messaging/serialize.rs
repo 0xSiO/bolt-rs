@@ -3,22 +3,15 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::fmt;
 
-use bytes::{Bytes, BytesMut};
+use bytes::Bytes;
 
-pub type MarkerResult = Result<u8, SerializeError>;
-pub type BytesResult = Result<Bytes, SerializeError>;
-pub type BytesMutResult = Result<BytesMut, SerializeError>;
+pub type SerializeResult<T> = Result<T, SerializeError>;
 
 pub trait Serialize {
-    fn get_marker(&self) -> MarkerResult;
+    fn get_marker(&self) -> SerializeResult<u8>;
 
-    fn into_bytes(self) -> BytesResult
+    fn try_into_bytes(self) -> SerializeResult<Bytes>
         where Self: TryInto<Bytes, Error=SerializeError> {
-        self.try_into()
-    }
-
-    fn into_bytes_mut(self) -> BytesMutResult
-        where Self: TryInto<BytesMut, Error=SerializeError> {
         self.try_into()
     }
 }
