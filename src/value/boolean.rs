@@ -8,7 +8,7 @@ const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
 
 pub struct Boolean {
-    value: bool
+    value: bool,
 }
 
 impl From<bool> for Boolean {
@@ -47,9 +47,15 @@ mod tests {
     fn is_valid() {
         let f = Boolean::from(false);
         assert_eq!(f.get_marker().unwrap(), MARKER_FALSE);
-        assert_eq!(f.try_into_bytes().unwrap(), Bytes::from_static(&[MARKER_FALSE]));
+        assert_eq!(
+            f.try_into_bytes().unwrap(),
+            Bytes::from_static(&[MARKER_FALSE])
+        );
         let t = Boolean::from(true);
         assert_eq!(t.get_marker().unwrap(), MARKER_TRUE);
-        assert_eq!(t.try_into_bytes().unwrap(), Bytes::from_static(&[MARKER_TRUE]));
+        assert_eq!(
+            t.try_into_bytes().unwrap(),
+            Bytes::from_static(&[MARKER_TRUE])
+        );
     }
 }

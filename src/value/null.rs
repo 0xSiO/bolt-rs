@@ -28,12 +28,15 @@ mod tests {
 
     use crate::serialize::Serialize;
 
-    use super::{MARKER, Null};
+    use super::{Null, MARKER};
 
     #[test]
     fn is_valid() {
         let null = Null;
         assert_eq!(null.get_marker().unwrap(), MARKER);
-        assert_eq!(null.try_into_bytes().unwrap(), Bytes::from_static(&[MARKER]));
+        assert_eq!(
+            null.try_into_bytes().unwrap(),
+            Bytes::from_static(&[MARKER])
+        );
     }
 }
