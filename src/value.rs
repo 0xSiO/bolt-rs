@@ -2,6 +2,10 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::fmt;
 
+mod null;
+mod boolean;
+mod string;
+
 pub type MarkerResult = Result<u8, ValueError>;
 
 pub trait Value {
