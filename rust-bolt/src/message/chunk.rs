@@ -2,8 +2,9 @@ use std::convert::TryFrom;
 use std::mem;
 
 use bytes::{BufMut, Bytes, BytesMut};
+use failure::Error;
 
-use crate::serialize::{DeserializeError, DeserializeResult, SerializeError, Value};
+use crate::serialize::DeserializeError;
 
 pub struct Chunk {
     size: u16,
@@ -11,14 +12,14 @@ pub struct Chunk {
 }
 
 impl TryFrom<Bytes> for Chunk {
-    type Error = DeserializeError;
+    type Error = Error;
 
-    fn try_from(bytes: Bytes) -> DeserializeResult<Chunk> {
+    fn try_from(bytes: Bytes) -> Result<Chunk, Error> {
         if bytes.len() > std::u16::MAX as usize {
-            return Err(DeserializeError::new(&format!(
+            Err(DeserializeError::new(&format!(
                 "Bytes length too long: {}",
                 bytes.len()
-            )));
+            )))?
         }
 
         Ok(Chunk {

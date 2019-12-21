@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use bytes::Bytes;
 use failure::Error;
 
-use crate::serialize::{SerializeError, Value};
+use crate::serialize::Value;
 
 const MARKER: u8 = 0xC0;
 

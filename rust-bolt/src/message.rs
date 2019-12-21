@@ -3,11 +3,12 @@ use std::mem;
 use std::panic::catch_unwind;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
+use failure::Error;
 
 pub use chunk::Chunk;
 pub use init::Init;
 
-use crate::serialize::{DeserializeError, DeserializeResult, SerializeError, Value};
+use crate::serialize::DeserializeError;
 
 mod chunk;
 mod init;
@@ -30,10 +31,10 @@ impl Message {
 }
 
 impl TryFrom<Bytes> for Message {
-    type Error = DeserializeError;
+    type Error = Error;
 
-    fn try_from(mut bytes: Bytes) -> DeserializeResult<Message> {
-        let result = catch_unwind(move || {
+    fn try_from(mut bytes: Bytes) -> Result<Message, Self::Error> {
+        let result: Result<Message, Error> = catch_unwind(move || {
             let mut message = Message::with_capacity(bytes.len());
             while bytes.has_remaining() {
                 let size: u16 = bytes.get_u16();
@@ -49,14 +50,12 @@ impl TryFrom<Bytes> for Message {
                 message.add_chunk(Chunk::try_from(buf.freeze())?)
             }
             Ok(message)
-        });
-        result
-            .unwrap_or(Err(DeserializeError::new(
-                "Failed to create Message from Bytes.",
-            )))
-            .map_err(|err| {
-                DeserializeError::new(&format!("Error creating Message from Bytes: {}", err))
-            })
+        })
+        .map_err(|_| DeserializeError::new("Panicked during deserialization"))?;
+
+        Ok(result.map_err(|err: Error| {
+            DeserializeError::new(&format!("Error creating Message from Bytes: {}", err))
+        })?)
     }
 }
 
@@ -115,7 +114,6 @@ mod tests {
             0x0C, 0x0D, 0x0E, 0x0F, 0x00, 0x00,
         ]);
         let message = Message::try_from(bytes);
-        assert!(message.is_ok());
         assert_eq!(message.unwrap().bytes, new_chunk().data);
     }
 
@@ -126,7 +124,6 @@ mod tests {
             0x0C, 0x0D, 0x0E, 0x0F, 0x00, 0x04, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00,
         ]);
         let message = Message::try_from(bytes);
-        assert!(message.is_ok());
         assert_eq!(
             message.unwrap().bytes,
             Bytes::from_static(&[

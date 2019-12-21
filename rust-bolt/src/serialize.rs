@@ -1,14 +1,9 @@
 use std::convert::TryInto;
-use std::fmt;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 use std::ops::Deref;
 
 use bytes::Bytes;
 use failure::{Error, Fail};
-
-use crate::error::ValueError;
-
-pub type DeserializeResult<T> = Result<T, DeserializeError>;
 
 pub trait Value {
     fn get_marker(&self) -> Result<u8, Error>;
