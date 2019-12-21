@@ -15,6 +15,14 @@ pub struct String {
     pub(crate) value: std::string::String,
 }
 
+impl From<&str> for String {
+    fn from(value: &str) -> Self {
+        Self {
+            value: value.to_string(),
+        }
+    }
+}
+
 impl From<std::string::String> for String {
     fn from(value: std::string::String) -> Self {
         Self { value }
@@ -55,7 +63,7 @@ impl TryInto<Bytes> for String {
                 return Err(SerializeError::new(format!(
                     "String length too long: {}",
                     self.value.len()
-                )))
+                )));
             }
         }
         bytes.put_slice(self.value.as_bytes());

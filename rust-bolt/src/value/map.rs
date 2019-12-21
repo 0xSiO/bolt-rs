@@ -22,13 +22,20 @@ where
     pub(crate) value: HashMap<K, V>,
 }
 
-impl<K, V> From<HashMap<K, V>> for Map<K, V>
+impl<K, V, X, Y> From<HashMap<K, V>> for Map<X, Y>
 where
-    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Serialize + TryInto<Bytes, Error = SerializeError>,
+    K: Into<X>,
+    V: Into<Y>,
+    X: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    Y: Serialize + TryInto<Bytes, Error = SerializeError>,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
-        Self { value }
+        Self {
+            value: value
+                .into_iter()
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
+        }
     }
 }
 
@@ -97,14 +104,10 @@ mod tests {
 
     #[test]
     fn get_marker() {
-        let empty_map: Map<String, Integer> = HashMap::new().into();
+        let empty_map: Map<String, Integer> = HashMap::<&str, i8>::new().into();
         assert_eq!(empty_map.get_marker().unwrap(), MARKER_TINY);
-        let tiny_map: Map<String, Integer> = HashMap::from_iter(
-            vec![("a", 1_i8), ("b", 2_i8), ("c", 3_i8)]
-                .into_iter()
-                .map(|(k, v)| (k.to_string().into(), v.into())),
-        )
-        .into();
+        let tiny_map: Map<String, Integer> =
+            HashMap::<&str, i8>::from_iter(vec![("a", 1_i8), ("b", 2_i8), ("c", 3_i8)]).into();
         assert_eq!(
             tiny_map.get_marker().unwrap(),
             MARKER_TINY | tiny_map.value.len() as u8
@@ -113,44 +116,36 @@ mod tests {
 
     #[test]
     fn try_into_bytes() {
-        let empty_map: Map<String, Integer> = HashMap::new().into();
+        let empty_map: Map<String, Integer> = HashMap::<&str, i8>::new().into();
         assert_eq!(
             empty_map.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_TINY | 0 as u8])
         );
-        let tiny_map: Map<String, Integer> = HashMap::from_iter(
-            vec![("a", 1_i8)]
-                .into_iter()
-                .map(|(k, v)| (k.to_string().into(), v.into())),
-        )
-        .into();
+        let tiny_map: Map<String, Integer> =
+            HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
         assert_eq!(
             tiny_map.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_TINY | 1, 0x81, 0x61, 0x01])
         );
 
-        let small_map: Map<String, Integer> = HashMap::from_iter(
-            vec![
-                ("a", 1_i8),
-                ("b", 1_i8),
-                ("c", 3_i8),
-                ("d", 4_i8),
-                ("e", 5_i8),
-                ("f", 6_i8),
-                ("g", 7_i8),
-                ("h", 8_i8),
-                ("i", 9_i8),
-                ("j", 0_i8),
-                ("k", 1_i8),
-                ("l", 2_i8),
-                ("m", 3_i8),
-                ("n", 4_i8),
-                ("o", 5_i8),
-                ("p", 6_i8),
-            ]
-            .into_iter()
-            .map(|(k, v)| (k.to_string().into(), v.into())),
-        )
+        let small_map: Map<String, Integer> = HashMap::<&str, i8>::from_iter(vec![
+            ("a", 1_i8),
+            ("b", 1_i8),
+            ("c", 3_i8),
+            ("d", 4_i8),
+            ("e", 5_i8),
+            ("f", 6_i8),
+            ("g", 7_i8),
+            ("h", 8_i8),
+            ("i", 9_i8),
+            ("j", 0_i8),
+            ("k", 1_i8),
+            ("l", 2_i8),
+            ("m", 3_i8),
+            ("n", 4_i8),
+            ("o", 5_i8),
+            ("p", 6_i8),
+        ])
         .into();
         let small_len = small_map.value.len();
         let small_bytes = small_map.try_into_bytes().unwrap();
