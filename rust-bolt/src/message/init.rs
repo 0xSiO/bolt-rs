@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::hash::Hash;
 use std::mem;
@@ -18,6 +19,23 @@ where
 {
     client_name: String,
     auth_token: Map<K, V>,
+}
+
+impl<K, V> Init<K, V>
+where
+    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Serialize + TryInto<Bytes, Error = SerializeError>,
+{
+    pub fn new<X, Y>(client_name: &str, auth_token: HashMap<X, Y>) -> Init<K, V>
+    where
+        X: Into<K>,
+        Y: Into<V>,
+    {
+        Init {
+            client_name: client_name.into(),
+            auth_token: auth_token.into(),
+        }
+    }
 }
 
 #[cfg(test)]
