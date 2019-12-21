@@ -13,7 +13,7 @@ const MARKER_INT_16: u8 = 0xC9;
 const MARKER_INT_32: u8 = 0xCA;
 const MARKER_INT_64: u8 = 0xCB;
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Integer {
     // Since integers come in many sizes, just store the bytes directly
     bytes: Bytes,

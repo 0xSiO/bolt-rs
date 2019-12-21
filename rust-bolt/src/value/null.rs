@@ -8,7 +8,7 @@ use crate::value::Marker;
 
 const MARKER: u8 = 0xC0;
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Null;
 
 impl Marker for Null {
