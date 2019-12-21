@@ -22,6 +22,7 @@ where
     K: Value + Serialize + Hash + Eq,
     V: Value + Serialize,
 {
+    // TODO: Maps permit a mixture of types, use an enum for Value types
     pub(crate) value: HashMap<K, V>,
 }
 
