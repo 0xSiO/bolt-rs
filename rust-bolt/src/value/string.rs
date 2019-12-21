@@ -4,7 +4,8 @@ use std::mem;
 use bytes::{BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::serialize::{SerializeError, Value};
+use crate::error::ValueError;
+use crate::serialize::Value;
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -37,10 +38,7 @@ impl Value for String {
             16..=255 => Ok(MARKER_SMALL),
             256..=65_535 => Ok(MARKER_MEDIUM),
             65_536..=4_294_967_295 => Ok(MARKER_LARGE),
-            _ => Err(SerializeError::new(&format!(
-                "String length too long: {}",
-                self.value.len()
-            )))?,
+            _ => Err(ValueError::TooLarge(self.value.len()))?,
         }
     }
 }
@@ -60,10 +58,7 @@ impl TryInto<Bytes> for String {
             16..=255 => bytes.put_u8(self.value.len() as u8),
             256..=65_535 => bytes.put_u16(self.value.len() as u16),
             65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
-            _ => Err(SerializeError::new(&format!(
-                "String length too long: {}",
-                self.value.len()
-            )))?,
+            _ => Err(ValueError::TooLarge(self.value.len()))?,
         }
         bytes.put_slice(self.value.as_bytes());
         Ok(bytes.freeze())
