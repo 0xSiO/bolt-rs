@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
-use crate::serialize::{Serialize, SerializeError, SerializeResult};
+use crate::serialize::{SerializeError, SerializeResult, Value};
 
 const MARKER_TINY: u8 = 0xA0;
 const MARKER_SMALL: u8 = 0xD8;
@@ -16,8 +16,8 @@ const MARKER_LARGE: u8 = 0xDA;
 pub struct Map<K, V>
 where
     // TODO: Waiting for trait aliases https://github.com/rust-lang/rust/issues/41517
-    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Serialize + TryInto<Bytes, Error = SerializeError>,
+    K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Value + TryInto<Bytes, Error = SerializeError>,
 {
     pub(crate) value: HashMap<K, V>,
 }
@@ -26,8 +26,8 @@ impl<K, V, X, Y> From<HashMap<K, V>> for Map<X, Y>
 where
     K: Into<X>,
     V: Into<Y>,
-    X: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    Y: Serialize + TryInto<Bytes, Error = SerializeError>,
+    X: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    Y: Value + TryInto<Bytes, Error = SerializeError>,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
         Self {
@@ -39,10 +39,10 @@ where
     }
 }
 
-impl<K, V> Serialize for Map<K, V>
+impl<K, V> Value for Map<K, V>
 where
-    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Serialize + TryInto<Bytes, Error = SerializeError>,
+    K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Value + TryInto<Bytes, Error = SerializeError>,
 {
     fn get_marker(&self) -> SerializeResult<u8> {
         match self.value.len() {
@@ -60,8 +60,8 @@ where
 
 impl<K, V> TryInto<Bytes> for Map<K, V>
 where
-    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Serialize + TryInto<Bytes, Error = SerializeError>,
+    K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Value + TryInto<Bytes, Error = SerializeError>,
 {
     type Error = SerializeError;
 
@@ -97,7 +97,7 @@ mod tests {
 
     use bytes::Bytes;
 
-    use crate::serialize::Serialize;
+    use crate::serialize::Value;
     use crate::value::{Integer, String};
 
     use super::{Map, MARKER_SMALL, MARKER_TINY};

@@ -9,7 +9,7 @@ use bytes::Bytes;
 pub type SerializeResult<T> = Result<T, SerializeError>;
 pub type DeserializeResult<T> = Result<T, DeserializeError>;
 
-pub trait Serialize {
+pub trait Value {
     fn get_marker(&self) -> SerializeResult<u8>;
 
     fn try_into_bytes(self) -> SerializeResult<Bytes>
@@ -20,13 +20,13 @@ pub trait Serialize {
     }
 }
 
-impl Serialize for Box<dyn Serialize> {
+impl Value for Box<dyn Value> {
     fn get_marker(&self) -> SerializeResult<u8> {
         self.deref().get_marker()
     }
 }
 
-impl TryInto<Bytes> for Box<dyn Serialize> {
+impl TryInto<Bytes> for Box<dyn Value> {
     type Error = SerializeError;
 
     fn try_into(self) -> SerializeResult<Bytes> {
