@@ -7,6 +7,7 @@ use std::ops::Deref;
 use bytes::Bytes;
 
 pub type SerializeResult<T> = Result<T, SerializeError>;
+pub type DeserializeResult<T> = Result<T, DeserializeError>;
 
 pub trait Serialize {
     fn get_marker(&self) -> SerializeResult<u8>;
