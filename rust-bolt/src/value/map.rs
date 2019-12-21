@@ -99,8 +99,8 @@ mod tests {
 
     use bytes::Bytes;
 
-    use crate::value::Value;
-    use crate::value::{Integer, String};
+    use crate::serialize::Serialize;
+    use crate::value::{Integer, String, Value};
 
     use super::{Map, MARKER_SMALL, MARKER_TINY};
 

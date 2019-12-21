@@ -30,6 +30,7 @@ impl TryInto<Bytes> for Null {
 mod tests {
     use bytes::Bytes;
 
+    use crate::serialize::Serialize;
     use crate::value::Value;
 
     use super::{Null, MARKER};
