@@ -6,7 +6,7 @@ use failure::Error;
 
 use crate::error::{SerializeError, ValueError};
 use crate::serialize::Serialize;
-use crate::value::Marker;
+use crate::value::{Marker, Value};
 
 const MARKER_INT_8: u8 = 0xC8;
 const MARKER_INT_16: u8 = 0xC9;
@@ -25,6 +25,12 @@ macro_rules! impl_from_int {
             impl From<$T> for $crate::value::Integer {
                 fn from(value: $T) -> Self {
                     Self { bytes: ::bytes::Bytes::copy_from_slice(&value.to_be_bytes()) }
+                }
+            }
+
+            impl From<$T> for $crate::value::Value {
+                fn from(value: $T) -> Self {
+                    Value::Integer(value.into())
                 }
             }
         )*

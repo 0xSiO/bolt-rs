@@ -4,12 +4,18 @@ use bytes::Bytes;
 use failure::Error;
 
 use crate::serialize::Serialize;
-use crate::value::Marker;
+use crate::value::{Marker, Value};
 
 const MARKER: u8 = 0xC0;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Null;
+
+impl From<Null> for Value {
+    fn from(value: Null) -> Self {
+        Value::Null(value)
+    }
+}
 
 impl Marker for Null {
     fn get_marker(&self) -> Result<u8, Error> {

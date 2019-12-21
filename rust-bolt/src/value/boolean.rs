@@ -4,7 +4,7 @@ use bytes::Bytes;
 use failure::Error;
 
 use crate::serialize::Serialize;
-use crate::value::Marker;
+use crate::value::{Marker, Value};
 
 const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
@@ -17,6 +17,12 @@ pub struct Boolean {
 impl From<bool> for Boolean {
     fn from(value: bool) -> Self {
         Self { value }
+    }
+}
+
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        Value::Boolean(value.into())
     }
 }
 
