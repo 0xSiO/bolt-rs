@@ -20,13 +20,6 @@ mod string;
 
 pub trait Value {
     fn get_marker(&self) -> Result<u8, Error>;
-
-    fn try_into_bytes(self) -> Result<Bytes, Error>
-    where
-        Self: Serialize,
-    {
-        self.try_into()
-    }
 }
 
 impl Value for Box<dyn Value> {

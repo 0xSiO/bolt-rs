@@ -44,6 +44,7 @@ impl TryInto<Bytes> for Boolean {
 mod tests {
     use bytes::Bytes;
 
+    use crate::serialize::Serialize;
     use crate::value::Value;
 
     use super::{Boolean, MARKER_FALSE, MARKER_TRUE};

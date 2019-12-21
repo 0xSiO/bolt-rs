@@ -72,6 +72,7 @@ impl TryInto<Bytes> for String {
 mod tests {
     use bytes::Bytes;
 
+    use crate::serialize::Serialize;
     use crate::value::Value;
 
     use super::{String, MARKER_LARGE, MARKER_MEDIUM, MARKER_SMALL, MARKER_TINY};

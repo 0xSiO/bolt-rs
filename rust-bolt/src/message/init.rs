@@ -44,9 +44,9 @@ mod tests {
     use bytes::Bytes;
 
     use crate::message::init::Init;
+    use crate::serialize::Serialize;
     use crate::structure::Structure;
-    use crate::value::Value;
-    use crate::value::{Map, String};
+    use crate::value::{Map, String, Value};
 
     fn new_msg() -> Init<String, String> {
         Init {
