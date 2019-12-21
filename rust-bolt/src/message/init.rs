@@ -6,12 +6,11 @@ use bytes::{BufMut, Bytes, BytesMut};
 
 use rust_bolt_macros::*;
 
-use crate::message::MARKER_TINY_STRUCTURE;
-use crate::serialize::{Serialize, SerializeError, SerializeResult};
+use crate::serialize::{Serialize, SerializeError};
 use crate::structure::Structure;
 use crate::value::{Map, String};
 
-#[derive(Debug, Structure)]
+#[derive(Debug, Structure, Serialize)]
 pub struct Init<K, V>
 where
     K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
@@ -19,40 +18,6 @@ where
 {
     client_name: String,
     auth_token: Map<K, V>,
-}
-
-impl<K, V> Serialize for Init<K, V>
-where
-    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Serialize + TryInto<Bytes, Error = SerializeError>,
-{
-    fn get_marker(&self) -> SerializeResult<u8> {
-        Ok(MARKER_TINY_STRUCTURE | 2)
-    }
-}
-
-impl<K, V> TryInto<Bytes> for Init<K, V>
-where
-    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Serialize + TryInto<Bytes, Error = SerializeError>,
-{
-    type Error = SerializeError;
-
-    fn try_into(self) -> SerializeResult<Bytes> {
-        let marker = self.get_marker()?;
-        let signature = self.get_signature();
-        let client_name_bytes = self.client_name.try_into_bytes()?;
-        let auth_token_bytes = self.auth_token.try_into_bytes()?;
-        let mut result_bytes = BytesMut::with_capacity(
-            // Marker byte, signature byte, then fields
-            mem::size_of::<u8>() * 2 + client_name_bytes.len() + auth_token_bytes.len(),
-        );
-        result_bytes.put_u8(marker);
-        result_bytes.put_u8(signature);
-        result_bytes.put(client_name_bytes);
-        result_bytes.put(auth_token_bytes);
-        Ok(result_bytes.freeze())
-    }
 }
 
 #[cfg(test)]

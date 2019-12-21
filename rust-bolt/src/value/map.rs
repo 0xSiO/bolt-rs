@@ -15,16 +15,16 @@ const MARKER_LARGE: u8 = 0xDA;
 #[derive(Debug)]
 pub struct Map<K, V>
 where
-    K: Serialize + Hash + Eq,
-    V: Serialize,
+    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Serialize + TryInto<Bytes, Error = SerializeError>,
 {
     pub(crate) value: HashMap<K, V>,
 }
 
 impl<K, V> From<HashMap<K, V>> for Map<K, V>
 where
-    K: Serialize + Hash + Eq,
-    V: Serialize,
+    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Serialize + TryInto<Bytes, Error = SerializeError>,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
         Self { value }
@@ -33,8 +33,8 @@ where
 
 impl<K, V> Serialize for Map<K, V>
 where
-    K: Serialize + Hash + Eq,
-    V: Serialize,
+    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Serialize + TryInto<Bytes, Error = SerializeError>,
 {
     fn get_marker(&self) -> SerializeResult<u8> {
         match self.value.len() {
