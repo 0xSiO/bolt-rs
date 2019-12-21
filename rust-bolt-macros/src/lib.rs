@@ -65,7 +65,7 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let size_bytes = get_size_bytes(fields.len());
 
     let gen = quote! {
-        impl#type_args crate::serialize::Serialize for #name#type_args
+        impl#type_args crate::serialize::Value for #name#type_args
         #where_clause
         {
             fn get_marker(&self) -> crate::serialize::SerializeResult<u8> {

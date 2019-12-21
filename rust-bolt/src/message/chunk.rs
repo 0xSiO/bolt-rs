@@ -57,11 +57,6 @@ mod tests {
     }
 
     #[test]
-    fn get_marker() {
-        assert!(new_chunk().get_marker().is_err());
-    }
-
-    #[test]
     fn into_bytes() {
         let bytes: Bytes = new_chunk().into();
         assert_eq!(
