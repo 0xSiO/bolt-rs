@@ -1,7 +1,7 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 
 use bytes::{BufMut, Bytes, BytesMut};
 use failure::Error;
@@ -15,7 +15,7 @@ const MARKER_SMALL: u8 = 0xD8;
 const MARKER_MEDIUM: u8 = 0xD9;
 const MARKER_LARGE: u8 = 0xDA;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Map<K, V>
 where
     // TODO: Waiting for trait aliases https://github.com/rust-lang/rust/issues/41517
@@ -24,6 +24,16 @@ where
 {
     // TODO: Maps permit a mixture of types, use an enum for Value types
     pub(crate) value: HashMap<K, V>,
+}
+
+impl<K, V> Hash for Map<K, V>
+where
+    K: Marker + Serialize + Hash + Eq,
+    V: Marker + Serialize,
+{
+    fn hash<H: Hasher>(&self, _state: &mut H) {
+        panic!("Cannot hash a Map")
+    }
 }
 
 impl<K, V, X, Y> From<HashMap<K, V>> for Map<X, Y>
