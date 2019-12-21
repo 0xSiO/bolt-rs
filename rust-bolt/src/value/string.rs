@@ -38,7 +38,7 @@ impl Value for String {
             16..=255 => Ok(MARKER_SMALL),
             256..=65_535 => Ok(MARKER_MEDIUM),
             65_536..=4_294_967_295 => Ok(MARKER_LARGE),
-            _ => Err(ValueError::TooLarge(self.value.len()))?,
+            _ => Err(ValueError::TooLarge(self.value.len()).into()),
         }
     }
 }
@@ -58,7 +58,7 @@ impl TryInto<Bytes> for String {
             16..=255 => bytes.put_u8(self.value.len() as u8),
             256..=65_535 => bytes.put_u16(self.value.len() as u16),
             65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
-            _ => Err(ValueError::TooLarge(self.value.len()))?,
+            _ => return Err(ValueError::TooLarge(self.value.len()).into()),
         }
         bytes.put_slice(self.value.as_bytes());
         Ok(bytes.freeze())

@@ -32,7 +32,7 @@ impl Client {
         SUPPORTED_VERSIONS
             .iter()
             .for_each(|&v| allowed_versions.put_u32(v));
-        self.stream.write(&mut PREAMBLE).await?;
+        self.stream.write(&PREAMBLE).await?;
         self.stream.write_buf(&mut allowed_versions).await?;
         self.stream.flush().await?;
         Ok(self.stream.read_u32().await?)
