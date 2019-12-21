@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::hash::Hash;
-use std::mem;
-
-use bytes::{BufMut, Bytes, BytesMut};
-use failure::Error;
 
 use rust_bolt_macros::*;
 
+use crate::serialize::Serialize;
 use crate::structure::Structure;
 use crate::value::Value;
 use crate::value::{Map, String};
@@ -15,8 +12,8 @@ use crate::value::{Map, String};
 #[derive(Debug, Structure, Serialize)]
 pub struct Init<K, V>
 where
-    K: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
-    V: Value + TryInto<Bytes, Error = Error>,
+    K: Value + Serialize + Hash + Eq,
+    V: Value + Serialize,
 {
     client_name: String,
     auth_token: Map<K, V>,
@@ -24,8 +21,8 @@ where
 
 impl<K, V> Init<K, V>
 where
-    K: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
-    V: Value + TryInto<Bytes, Error = Error>,
+    K: Value + Serialize + Hash + Eq,
+    V: Value + Serialize,
 {
     pub fn new<X, Y>(client_name: &str, auth_token: HashMap<X, Y>) -> Init<K, V>
     where

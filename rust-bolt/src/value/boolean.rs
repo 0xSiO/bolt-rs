@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use bytes::Bytes;
 use failure::Error;
 
+use crate::serialize::Serialize;
 use crate::value::Value;
 
 const MARKER_FALSE: u8 = 0xC2;
@@ -28,6 +29,8 @@ impl Value for Boolean {
         }
     }
 }
+
+impl Serialize for Boolean {}
 
 impl TryInto<Bytes> for Boolean {
     type Error = Error;

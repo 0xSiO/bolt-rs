@@ -4,6 +4,8 @@ use std::ops::Deref;
 use bytes::Bytes;
 use failure::Error;
 
+use crate::serialize::Serialize;
+
 pub use self::boolean::Boolean;
 pub use self::integer::Integer;
 pub use self::map::Map;
@@ -21,7 +23,7 @@ pub trait Value {
 
     fn try_into_bytes(self) -> Result<Bytes, Error>
     where
-        Self: TryInto<Bytes, Error = Error>,
+        Self: Serialize,
     {
         self.try_into()
     }
@@ -32,6 +34,8 @@ impl Value for Box<dyn Value> {
         self.deref().get_marker()
     }
 }
+
+impl Serialize for Box<dyn Value> {}
 
 impl TryInto<Bytes> for Box<dyn Value> {
     type Error = Error;

@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use bytes::Bytes;
 use failure::Error;
 
+use crate::serialize::Serialize;
 use crate::value::Value;
 
 const MARKER: u8 = 0xC0;
@@ -16,6 +17,7 @@ impl Value for Null {
     }
 }
 
+impl Serialize for Null {}
 impl TryInto<Bytes> for Null {
     type Error = Error;
 

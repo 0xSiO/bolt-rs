@@ -7,6 +7,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 use failure::Error;
 
 use crate::error::ValueError;
+use crate::serialize::Serialize;
 use crate::value::Value;
 
 const MARKER_TINY: u8 = 0xA0;
@@ -18,8 +19,8 @@ const MARKER_LARGE: u8 = 0xDA;
 pub struct Map<K, V>
 where
     // TODO: Waiting for trait aliases https://github.com/rust-lang/rust/issues/41517
-    K: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
-    V: Value + TryInto<Bytes, Error = Error>,
+    K: Value + Serialize + Hash + Eq,
+    V: Value + Serialize,
 {
     pub(crate) value: HashMap<K, V>,
 }
@@ -28,8 +29,8 @@ impl<K, V, X, Y> From<HashMap<K, V>> for Map<X, Y>
 where
     K: Into<X>,
     V: Into<Y>,
-    X: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
-    Y: Value + TryInto<Bytes, Error = Error>,
+    X: Value + Serialize + Hash + Eq,
+    Y: Value + Serialize,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
         Self {
@@ -43,8 +44,8 @@ where
 
 impl<K, V> Value for Map<K, V>
 where
-    K: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
-    V: Value + TryInto<Bytes, Error = Error>,
+    K: Value + Serialize + Hash + Eq,
+    V: Value + Serialize,
 {
     fn get_marker(&self) -> Result<u8, Error> {
         match self.value.len() {
@@ -57,10 +58,17 @@ where
     }
 }
 
+impl<K, V> Serialize for Map<K, V>
+where
+    K: Value + Serialize + Hash + Eq,
+    V: Value + Serialize,
+{
+}
+
 impl<K, V> TryInto<Bytes> for Map<K, V>
 where
-    K: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
-    V: Value + TryInto<Bytes, Error = Error>,
+    K: Value + Serialize + Hash + Eq,
+    V: Value + Serialize,
 {
     type Error = Error;
 
