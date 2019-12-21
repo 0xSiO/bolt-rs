@@ -4,7 +4,7 @@ use std::mem;
 use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::serialize::{
-    DeserializeError, DeserializeResult, Serialize, SerializeError, SerializeResult,
+    DeserializeError, DeserializeResult, SerializeError, SerializeResult, Value,
 };
 
 pub struct Chunk {
@@ -12,7 +12,7 @@ pub struct Chunk {
     pub(crate) data: Bytes,
 }
 
-impl Serialize for Chunk {
+impl Value for Chunk {
     fn get_marker(&self) -> SerializeResult<u8> {
         Err(SerializeError::new("Chunks do not have markers"))
     }

@@ -7,15 +7,15 @@ use bytes::{BufMut, Bytes, BytesMut};
 
 use rust_bolt_macros::*;
 
-use crate::serialize::{Serialize, SerializeError};
+use crate::serialize::{SerializeError, Value};
 use crate::structure::Structure;
 use crate::value::{Map, String};
 
-#[derive(Debug, Structure, Serialize)]
+#[derive(Debug, Structure, Value)]
 pub struct Init<K, V>
 where
-    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Serialize + TryInto<Bytes, Error = SerializeError>,
+    K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Value + TryInto<Bytes, Error = SerializeError>,
 {
     client_name: String,
     auth_token: Map<K, V>,
@@ -23,8 +23,8 @@ where
 
 impl<K, V> Init<K, V>
 where
-    K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Serialize + TryInto<Bytes, Error = SerializeError>,
+    K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
+    V: Value + TryInto<Bytes, Error = SerializeError>,
 {
     pub fn new<X, Y>(client_name: &str, auth_token: HashMap<X, Y>) -> Init<K, V>
     where
@@ -46,7 +46,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::message::init::Init;
-    use crate::serialize::Serialize;
+    use crate::serialize::Value;
     use crate::structure::Structure;
     use crate::value::{Map, String};
 

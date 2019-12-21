@@ -2,14 +2,14 @@ use std::convert::TryInto;
 
 use bytes::Bytes;
 
-use crate::serialize::{Serialize, SerializeError, SerializeResult};
+use crate::serialize::{SerializeError, SerializeResult, Value};
 
 const MARKER: u8 = 0xC0;
 
 #[derive(Debug)]
 pub struct Null;
 
-impl Serialize for Null {
+impl Value for Null {
     fn get_marker(&self) -> SerializeResult<u8> {
         Ok(MARKER)
     }
@@ -27,7 +27,7 @@ impl TryInto<Bytes> for Null {
 mod tests {
     use bytes::Bytes;
 
-    use crate::serialize::Serialize;
+    use crate::serialize::Value;
 
     use super::{Null, MARKER};
 

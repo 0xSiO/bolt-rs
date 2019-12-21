@@ -8,7 +8,7 @@ pub use chunk::Chunk;
 pub use init::Init;
 
 use crate::serialize::{
-    DeserializeError, DeserializeResult, Serialize, SerializeError, SerializeResult,
+    DeserializeError, DeserializeResult, SerializeError, SerializeResult, Value,
 };
 
 mod chunk;
@@ -31,7 +31,7 @@ impl Message {
     }
 }
 
-impl Serialize for Message {
+impl Value for Message {
     fn get_marker(&self) -> SerializeResult<u8> {
         Err(SerializeError::new("Messages do not have markers"))
     }

@@ -9,7 +9,7 @@ use tokio::net::TcpStream;
 use tokio::prelude::*;
 
 use crate::message::{Chunk, Init, Message};
-use crate::serialize::Serialize;
+use crate::serialize::Value;
 use crate::value;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];

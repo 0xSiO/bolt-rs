@@ -3,7 +3,7 @@ use std::mem;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
-use crate::serialize::{Serialize, SerializeError, SerializeResult};
+use crate::serialize::{SerializeError, SerializeResult, Value};
 
 const MARKER_INT_8: u8 = 0xC8;
 const MARKER_INT_16: u8 = 0xC9;
@@ -30,7 +30,7 @@ macro_rules! impl_from_int {
 
 impl_from_int!(i8, i16, i32, i64);
 
-impl Serialize for Integer {
+impl Value for Integer {
     fn get_marker(&self) -> SerializeResult<u8> {
         let value = match self.bytes.len() {
             1 => self.bytes.clone().get_i8() as i64,
@@ -77,7 +77,7 @@ impl TryInto<Bytes> for Integer {
 mod tests {
     use bytes::Bytes;
 
-    use crate::serialize::Serialize;
+    use crate::serialize::Value;
 
     use super::*;
 

@@ -3,7 +3,7 @@ use std::mem;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
-use crate::serialize::{Serialize, SerializeError, SerializeResult};
+use crate::serialize::{SerializeError, SerializeResult, Value};
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -29,7 +29,7 @@ impl From<std::string::String> for String {
     }
 }
 
-impl Serialize for String {
+impl Value for String {
     fn get_marker(&self) -> SerializeResult<u8> {
         match self.value.len() {
             0..=15 => Ok(MARKER_TINY | self.value.len() as u8),
@@ -75,7 +75,7 @@ impl TryInto<Bytes> for String {
 mod tests {
     use bytes::Bytes;
 
-    use crate::serialize::Serialize;
+    use crate::serialize::Value;
 
     use super::{String, MARKER_LARGE, MARKER_MEDIUM, MARKER_SMALL, MARKER_TINY};
 

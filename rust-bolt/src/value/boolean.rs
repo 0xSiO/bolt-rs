@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use bytes::Bytes;
 
-use crate::serialize::{Serialize, SerializeError, SerializeResult};
+use crate::serialize::{SerializeError, SerializeResult, Value};
 
 const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
@@ -18,7 +18,7 @@ impl From<bool> for Boolean {
     }
 }
 
-impl Serialize for Boolean {
+impl Value for Boolean {
     fn get_marker(&self) -> SerializeResult<u8> {
         if self.value {
             Ok(MARKER_TRUE)
@@ -40,7 +40,7 @@ impl TryInto<Bytes> for Boolean {
 mod tests {
     use bytes::Bytes;
 
-    use crate::serialize::Serialize;
+    use crate::serialize::Value;
 
     use super::{Boolean, MARKER_FALSE, MARKER_TRUE};
 
