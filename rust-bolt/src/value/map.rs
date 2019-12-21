@@ -8,7 +8,7 @@ use failure::Error;
 
 use crate::error::ValueError;
 use crate::serialize::Serialize;
-use crate::value::Marker;
+use crate::value::{Marker, Value};
 
 const MARKER_TINY: u8 = 0xA0;
 const MARKER_SMALL: u8 = 0xD8;
@@ -50,6 +50,16 @@ where
                 .map(|(k, v)| (k.into(), v.into()))
                 .collect(),
         }
+    }
+}
+
+impl<K, V> From<HashMap<K, V>> for Value
+where
+    K: Into<Value>,
+    V: Into<Value>,
+{
+    fn from(value: HashMap<K, V, RandomState>) -> Self {
+        Value::Map(value.into())
     }
 }
 
