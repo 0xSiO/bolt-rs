@@ -4,8 +4,8 @@ use std::mem;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::error::ValueError;
-use crate::serialize::{SerializeError, Value};
+use crate::error::{SerializeError, ValueError};
+use crate::serialize::Value;
 
 const MARKER_INT_8: u8 = 0xC8;
 const MARKER_INT_16: u8 = 0xC9;
