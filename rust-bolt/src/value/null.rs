@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use bytes::Bytes;
 use failure::Error;
 
-use crate::serialize::Value;
+use crate::value::Value;
 
 const MARKER: u8 = 0xC0;
 
@@ -28,7 +28,7 @@ impl TryInto<Bytes> for Null {
 mod tests {
     use bytes::Bytes;
 
-    use crate::serialize::Value;
+    use crate::value::Value;
 
     use super::{Null, MARKER};
 

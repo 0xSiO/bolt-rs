@@ -7,7 +7,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 use failure::Error;
 
 use crate::error::ValueError;
-use crate::serialize::Value;
+use crate::value::Value;
 
 const MARKER_TINY: u8 = 0xA0;
 const MARKER_SMALL: u8 = 0xD8;
@@ -91,7 +91,7 @@ mod tests {
 
     use bytes::Bytes;
 
-    use crate::serialize::Value;
+    use crate::value::Value;
     use crate::value::{Integer, String};
 
     use super::{Map, MARKER_SMALL, MARKER_TINY};

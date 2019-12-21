@@ -8,8 +8,8 @@ use failure::Error;
 
 use rust_bolt_macros::*;
 
-use crate::serialize::Value;
 use crate::structure::Structure;
+use crate::value::Value;
 use crate::value::{Map, String};
 
 #[derive(Debug, Structure, Serialize)]
@@ -47,8 +47,8 @@ mod tests {
     use bytes::Bytes;
 
     use crate::message::init::Init;
-    use crate::serialize::Value;
     use crate::structure::Structure;
+    use crate::value::Value;
     use crate::value::{Map, String};
 
     fn new_msg() -> Init<String, String> {
