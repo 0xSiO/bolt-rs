@@ -6,7 +6,7 @@ use failure::Error;
 
 use crate::error::ValueError;
 use crate::serialize::Serialize;
-use crate::value::Value;
+use crate::value::Marker;
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -32,7 +32,7 @@ impl From<std::string::String> for String {
     }
 }
 
-impl Value for String {
+impl Marker for String {
     fn get_marker(&self) -> Result<u8, Error> {
         match self.value.len() {
             0..=15 => Ok(MARKER_TINY | self.value.len() as u8),
@@ -73,7 +73,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::serialize::Serialize;
-    use crate::value::Value;
+    use crate::value::Marker;
 
     use super::{String, MARKER_LARGE, MARKER_MEDIUM, MARKER_SMALL, MARKER_TINY};
 

@@ -18,19 +18,19 @@ mod map;
 mod null;
 mod string;
 
-pub trait Value {
+pub trait Marker {
     fn get_marker(&self) -> Result<u8, Error>;
 }
 
-impl Value for Box<dyn Value> {
+impl Marker for Box<dyn Marker> {
     fn get_marker(&self) -> Result<u8, Error> {
         self.deref().get_marker()
     }
 }
 
-impl Serialize for Box<dyn Value> {}
+impl Serialize for Box<dyn Marker> {}
 
-impl TryInto<Bytes> for Box<dyn Value> {
+impl TryInto<Bytes> for Box<dyn Marker> {
     type Error = Error;
 
     fn try_into(self) -> Result<Bytes, Self::Error> {
