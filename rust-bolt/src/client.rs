@@ -40,7 +40,7 @@ impl Client {
 
     // TODO: Clean this up, this is just an experiment
     // Have to implement conversion from Bytes to value types before we can implement this
-    pub async fn init(&mut self) -> Result<Bytes, Box<dyn Error>> {
+    pub async fn init(&mut self) -> Result<Message, Box<dyn Error>> {
         println!("Starting init.");
         let init: Init<value::String, value::String> = Init::new(
             "rust-bolt/0.1.0",
@@ -58,9 +58,9 @@ impl Client {
         self.stream.write_buf(&mut bytes).await?;
         self.stream.flush().await?;
         println!("Wrote init.");
-        let mut buf: [u8; 116] = [0; 116];
-        self.stream.read(&mut buf).await?;
+        let mut buf = Vec::new();
+        self.stream.read_to_end(&mut buf).await?;
         println!("Read response: {:?}", &buf[..]);
-        Ok(Bytes::from(buf.to_vec()))
+        Ok(Message::try_from(Bytes::from(buf))?)
     }
 }
