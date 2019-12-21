@@ -1,33 +1,24 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::hash::Hash;
 
 use rust_bolt_macros::*;
 
 use crate::serialize::Serialize;
 use crate::structure::Structure;
 use crate::value::Marker;
-use crate::value::{Map, String};
+use crate::value::{Map, String, Value};
 
 #[derive(Debug, Structure, Serialize)]
-pub struct Init<K, V>
-where
-    K: Marker + Serialize + Hash + Eq,
-    V: Marker + Serialize,
-{
+pub struct Init {
     client_name: String,
-    auth_token: Map<K, V>,
+    auth_token: Map<String, Value>,
 }
 
-impl<K, V> Init<K, V>
-where
-    K: Marker + Serialize + Hash + Eq,
-    V: Marker + Serialize,
-{
-    pub fn new<X, Y>(client_name: &str, auth_token: HashMap<X, Y>) -> Init<K, V>
+impl Init {
+    pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> Init
     where
-        X: Into<K>,
-        Y: Into<V>,
+        K: Into<String>,
+        V: Into<Value>,
     {
         Init {
             client_name: client_name.into(),
@@ -46,21 +37,13 @@ mod tests {
     use crate::message::init::Init;
     use crate::serialize::Serialize;
     use crate::structure::Structure;
-    use crate::value::{Map, Marker, String};
+    use crate::value::Marker;
 
-    fn new_msg() -> Init<String, String> {
-        Init {
-            client_name: String {
-                value: "MyClient/1.0".to_string(),
-            },
-            auth_token: Map {
-                value: HashMap::from_iter(
-                    vec![("scheme", "basic")]
-                        .into_iter()
-                        .map(|(k, v)| (String::from(k.to_string()), String::from(v.to_string()))),
-                ),
-            },
-        }
+    fn new_msg() -> Init {
+        Init::new(
+            "MyClient/1.0",
+            HashMap::from_iter(vec![("scheme", "basic")]),
+        )
     }
 
     #[test]

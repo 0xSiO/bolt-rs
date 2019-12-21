@@ -10,7 +10,6 @@ use tokio::prelude::*;
 
 use crate::message::{Chunk, Init, Message};
 use crate::serialize::Serialize;
-use crate::value;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
@@ -42,7 +41,7 @@ impl Client {
     // Have to implement conversion from Bytes to value types before we can implement this
     pub async fn init(&mut self) -> Result<Message, Error> {
         println!("Starting init.");
-        let init: Init<value::String, value::String> = Init::new(
+        let init = Init::new(
             "rust-bolt/0.1.0",
             HashMap::from_iter(vec![
                 ("scheme", "basic"),
