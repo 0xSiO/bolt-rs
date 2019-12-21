@@ -10,4 +10,5 @@ edition = "2018"
 rust-bolt-macros = { path = "../rust-bolt-macros" }
 
 bytes = "0.5.3"
+failure = "0.1.6"
 tokio = { version = "0.2", features = ["full"] }
