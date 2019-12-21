@@ -1,7 +1,7 @@
 use failure::Fail;
 
 #[derive(Debug, Fail)]
-enum ValueError {
+pub enum ValueError {
     #[fail(display = "Value too large: {}", size)]
     ValueTooLarge { size: usize },
 }

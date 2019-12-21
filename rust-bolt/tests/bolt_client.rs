@@ -1,8 +1,8 @@
-use std::error::Error;
+use failure::Error;
 
 use rust_bolt::Client;
 
-async fn new_client() -> Result<Client, Box<dyn Error>> {
+async fn new_client() -> Result<Client, Error> {
     Client::new("127.0.0.1".parse().unwrap(), 7687).await
 }
 

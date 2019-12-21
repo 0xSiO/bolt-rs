@@ -68,7 +68,7 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
         impl#type_args crate::serialize::Value for #name#type_args
         #where_clause
         {
-            fn get_marker(&self) -> crate::serialize::SerializeResult<u8> {
+            fn get_marker(&self) -> Result<u8, ::failure::Error> {
                 Ok(#marker)
             }
         }
@@ -76,9 +76,9 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
         impl#type_args TryInto<::bytes::Bytes> for #name#type_args
         #where_clause
         {
-            type Error = crate::serialize::SerializeError;
+            type Error = ::failure::Error;
 
-            fn try_into(self) -> crate::serialize::SerializeResult<::bytes::Bytes> {
+            fn try_into(self) -> Result<::bytes::Bytes, Self::Error> {
                 let marker = self.get_marker()?;
                 let signature = self.get_signature();
                 #(#byte_vars)*

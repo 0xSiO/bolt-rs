@@ -4,8 +4,9 @@ use std::convert::TryInto;
 use std::hash::Hash;
 
 use bytes::{BufMut, Bytes, BytesMut};
+use failure::Error;
 
-use crate::serialize::{SerializeError, SerializeResult, Value};
+use crate::serialize::{SerializeError, Value};
 
 const MARKER_TINY: u8 = 0xA0;
 const MARKER_SMALL: u8 = 0xD8;
@@ -16,8 +17,8 @@ const MARKER_LARGE: u8 = 0xDA;
 pub struct Map<K, V>
 where
     // TODO: Waiting for trait aliases https://github.com/rust-lang/rust/issues/41517
-    K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Value + TryInto<Bytes, Error = SerializeError>,
+    K: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
+    V: Value + TryInto<Bytes, Error = Error>,
 {
     pub(crate) value: HashMap<K, V>,
 }
@@ -26,8 +27,8 @@ impl<K, V, X, Y> From<HashMap<K, V>> for Map<X, Y>
 where
     K: Into<X>,
     V: Into<Y>,
-    X: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    Y: Value + TryInto<Bytes, Error = SerializeError>,
+    X: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
+    Y: Value + TryInto<Bytes, Error = Error>,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
         Self {
@@ -41,10 +42,10 @@ where
 
 impl<K, V> Value for Map<K, V>
 where
-    K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Value + TryInto<Bytes, Error = SerializeError>,
+    K: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
+    V: Value + TryInto<Bytes, Error = Error>,
 {
-    fn get_marker(&self) -> SerializeResult<u8> {
+    fn get_marker(&self) -> Result<u8, Error> {
         match self.value.len() {
             0..=15 => Ok(MARKER_TINY | self.value.len() as u8),
             16..=255 => Ok(MARKER_SMALL),
@@ -53,19 +54,19 @@ where
             _ => Err(SerializeError::new(&format!(
                 "Too many pairs in Map: {}",
                 self.value.len()
-            ))),
+            )))?,
         }
     }
 }
 
 impl<K, V> TryInto<Bytes> for Map<K, V>
 where
-    K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
-    V: Value + TryInto<Bytes, Error = SerializeError>,
+    K: Value + Hash + Eq + TryInto<Bytes, Error = Error>,
+    V: Value + TryInto<Bytes, Error = Error>,
 {
-    type Error = SerializeError;
+    type Error = Error;
 
-    fn try_into(self) -> SerializeResult<Bytes> {
+    fn try_into(self) -> Result<Bytes, Self::Error> {
         let marker = self.get_marker()?;
         // There is no "good" worst case capacity to use here
         let mut bytes = BytesMut::with_capacity(self.value.len());
@@ -76,10 +77,10 @@ where
             256..=65_535 => bytes.put_u16(self.value.len() as u16),
             65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
             _ => {
-                return Err(SerializeError::new(&format!(
+                Err(SerializeError::new(&format!(
                     "Map length too long: {}",
                     self.value.len()
-                )));
+                )))?;
             }
         }
         for (key, value) in self.value {

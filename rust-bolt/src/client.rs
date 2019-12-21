@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::error::Error;
 use std::iter::FromIterator;
 use std::net::IpAddr;
 
 use bytes::*;
+use failure::Error;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
@@ -20,14 +20,14 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new(host: IpAddr, port: usize) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(host: IpAddr, port: usize) -> Result<Self, Error> {
         let client = Client {
             stream: TcpStream::connect(format!("{}:{}", host, port)).await?,
         };
         Ok(client)
     }
 
-    pub async fn handshake(&mut self) -> Result<u32, Box<dyn Error>> {
+    pub async fn handshake(&mut self) -> Result<u32, Error> {
         let mut allowed_versions = BytesMut::with_capacity(16);
         SUPPORTED_VERSIONS
             .iter()
@@ -40,7 +40,7 @@ impl Client {
 
     // TODO: Clean this up, this is just an experiment
     // Have to implement conversion from Bytes to value types before we can implement this
-    pub async fn init(&mut self) -> Result<Message, Box<dyn Error>> {
+    pub async fn init(&mut self) -> Result<Message, Error> {
         println!("Starting init.");
         let init: Init<value::String, value::String> = Init::new(
             "rust-bolt/0.1.0",
