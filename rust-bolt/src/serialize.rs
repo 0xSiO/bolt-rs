@@ -1,40 +1,42 @@
 use std::convert::TryInto;
-use std::error::Error;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
 
 use bytes::Bytes;
+use failure::{Error, Fail};
 
-pub type SerializeResult<T> = Result<T, SerializeError>;
+use crate::error::ValueError;
+
 pub type DeserializeResult<T> = Result<T, DeserializeError>;
 
 pub trait Value {
-    fn get_marker(&self) -> SerializeResult<u8>;
+    fn get_marker(&self) -> Result<u8, Error>;
 
-    fn try_into_bytes(self) -> SerializeResult<Bytes>
+    fn try_into_bytes(self) -> Result<Bytes, Error>
     where
-        Self: TryInto<Bytes, Error = SerializeError>,
+        Self: TryInto<Bytes, Error = Error>,
     {
         self.try_into()
     }
 }
 
 impl Value for Box<dyn Value> {
-    fn get_marker(&self) -> SerializeResult<u8> {
+    fn get_marker(&self) -> Result<u8, Error> {
         self.deref().get_marker()
     }
 }
 
 impl TryInto<Bytes> for Box<dyn Value> {
-    type Error = SerializeError;
+    type Error = Error;
 
-    fn try_into(self) -> SerializeResult<Bytes> {
+    fn try_into(self) -> Result<Bytes, Self::Error> {
         self.try_into_bytes()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Fail)]
+#[fail(display = "Error during serialization: {}", message)]
 pub struct SerializeError {
     message: String,
 }
@@ -48,11 +50,3 @@ impl SerializeError {
         }
     }
 }
-
-impl Display for SerializeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.message)
-    }
-}
-
-impl Error for SerializeError {}

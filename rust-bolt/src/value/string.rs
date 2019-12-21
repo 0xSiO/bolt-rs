@@ -2,8 +2,9 @@ use std::convert::TryInto;
 use std::mem;
 
 use bytes::{BufMut, Bytes, BytesMut};
+use failure::Error;
 
-use crate::serialize::{SerializeError, SerializeResult, Value};
+use crate::serialize::{SerializeError, Value};
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -30,7 +31,7 @@ impl From<std::string::String> for String {
 }
 
 impl Value for String {
-    fn get_marker(&self) -> SerializeResult<u8> {
+    fn get_marker(&self) -> Result<u8, Error> {
         match self.value.len() {
             0..=15 => Ok(MARKER_TINY | self.value.len() as u8),
             16..=255 => Ok(MARKER_SMALL),
@@ -39,15 +40,15 @@ impl Value for String {
             _ => Err(SerializeError::new(&format!(
                 "String length too long: {}",
                 self.value.len()
-            ))),
+            )))?,
         }
     }
 }
 
 impl TryInto<Bytes> for String {
-    type Error = SerializeError;
+    type Error = Error;
 
-    fn try_into(self) -> SerializeResult<Bytes> {
+    fn try_into(self) -> Result<Bytes, Self::Error> {
         let marker = self.get_marker()?;
         // Worst case is a large string, with marker byte, 32-bit size value, and length
         let mut bytes = BytesMut::with_capacity(
@@ -59,12 +60,10 @@ impl TryInto<Bytes> for String {
             16..=255 => bytes.put_u8(self.value.len() as u8),
             256..=65_535 => bytes.put_u16(self.value.len() as u16),
             65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
-            _ => {
-                return Err(SerializeError::new(&format!(
-                    "String length too long: {}",
-                    self.value.len()
-                )));
-            }
+            _ => Err(SerializeError::new(&format!(
+                "String length too long: {}",
+                self.value.len()
+            )))?,
         }
         bytes.put_slice(self.value.as_bytes());
         Ok(bytes.freeze())

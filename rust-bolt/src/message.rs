@@ -7,9 +7,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use chunk::Chunk;
 pub use init::Init;
 
-use crate::serialize::{
-    DeserializeError, DeserializeResult, SerializeError, SerializeResult, Value,
-};
+use crate::serialize::{DeserializeError, DeserializeResult, SerializeError, Value};
 
 mod chunk;
 mod init;

@@ -3,9 +3,7 @@ use std::mem;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
-use crate::serialize::{
-    DeserializeError, DeserializeResult, SerializeError, SerializeResult, Value,
-};
+use crate::serialize::{DeserializeError, DeserializeResult, SerializeError, Value};
 
 pub struct Chunk {
     size: u16,

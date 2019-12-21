@@ -1,8 +1,9 @@
 use std::convert::TryInto;
 
 use bytes::Bytes;
+use failure::Error;
 
-use crate::serialize::{SerializeError, SerializeResult, Value};
+use crate::serialize::{SerializeError, Value};
 
 const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
@@ -19,7 +20,7 @@ impl From<bool> for Boolean {
 }
 
 impl Value for Boolean {
-    fn get_marker(&self) -> SerializeResult<u8> {
+    fn get_marker(&self) -> Result<u8, Error> {
         if self.value {
             Ok(MARKER_TRUE)
         } else {
@@ -29,10 +30,10 @@ impl Value for Boolean {
 }
 
 impl TryInto<Bytes> for Boolean {
-    type Error = SerializeError;
+    type Error = Error;
 
-    fn try_into(self) -> SerializeResult<Bytes> {
-        self.get_marker().map(|m| Bytes::copy_from_slice(&[m]))
+    fn try_into(self) -> Result<Bytes, Self::Error> {
+        Ok(Bytes::copy_from_slice(&[self.get_marker()?]))
     }
 }
 
