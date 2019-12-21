@@ -31,19 +31,9 @@ impl TryInto<Bytes> for Box<dyn Value> {
 }
 
 #[derive(Debug, Fail)]
-#[fail(display = "Error during serialization: {}", _0)]
+#[fail(display = "{}", _0)]
 pub struct SerializeError(pub String);
 
 #[derive(Debug, Fail)]
-#[fail(display = "Error during deserialization: {}", message)]
-pub struct DeserializeError {
-    message: String,
-}
-
-impl DeserializeError {
-    pub fn new(message: &str) -> Self {
-        Self {
-            message: message.to_string(),
-        }
-    }
-}
+#[fail(display = "{}", _0)]
+pub struct DeserializeError(pub String);

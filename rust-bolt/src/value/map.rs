@@ -7,7 +7,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 use failure::Error;
 
 use crate::error::ValueError;
-use crate::serialize::{SerializeError, Value};
+use crate::serialize::Value;
 
 const MARKER_TINY: u8 = 0xA0;
 const MARKER_SMALL: u8 = 0xD8;

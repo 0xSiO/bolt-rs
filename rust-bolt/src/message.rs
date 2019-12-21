@@ -51,10 +51,10 @@ impl TryFrom<Bytes> for Message {
             }
             Ok(message)
         })
-        .map_err(|_| DeserializeError::new("Panicked during deserialization"))?;
+        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError::new(&format!("Error creating Message from Bytes: {}", err))
+            DeserializeError(format!("Error creating Message from Bytes: {:?}", err))
         })?)
     }
 }
