@@ -6,7 +6,7 @@ use failure::Error;
 
 use crate::error::{SerializeError, ValueError};
 use crate::serialize::Serialize;
-use crate::value::Value;
+use crate::value::Marker;
 
 const MARKER_INT_8: u8 = 0xC8;
 const MARKER_INT_16: u8 = 0xC9;
@@ -33,7 +33,7 @@ macro_rules! impl_from_int {
 
 impl_from_int!(i8, i16, i32, i64);
 
-impl Value for Integer {
+impl Marker for Integer {
     fn get_marker(&self) -> Result<u8, Error> {
         let value = match self.bytes.len() {
             1 => self.bytes.clone().get_i8() as i64,
@@ -77,7 +77,7 @@ impl TryInto<Bytes> for Integer {
 mod tests {
     use bytes::Bytes;
 
-    use crate::value::Value;
+    use crate::value::Marker;
 
     use super::*;
 

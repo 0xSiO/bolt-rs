@@ -4,20 +4,21 @@ use bytes::Bytes;
 use failure::Error;
 
 use crate::serialize::Serialize;
-use crate::value::Value;
+use crate::value::Marker;
 
 const MARKER: u8 = 0xC0;
 
 #[derive(Debug)]
 pub struct Null;
 
-impl Value for Null {
+impl Marker for Null {
     fn get_marker(&self) -> Result<u8, Error> {
         Ok(MARKER)
     }
 }
 
 impl Serialize for Null {}
+
 impl TryInto<Bytes> for Null {
     type Error = Error;
 
@@ -31,7 +32,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::serialize::Serialize;
-    use crate::value::Value;
+    use crate::value::Marker;
 
     use super::{Null, MARKER};
 

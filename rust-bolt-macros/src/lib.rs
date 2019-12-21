@@ -63,7 +63,7 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         use ::bytes::BufMut;
 
-        impl#type_args crate::value::Value for #name#type_args
+        impl#type_args crate::value::Marker for #name#type_args
         #where_clause
         {
             fn get_marker(&self) -> Result<u8, ::failure::Error> {

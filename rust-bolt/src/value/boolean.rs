@@ -4,7 +4,7 @@ use bytes::Bytes;
 use failure::Error;
 
 use crate::serialize::Serialize;
-use crate::value::Value;
+use crate::value::Marker;
 
 const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
@@ -20,7 +20,7 @@ impl From<bool> for Boolean {
     }
 }
 
-impl Value for Boolean {
+impl Marker for Boolean {
     fn get_marker(&self) -> Result<u8, Error> {
         if self.value {
             Ok(MARKER_TRUE)
@@ -45,7 +45,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::serialize::Serialize;
-    use crate::value::Value;
+    use crate::value::Marker;
 
     use super::{Boolean, MARKER_FALSE, MARKER_TRUE};
 

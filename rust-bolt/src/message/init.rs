@@ -6,14 +6,14 @@ use rust_bolt_macros::*;
 
 use crate::serialize::Serialize;
 use crate::structure::Structure;
-use crate::value::Value;
+use crate::value::Marker;
 use crate::value::{Map, String};
 
 #[derive(Debug, Structure, Serialize)]
 pub struct Init<K, V>
 where
-    K: Value + Serialize + Hash + Eq,
-    V: Value + Serialize,
+    K: Marker + Serialize + Hash + Eq,
+    V: Marker + Serialize,
 {
     client_name: String,
     auth_token: Map<K, V>,
@@ -21,8 +21,8 @@ where
 
 impl<K, V> Init<K, V>
 where
-    K: Value + Serialize + Hash + Eq,
-    V: Value + Serialize,
+    K: Marker + Serialize + Hash + Eq,
+    V: Marker + Serialize,
 {
     pub fn new<X, Y>(client_name: &str, auth_token: HashMap<X, Y>) -> Init<K, V>
     where
@@ -46,7 +46,7 @@ mod tests {
     use crate::message::init::Init;
     use crate::serialize::Serialize;
     use crate::structure::Structure;
-    use crate::value::{Map, String, Value};
+    use crate::value::{Map, Marker, String};
 
     fn new_msg() -> Init<String, String> {
         Init {
