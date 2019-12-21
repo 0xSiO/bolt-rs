@@ -41,11 +41,23 @@ pub struct SerializeError {
     message: String,
 }
 
-pub type DeserializeError = SerializeError;
-
 impl SerializeError {
     pub fn new(message: &str) -> Self {
-        SerializeError {
+        Self {
+            message: message.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Fail)]
+#[fail(display = "Error during deserialization: {}", message)]
+pub struct DeserializeError {
+    message: String,
+}
+
+impl DeserializeError {
+    pub fn new(message: &str) -> Self {
+        Self {
             message: message.to_string(),
         }
     }
