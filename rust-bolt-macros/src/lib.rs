@@ -43,11 +43,7 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let type_args = &ast.generics;
     let where_clause = &ast.generics.where_clause;
     let fields = match &ast.data {
-        Data::Struct(DataStruct {
-            struct_token: _,
-            fields,
-            semi_token: _,
-        }) => fields,
+        Data::Struct(DataStruct { fields, .. }) => fields,
         _ => panic!("Macro must be used on a struct."),
     };
     let marker = get_structure_marker(fields.len());
