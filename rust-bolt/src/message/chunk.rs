@@ -4,7 +4,7 @@ use std::mem;
 use bytes::{BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::serialize::DeserializeError;
+use crate::error::DeserializeError;
 
 pub struct Chunk {
     size: u16,

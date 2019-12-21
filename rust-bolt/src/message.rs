@@ -8,7 +8,7 @@ use failure::Error;
 pub use chunk::Chunk;
 pub use init::Init;
 
-use crate::serialize::DeserializeError;
+use crate::error::DeserializeError;
 
 mod chunk;
 mod init;
