@@ -6,7 +6,7 @@ use failure::Error;
 
 use crate::error::ValueError;
 use crate::serialize::Serialize;
-use crate::value::Marker;
+use crate::value::{Marker, Value};
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -23,6 +23,12 @@ impl From<&str> for String {
         Self {
             value: value.to_string(),
         }
+    }
+}
+
+impl From<&str> for Value {
+    fn from(value: &str) -> Self {
+        Value::String(value.into())
     }
 }
 

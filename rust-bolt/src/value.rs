@@ -22,7 +22,7 @@ pub trait Marker {
     fn get_marker(&self) -> Result<u8, Error>;
 }
 
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub enum Value {
     Boolean(Boolean),
     Integer(Integer),
