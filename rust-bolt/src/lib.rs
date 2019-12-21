@@ -7,4 +7,4 @@ mod serialize;
 mod structure;
 mod value;
 
-// TODO: Maybe use tokio-proto to build the protocol instead of manually encoding/decoding everything
+// TODO: Maybe use tokio-tower to build the protocol instead of manually encoding/decoding everything
