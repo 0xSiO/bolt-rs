@@ -5,6 +5,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
 use crate::error::{SerializeError, ValueError};
+use crate::serialize::Serialize;
 use crate::value::Value;
 
 const MARKER_INT_8: u8 = 0xC8;
@@ -51,6 +52,8 @@ impl Value for Integer {
         }
     }
 }
+
+impl Serialize for Integer {}
 
 impl TryInto<Bytes> for Integer {
     type Error = Error;

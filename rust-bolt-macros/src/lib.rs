@@ -61,6 +61,8 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let size_bytes = get_size_bytes(fields.len());
 
     let gen = quote! {
+        use ::bytes::BufMut;
+
         impl#type_args crate::value::Value for #name#type_args
         #where_clause
         {
@@ -68,6 +70,10 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                 Ok(#marker)
             }
         }
+
+        impl#type_args crate::serialize::Serialize for #name#type_args
+        #where_clause
+        {}
 
         impl#type_args TryInto<::bytes::Bytes> for #name#type_args
         #where_clause
@@ -79,7 +85,7 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                 let signature = self.get_signature();
                 #(#byte_vars)*
                 // Marker byte, up to 2 size bytes, signature byte, then the rest of the data
-                let mut result_bytes_mut = BytesMut::with_capacity(mem::size_of::<u8>() * 4 #(+ #byte_var_names.len())*);
+                let mut result_bytes_mut = ::bytes::BytesMut::with_capacity(std::mem::size_of::<u8>() * 4 #(+ #byte_var_names.len())*);
                 result_bytes_mut.put_u8(marker);
                 #(result_bytes_mut.put_u8(#size_bytes);)*
                 result_bytes_mut.put_u8(signature);
