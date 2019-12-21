@@ -11,7 +11,7 @@ use crate::serialize::{SerializeError, Value};
 use crate::structure::Structure;
 use crate::value::{Map, String};
 
-#[derive(Debug, Structure, Value)]
+#[derive(Debug, Structure, Serialize)]
 pub struct Init<K, V>
 where
     K: Value + Hash + Eq + TryInto<Bytes, Error = SerializeError>,

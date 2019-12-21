@@ -96,14 +96,13 @@ mod tests {
     }
 
     #[test]
-    fn get_marker() {
-        assert!(new_message().get_marker().is_err());
-    }
-
-    #[test]
     fn into_bytes() {
         let bytes: Bytes = new_message().into();
-        assert_eq!(bytes, new_chunk().data)
+        let mut result = BytesMut::new();
+        result.put_u16(new_chunk().data.len() as u16);
+        result.put(new_chunk().data);
+        result.put_u16(0);
+        assert_eq!(bytes, result.freeze())
     }
 
     //    #[test]
@@ -119,8 +118,7 @@ mod tests {
         ]);
         let message = Message::try_from(bytes);
         assert!(message.is_ok());
-        let message_bytes: Bytes = message.unwrap().into();
-        assert_eq!(message_bytes, new_chunk().data);
+        assert_eq!(message.unwrap().bytes, new_chunk().data);
     }
 
     #[test]
@@ -131,9 +129,8 @@ mod tests {
         ]);
         let message = Message::try_from(bytes);
         assert!(message.is_ok());
-        let message_bytes: Bytes = message.unwrap().into();
         assert_eq!(
-            message_bytes,
+            message.unwrap().bytes,
             Bytes::from_static(&[
                 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
                 0x0E, 0x0F, 0x01, 0x02, 0x03, 0x04
