@@ -1,9 +1,12 @@
 use std::convert::TryFrom;
+use std::mem;
 use std::panic::catch_unwind;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
-use crate::message::chunk::Chunk;
+pub use chunk::Chunk;
+pub use init::Init;
+
 use crate::serialize::{
     DeserializeError, DeserializeResult, Serialize, SerializeError, SerializeResult,
 };
@@ -11,7 +14,8 @@ use crate::serialize::{
 mod chunk;
 mod init;
 
-struct Message {
+#[derive(Debug)]
+pub struct Message {
     bytes: BytesMut,
 }
 
@@ -41,7 +45,7 @@ impl TryFrom<Bytes> for Message {
             let mut message = Message::with_capacity(bytes.len());
             while bytes.has_remaining() {
                 let size: u16 = bytes.get_u16();
-                if size == 0 {
+                if size == 0 && !bytes.has_remaining() {
                     // We've reached the end of the message
                     break;
                 }
@@ -65,8 +69,15 @@ impl TryFrom<Bytes> for Message {
 }
 
 impl Into<Bytes> for Message {
+    // TODO: This puts the message into a single chunk, consider breaking up large messages into several chunk
     fn into(self) -> Bytes {
-        self.bytes.freeze()
+        let mut bytes = BytesMut::with_capacity(
+            mem::size_of::<u8>() * 2 + self.bytes.len() + mem::size_of::<u8>() * 2,
+        );
+        bytes.put_u16(self.bytes.len() as u16);
+        bytes.put(self.bytes);
+        bytes.put_u16(0);
+        bytes.freeze()
     }
 }
 
@@ -101,10 +112,10 @@ mod tests {
         assert_eq!(bytes, new_chunk().data)
     }
 
-    #[test]
-    fn into_bytes_multiple_chunks {
-        todo!();
-    }
+    //    #[test]
+    //    fn into_bytes_multiple_chunks() {
+    //        todo!();
+    //    }
 
     #[test]
     fn from_bytes() {
