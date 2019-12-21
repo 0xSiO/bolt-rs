@@ -5,7 +5,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 use failure::Error;
 
 use crate::error::ValueError;
-use crate::serialize::Value;
+use crate::value::Value;
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -69,7 +69,7 @@ impl TryInto<Bytes> for String {
 mod tests {
     use bytes::Bytes;
 
-    use crate::serialize::Value;
+    use crate::value::Value;
 
     use super::{String, MARKER_LARGE, MARKER_MEDIUM, MARKER_SMALL, MARKER_TINY};
 

@@ -5,7 +5,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
 use crate::error::{SerializeError, ValueError};
-use crate::serialize::Value;
+use crate::value::Value;
 
 const MARKER_INT_8: u8 = 0xC8;
 const MARKER_INT_16: u8 = 0xC9;
@@ -74,7 +74,7 @@ impl TryInto<Bytes> for Integer {
 mod tests {
     use bytes::Bytes;
 
-    use crate::serialize::Value;
+    use crate::value::Value;
 
     use super::*;
 
