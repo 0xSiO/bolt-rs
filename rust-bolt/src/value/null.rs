@@ -32,11 +32,14 @@ mod tests {
     use super::{Null, MARKER};
 
     #[test]
-    fn is_valid() {
-        let null = Null;
-        assert_eq!(null.get_marker().unwrap(), MARKER);
+    fn get_marker() {
+        assert_eq!(Null.get_marker().unwrap(), MARKER);
+    }
+
+    #[test]
+    fn try_into_bytes() {
         assert_eq!(
-            null.try_into_bytes().unwrap(),
+            Null.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER])
         );
     }
