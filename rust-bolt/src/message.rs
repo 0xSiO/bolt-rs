@@ -31,12 +31,6 @@ impl Message {
     }
 }
 
-impl Value for Message {
-    fn get_marker(&self) -> SerializeResult<u8> {
-        Err(SerializeError::new("Messages do not have markers"))
-    }
-}
-
 impl TryFrom<Bytes> for Message {
     type Error = DeserializeError;
 

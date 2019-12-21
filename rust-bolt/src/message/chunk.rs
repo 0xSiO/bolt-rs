@@ -12,12 +12,6 @@ pub struct Chunk {
     pub(crate) data: Bytes,
 }
 
-impl Value for Chunk {
-    fn get_marker(&self) -> SerializeResult<u8> {
-        Err(SerializeError::new("Chunks do not have markers"))
-    }
-}
-
 impl TryFrom<Bytes> for Chunk {
     type Error = DeserializeError;
 
