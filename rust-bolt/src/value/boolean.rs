@@ -45,15 +45,21 @@ mod tests {
     use super::{Boolean, MARKER_FALSE, MARKER_TRUE};
 
     #[test]
-    fn is_valid() {
+    fn get_marker() {
         let f = Boolean::from(false);
         assert_eq!(f.get_marker().unwrap(), MARKER_FALSE);
+        let t = Boolean::from(true);
+        assert_eq!(t.get_marker().unwrap(), MARKER_TRUE);
+    }
+
+    #[test]
+    fn try_into_bytes() {
+        let f = Boolean::from(false);
         assert_eq!(
             f.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_FALSE])
         );
         let t = Boolean::from(true);
-        assert_eq!(t.get_marker().unwrap(), MARKER_TRUE);
         assert_eq!(
             t.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_TRUE])
