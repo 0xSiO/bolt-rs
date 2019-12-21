@@ -15,6 +15,7 @@ const MARKER_LARGE: u8 = 0xDA;
 #[derive(Debug)]
 pub struct Map<K, V>
 where
+    // TODO: Waiting for trait aliases https://github.com/rust-lang/rust/issues/41517
     K: Serialize + Hash + Eq + TryInto<Bytes, Error = SerializeError>,
     V: Serialize + TryInto<Bytes, Error = SerializeError>,
 {
