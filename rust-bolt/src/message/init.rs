@@ -8,7 +8,7 @@ use failure::Error;
 
 use rust_bolt_macros::*;
 
-use crate::serialize::{SerializeError, Value};
+use crate::serialize::Value;
 use crate::structure::Structure;
 use crate::value::{Map, String};
 
