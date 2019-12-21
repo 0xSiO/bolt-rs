@@ -38,9 +38,13 @@ pub struct SerializeError {
     message: String,
 }
 
+pub type DeserializeError = SerializeError;
+
 impl SerializeError {
-    pub fn new(message: String) -> Self {
-        SerializeError { message }
+    pub fn new(message: &str) -> Self {
+        SerializeError {
+            message: message.to_string(),
+        }
     }
 }
 
