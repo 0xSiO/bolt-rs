@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 use std::mem;
+use std::panic::catch_unwind;
 use std::str;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
@@ -8,14 +9,13 @@ use failure::Error;
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
-use std::panic::catch_unwind;
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
 const MARKER_MEDIUM: u8 = 0xD1;
 const MARKER_LARGE: u8 = 0xD2;
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct String {
     pub(crate) value: std::string::String,
 }
@@ -93,7 +93,7 @@ impl TryFrom<Bytes> for String {
                 _ => {
                     return Err(
                         DeserializeError(format!("Invalid marker byte: {:x}", marker)).into(),
-                    )
+                    );
                 }
             };
             let mut string_bytes = BytesMut::with_capacity(size);
@@ -110,6 +110,8 @@ impl TryFrom<Bytes> for String {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use bytes::Bytes;
 
     use crate::serialize::Serialize;
@@ -134,9 +136,9 @@ mod tests {
 
     #[test]
     fn try_into_bytes() {
-        let tiny_bytes = String::from("a".to_string()).try_into_bytes().unwrap();
+        let tiny_bytes = String::from("a").try_into_bytes().unwrap();
         assert_eq!(tiny_bytes, Bytes::from_static(&[0x81, 0x61]));
-        let normal_bytes = String::from("abcdefghijklmnopqrstuvwxyz".to_string())
+        let normal_bytes = String::from("abcdefghijklmnopqrstuvwxyz")
             .try_into_bytes()
             .unwrap();
         assert_eq!(
@@ -146,7 +148,7 @@ mod tests {
                 0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A
             ])
         );
-        let special_bytes = String::from("En å flöt över ängen".to_string())
+        let special_bytes = String::from("En å flöt över ängen")
             .try_into_bytes()
             .unwrap();
         assert_eq!(
@@ -155,6 +157,35 @@ mod tests {
                 0xD0, 0x18, 0x45, 0x6E, 0x20, 0xC3, 0xA5, 0x20, 0x66, 0x6C, 0xC3, 0xB6, 0x74, 0x20,
                 0xC3, 0xB6, 0x76, 0x65, 0x72, 0x20, 0xC3, 0xA4, 0x6E, 0x67, 0x65, 0x6E
             ])
+        );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let tiny = String::from("string".repeat(1));
+        assert_eq!(
+            String::try_from(tiny.clone().try_into_bytes().unwrap()).unwrap(),
+            tiny
+        );
+        let small = String::from("string".repeat(10));
+        assert_eq!(
+            String::try_from(small.clone().try_into_bytes().unwrap()).unwrap(),
+            small
+        );
+        let medium = String::from("string".repeat(1000));
+        assert_eq!(
+            String::try_from(medium.clone().try_into_bytes().unwrap()).unwrap(),
+            medium
+        );
+        let large = String::from("string".repeat(100_000));
+        assert_eq!(
+            String::try_from(large.clone().try_into_bytes().unwrap()).unwrap(),
+            large
+        );
+        let special = String::from("En å flöt över ängen");
+        assert_eq!(
+            String::try_from(special.clone().try_into_bytes().unwrap()).unwrap(),
+            special
         );
     }
 }
