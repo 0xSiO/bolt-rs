@@ -22,7 +22,6 @@ where
     K: Marker + Serialize + Hash + Eq,
     V: Marker + Serialize,
 {
-    // TODO: Maps permit a mixture of types, use an enum for Value types
     pub(crate) value: HashMap<K, V>,
 }
 
@@ -36,14 +35,14 @@ where
     }
 }
 
-impl<K, V, X, Y> From<HashMap<K, V>> for Map<X, Y>
+impl<K, V, X, Y> From<HashMap<X, Y>> for Map<K, V>
 where
-    K: Into<X>,
-    V: Into<Y>,
-    X: Marker + Serialize + Hash + Eq,
-    Y: Marker + Serialize,
+    X: Into<K>,
+    Y: Into<V>,
+    K: Marker + Serialize + Hash + Eq,
+    V: Marker + Serialize,
 {
-    fn from(value: HashMap<K, V, RandomState>) -> Self {
+    fn from(value: HashMap<X, Y, RandomState>) -> Self {
         Self {
             value: value
                 .into_iter()
