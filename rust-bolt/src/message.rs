@@ -4,12 +4,16 @@ use std::panic::catch_unwind;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
+use tokio::io::BufStream;
+use tokio::net::TcpStream;
+use tokio::prelude::*;
 
 pub use chunk::Chunk;
 pub use init::Init;
 pub use success::Success;
 
 use crate::error::DeserializeError;
+use crate::utils::message_ended;
 
 mod chunk;
 mod init;
@@ -21,6 +25,12 @@ pub struct Message {
 }
 
 impl Message {
+    pub fn new() -> Message {
+        Message {
+            bytes: BytesMut::new(),
+        }
+    }
+
     pub fn with_capacity(capacity: usize) -> Message {
         Message {
             bytes: BytesMut::with_capacity(capacity),
@@ -29,6 +39,22 @@ impl Message {
 
     pub fn add_chunk(&mut self, chunk: Chunk) {
         self.bytes.put(chunk.data);
+    }
+
+    pub async fn from_stream(buf_stream: &mut BufStream<TcpStream>) -> Result<Message, Error> {
+        let mut message = Message::new();
+        while !message_ended(buf_stream.get_mut()).await? {
+            let size: u16 = buf_stream.read_u16().await?;
+            if size == 0 && message_ended(buf_stream.get_mut()).await? {
+                // We've reached the end of the message
+                break;
+            }
+            let mut buf = BytesMut::with_capacity(size as usize);
+            buf_stream.read_buf(&mut buf).await?;
+            debug_assert!(buf.len() == size as usize);
+            message.add_chunk(Chunk::try_from(buf.freeze())?)
+        }
+        Ok(message)
     }
 }
 
