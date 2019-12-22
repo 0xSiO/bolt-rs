@@ -9,8 +9,8 @@ use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
 use std::sync::Mutex;
 
-const MARKER_FALSE: u8 = 0xC2;
-const MARKER_TRUE: u8 = 0xC3;
+pub const MARKER_FALSE: u8 = 0xC2;
+pub const MARKER_TRUE: u8 = 0xC3;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Boolean {

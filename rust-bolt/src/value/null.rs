@@ -10,7 +10,7 @@ use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
 use std::sync::Mutex;
 
-const MARKER: u8 = 0xC0;
+pub const MARKER: u8 = 0xC0;
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Null;
