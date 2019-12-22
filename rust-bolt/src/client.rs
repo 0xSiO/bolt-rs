@@ -5,6 +5,7 @@ use std::net::IpAddr;
 
 use bytes::*;
 use failure::Error;
+use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
@@ -16,13 +17,13 @@ const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
 
 pub struct Client {
-    stream: TcpStream,
+    stream: BufStream<TcpStream>,
 }
 
 impl Client {
     pub async fn new(host: IpAddr, port: usize) -> Result<Self, Error> {
         let client = Client {
-            stream: TcpStream::connect(format!("{}:{}", host, port)).await?,
+            stream: BufStream::new(TcpStream::connect(format!("{}:{}", host, port)).await?),
         };
         Ok(client)
     }
@@ -58,14 +59,7 @@ impl Client {
         self.stream.write_buf(&mut bytes).await?;
         self.stream.flush().await?;
         println!("Wrote init.");
-        // Success messages don't give us an EOF, so read exact number of bytes
-        // TODO: To avoid this, we need to read on-demand from the stream: consider making Message read from
-        //       a TcpStream instead of a Bytes (maybe even a Box<dyn AsyncBufRead> if that's possible).
-        //       Remember to consume the last two 0 bytes when deserializing.
-        let mut buf = vec![0u8; 27];
-        self.stream.read_exact(&mut buf).await?;
-        println!("Read response: {:?}", &buf[..]);
-        let msg = Message::try_from(Bytes::from(buf))?;
+        let msg = Message::from_stream(&mut self.stream).await?;
         Ok(Success::try_from(Arc::new(Mutex::new(msg.bytes.freeze())))?)
     }
 }

@@ -13,7 +13,6 @@ pub use init::Init;
 pub use success::Success;
 
 use crate::error::DeserializeError;
-use crate::utils::message_ended;
 
 mod chunk;
 mod init;
@@ -43,15 +42,16 @@ impl Message {
 
     pub async fn from_stream(buf_stream: &mut BufStream<TcpStream>) -> Result<Message, Error> {
         let mut message = Message::new();
-        while !message_ended(buf_stream.get_mut()).await? {
-            let size: u16 = buf_stream.read_u16().await?;
-            if size == 0 && message_ended(buf_stream.get_mut()).await? {
+        loop {
+            let size = buf_stream.read_u16().await? as usize;
+            if size == 0 {
                 // We've reached the end of the message
+                // Note that after this point we will have consumed the last two 0 bytes
                 break;
             }
-            let mut buf = BytesMut::with_capacity(size as usize);
+            let mut buf = BytesMut::with_capacity(size);
             buf_stream.read_buf(&mut buf).await?;
-            debug_assert!(buf.len() == size as usize);
+            debug_assert!(buf.len() == size);
             message.add_chunk(Chunk::try_from(buf.freeze())?)
         }
         Ok(message)
