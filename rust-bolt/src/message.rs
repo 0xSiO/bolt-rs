@@ -7,3 +7,9 @@ mod chunk;
 mod init;
 mod message_bytes;
 mod success;
+
+#[derive(Debug)]
+pub enum Message {
+    Init(Init),
+    Success(Success),
+}
