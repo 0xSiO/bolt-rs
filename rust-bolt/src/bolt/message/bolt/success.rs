@@ -7,10 +7,10 @@ use failure::Error;
 
 use rust_bolt_macros::*;
 
+use crate::bolt::value::BoltValue;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 use crate::structure::Structure;
-use crate::value::BoltValue;
 
 #[derive(Debug, Structure)]
 pub struct BoltSuccess {

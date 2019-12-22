@@ -4,9 +4,9 @@ use std::mem;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
+use crate::bolt::value::{BoltValue, Marker};
 use crate::error::{DeserializeError, SerializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
-use crate::value::{BoltValue, Marker};
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
@@ -24,13 +24,13 @@ pub struct Integer {
 macro_rules! impl_from_int {
     ($($T:ty),+) => {
         $(
-            impl From<$T> for $crate::value::Integer {
+            impl From<$T> for $crate::bolt::value::Integer {
                 fn from(value: $T) -> Self {
                     Self { bytes: ::bytes::Bytes::copy_from_slice(&value.to_be_bytes()) }
                 }
             }
 
-            impl From<$T> for $crate::value::BoltValue {
+            impl From<$T> for $crate::bolt::value::BoltValue {
                 fn from(value: $T) -> Self {
                     BoltValue::Integer(value.into())
                 }
@@ -112,7 +112,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
 mod tests {
     use bytes::Bytes;
 
-    use crate::value::Marker;
+    use crate::bolt::value::Marker;
 
     use super::*;
 
