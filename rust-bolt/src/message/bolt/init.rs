@@ -4,19 +4,19 @@ use rust_bolt_macros::*;
 
 use crate::serialize::Serialize;
 use crate::structure::Structure;
-use crate::value::{Map, String, Value};
+use crate::value::{BoltValue, Map, String};
 
 #[derive(Debug, Structure)]
 pub struct BoltInit {
     client_name: String,
-    auth_token: Map<String, Value>,
+    auth_token: Map<String, BoltValue>,
 }
 
 impl BoltInit {
     pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> BoltInit
     where
         K: Into<String>,
-        V: Into<Value>,
+        V: Into<BoltValue>,
     {
         BoltInit {
             client_name: client_name.into(),

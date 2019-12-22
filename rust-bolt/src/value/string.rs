@@ -9,7 +9,7 @@ use failure::Error;
 
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
-use crate::value::{Marker, Value};
+use crate::value::{BoltValue, Marker};
 
 pub const MARKER_TINY: u8 = 0x80;
 pub const MARKER_SMALL: u8 = 0xD0;
@@ -29,9 +29,9 @@ impl From<&str> for String {
     }
 }
 
-impl From<&str> for Value {
+impl From<&str> for BoltValue {
     fn from(value: &str) -> Self {
-        Value::String(value.into())
+        BoltValue::String(value.into())
     }
 }
 

@@ -6,7 +6,7 @@ use failure::Error;
 
 use crate::error::{DeserializeError, SerializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
-use crate::value::{Marker, Value};
+use crate::value::{BoltValue, Marker};
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
@@ -30,9 +30,9 @@ macro_rules! impl_from_int {
                 }
             }
 
-            impl From<$T> for $crate::value::Value {
+            impl From<$T> for $crate::value::BoltValue {
                 fn from(value: $T) -> Self {
-                    Value::Integer(value.into())
+                    BoltValue::Integer(value.into())
                 }
             }
         )*

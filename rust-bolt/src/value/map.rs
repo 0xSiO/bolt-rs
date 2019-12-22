@@ -10,7 +10,7 @@ use failure::Error;
 
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
-use crate::value::{Marker, Value};
+use crate::value::{BoltValue, Marker};
 
 pub const MARKER_TINY: u8 = 0xA0;
 pub const MARKER_SMALL: u8 = 0xD8;
@@ -54,13 +54,13 @@ where
     }
 }
 
-impl<K, V> From<HashMap<K, V>> for Value
+impl<K, V> From<HashMap<K, V>> for BoltValue
 where
-    K: Into<Value>,
-    V: Into<Value>,
+    K: Into<BoltValue>,
+    V: Into<BoltValue>,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
-        Value::Map(value.into())
+        BoltValue::Map(value.into())
     }
 }
 
@@ -114,13 +114,13 @@ where
     }
 }
 
-impl Deserialize for Map<Value, Value> {}
+impl Deserialize for Map<BoltValue, BoltValue> {}
 
-impl TryFrom<Arc<Mutex<Bytes>>> for Map<Value, Value> {
+impl TryFrom<Arc<Mutex<Bytes>>> for Map<BoltValue, BoltValue> {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<Map<Value, Value>, Error> = catch_unwind(move || {
+        let result: Result<Map<BoltValue, BoltValue>, Error> = catch_unwind(move || {
             let marker = input_arc.lock().unwrap().get_u8();
             let size = match marker {
                 marker if (MARKER_TINY..=(MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -135,10 +135,10 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Map<Value, Value> {
                     );
                 }
             };
-            let mut hash_map: HashMap<Value, Value> = HashMap::with_capacity(size);
+            let mut hash_map: HashMap<BoltValue, BoltValue> = HashMap::with_capacity(size);
             for _ in 0..size {
-                let key = Value::try_from(Arc::clone(&input_arc))?;
-                let value = Value::try_from(Arc::clone(&input_arc))?;
+                let key = BoltValue::try_from(Arc::clone(&input_arc))?;
+                let value = BoltValue::try_from(Arc::clone(&input_arc))?;
                 hash_map.insert(key, value);
             }
             Ok(Map::from(hash_map))
@@ -162,7 +162,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::serialize::Serialize;
-    use crate::value::{Integer, Marker, String, Value};
+    use crate::value::{BoltValue, Integer, Marker, String};
 
     use super::{Map, MARKER_SMALL, MARKER_TINY};
 
@@ -221,11 +221,12 @@ mod tests {
 
     #[test]
     fn try_from_bytes() {
-        let empty_map: Map<Value, Value> = HashMap::<&str, i8>::new().into();
+        let empty_map: Map<BoltValue, BoltValue> = HashMap::<&str, i8>::new().into();
         let empty_map_bytes = empty_map.clone().try_into_bytes().unwrap();
-        let tiny_map: Map<Value, Value> = HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
+        let tiny_map: Map<BoltValue, BoltValue> =
+            HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
         let tiny_map_bytes = tiny_map.clone().try_into_bytes().unwrap();
-        let small_map: Map<Value, Value> = HashMap::<&str, i8>::from_iter(vec![
+        let small_map: Map<BoltValue, BoltValue> = HashMap::<&str, i8>::from_iter(vec![
             ("a", 1_i8),
             ("b", 1_i8),
             ("c", 3_i8),
