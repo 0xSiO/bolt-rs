@@ -85,10 +85,15 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 | integer::MARKER_INT_16
                 | integer::MARKER_INT_32
                 | integer::MARKER_INT_64 => Ok(Value::Integer(Integer::try_from(input_arc)?)),
-                string::MARKER_TINY
-                | string::MARKER_SMALL
-                | string::MARKER_MEDIUM
-                | string::MARKER_LARGE => Ok(Value::String(String::try_from(input_arc)?)),
+                // Tiny string
+                marker
+                    if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
+                {
+                    Ok(Value::String(String::try_from(input_arc)?))
+                }
+                string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
+                    Ok(Value::String(String::try_from(input_arc)?))
+                }
                 _ => todo!(),
             }
         })
@@ -163,6 +168,34 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(very_large_bytes))).unwrap(),
             Value::Integer(very_large)
+        );
+    }
+
+    #[test]
+    fn string_from_bytes() {
+        let tiny = String::from("string".repeat(1));
+        let tiny_bytes = tiny.clone().try_into_bytes().unwrap();
+        let small = String::from("string".repeat(10));
+        let small_bytes = small.clone().try_into_bytes().unwrap();
+        let medium = String::from("string".repeat(1000));
+        let medium_bytes = medium.clone().try_into_bytes().unwrap();
+        let large = String::from("string".repeat(100_000));
+        let large_bytes = large.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
+            Value::String(tiny)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
+            Value::String(small)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
+            Value::String(medium)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
+            Value::String(large)
         );
     }
 }
