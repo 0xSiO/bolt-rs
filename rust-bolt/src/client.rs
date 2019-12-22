@@ -52,7 +52,7 @@ impl Client {
             ]),
         );
         let bytes = init.try_into_bytes()?;
-        let mut message = MessageBytes::with_capacity(bytes.len());
+        let mut message = MessageBytes::new();
         message.add_chunk(Chunk::try_from(bytes)?);
         println!("Created message.");
         let mut bytes: Bytes = message.into();
