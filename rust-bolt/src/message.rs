@@ -12,6 +12,7 @@ use crate::error::DeserializeError;
 
 mod chunk;
 mod init;
+mod success;
 
 #[derive(Debug)]
 pub struct Message {

@@ -1,11 +1,9 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 
 use rust_bolt_macros::*;
 
 use crate::serialize::Serialize;
 use crate::structure::Structure;
-use crate::value::Marker;
 use crate::value::{Map, String, Value};
 
 #[derive(Debug, Structure, Serialize)]
