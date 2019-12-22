@@ -1,12 +1,14 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::mem;
+use std::str;
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::error::ValueError;
-use crate::serialize::Serialize;
+use crate::error::{DeserializeError, ValueError};
+use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
+use std::panic::catch_unwind;
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -71,6 +73,38 @@ impl TryInto<Bytes> for String {
         }
         bytes.put_slice(self.value.as_bytes());
         Ok(bytes.freeze())
+    }
+}
+
+impl Deserialize for String {}
+
+impl TryFrom<Bytes> for String {
+    type Error = Error;
+
+    fn try_from(mut input_bytes: Bytes) -> Result<Self, Self::Error> {
+        let result: Result<String, Error> = catch_unwind(move || {
+            let marker = input_bytes.get_u8();
+            let size = match marker {
+                // Lower-order nibble of tiny string marker
+                0x80..=0x8F => 0x0F & marker as usize,
+                MARKER_SMALL => input_bytes.get_u8() as usize,
+                MARKER_MEDIUM => input_bytes.get_u16() as usize,
+                MARKER_LARGE => input_bytes.get_u32() as usize,
+                _ => {
+                    return Err(
+                        DeserializeError(format!("Invalid marker byte: {:x}", marker)).into(),
+                    )
+                }
+            };
+            let mut string_bytes = BytesMut::with_capacity(size);
+            input_bytes.copy_to_slice(&mut string_bytes);
+            Ok(String::from(str::from_utf8(&input_bytes)?))
+        })
+        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+
+        Ok(result.map_err(|err: Error| {
+            DeserializeError(format!("Error creating String from Bytes: {:?}", err))
+        })?)
     }
 }
 
