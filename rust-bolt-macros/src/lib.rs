@@ -11,44 +11,7 @@ pub fn structure_derive(input: TokenStream) -> TokenStream {
     impl_structure(&syn::parse(input).unwrap())
 }
 
-#[proc_macro_derive(Marker)]
-pub fn marker_derive(input: TokenStream) -> TokenStream {
-    impl_marker(&syn::parse(input).unwrap())
-}
-
-#[proc_macro_derive(Serialize)]
-pub fn serialize_derive(input: TokenStream) -> TokenStream {
-    impl_serialize(&syn::parse(input).unwrap())
-}
-
 fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
-    let name = &ast.ident;
-    let type_args = &ast.generics;
-    let where_clause = &ast.generics.where_clause;
-    let name_str = name.to_string();
-    let signature = get_structure_signature(&name_str);
-
-    let gen = quote! {
-        impl#type_args crate::structure::Structure for #name#type_args
-        #where_clause
-        {
-            fn get_signature(&self) -> u8 {
-                #signature
-            }
-        }
-    };
-    gen.into()
-}
-
-fn get_structure_signature(name: &str) -> u8 {
-    match name {
-        "Init" => 0x01,
-        "Success" => 0x70,
-        _ => panic!("Invalid message type: {}", name),
-    }
-}
-
-fn impl_marker(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let type_args = &ast.generics;
     let where_clause = &ast.generics.where_clause;
@@ -57,29 +20,8 @@ fn impl_marker(ast: &syn::DeriveInput) -> TokenStream {
         _ => panic!("Macro must be used on a struct."),
     };
     let marker = get_structure_marker(fields.len());
-
-    let gen = quote! {
-        use crate::value::Marker;
-
-        impl#type_args crate::value::Marker for #name#type_args
-        #where_clause
-        {
-            fn get_marker(&self) -> Result<u8, ::failure::Error> {
-                Ok(#marker)
-            }
-        }
-    };
-    gen.into()
-}
-
-fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
-    let name = &ast.ident;
-    let type_args = &ast.generics;
-    let where_clause = &ast.generics.where_clause;
-    let fields = match &ast.data {
-        Data::Struct(DataStruct { fields, .. }) => fields,
-        _ => panic!("Macro must be used on a struct."),
-    };
+    let name_str = name.to_string();
+    let signature = get_structure_signature(&name_str);
 
     let byte_var_names: Vec<Ident> = fields
         .iter()
@@ -96,6 +38,23 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         use ::std::convert::TryInto;
         use ::bytes::BufMut;
+        use crate::value::Marker;
+
+        impl#type_args crate::structure::Structure for #name#type_args
+        #where_clause
+        {
+            fn get_signature(&self) -> u8 {
+                #signature
+            }
+        }
+
+        impl#type_args crate::value::Marker for #name#type_args
+        #where_clause
+        {
+            fn get_marker(&self) -> Result<u8, ::failure::Error> {
+                Ok(#marker)
+            }
+        }
 
         impl#type_args crate::serialize::Serialize for #name#type_args
         #where_clause
@@ -123,6 +82,14 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
         }
     };
     gen.into()
+}
+
+fn get_structure_signature(name: &str) -> u8 {
+    match name {
+        "Init" => 0x01,
+        "Success" => 0x70,
+        _ => panic!("Invalid message type: {}", name),
+    }
 }
 
 const MARKER_TINY_STRUCTURE: u8 = 0xB0;
