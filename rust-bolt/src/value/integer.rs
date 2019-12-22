@@ -1,19 +1,20 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::mem;
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::error::{SerializeError, ValueError};
-use crate::serialize::Serialize;
+use crate::error::{DeserializeError, SerializeError, ValueError};
+use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
+use std::panic::catch_unwind;
 
 const MARKER_INT_8: u8 = 0xC8;
 const MARKER_INT_16: u8 = 0xC9;
 const MARKER_INT_32: u8 = 0xCA;
 const MARKER_INT_64: u8 = 0xCB;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Integer {
     // Since integers come in many sizes, just store the bytes directly
     bytes: Bytes,
@@ -79,6 +80,35 @@ impl TryInto<Bytes> for Integer {
     }
 }
 
+impl Deserialize for Integer {}
+
+impl TryFrom<Bytes> for Integer {
+    type Error = Error;
+
+    fn try_from(mut input_bytes: Bytes) -> Result<Self, Self::Error> {
+        let result: Result<Integer, Error> = catch_unwind(move || {
+            let marker = input_bytes.get_u8();
+            if !input_bytes.has_remaining() {
+                // Tiny int
+                return Ok(Integer::from(marker as i8));
+            }
+
+            match marker {
+                MARKER_INT_8 => Ok(Integer::from(input_bytes.get_i8())),
+                MARKER_INT_16 => Ok(Integer::from(input_bytes.get_i16())),
+                MARKER_INT_32 => Ok(Integer::from(input_bytes.get_i32())),
+                MARKER_INT_64 => Ok(Integer::from(input_bytes.get_i64())),
+                _ => Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into()),
+            }
+        })
+        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+
+        Ok(result.map_err(|err: Error| {
+            DeserializeError(format!("Error creating Integer from Bytes: {:?}", err))
+        })?)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bytes::Bytes;
@@ -89,13 +119,13 @@ mod tests {
 
     #[test]
     fn get_marker() {
-        let tiny = Integer::from(-16);
+        let tiny = Integer::from(-16_i8);
         assert_eq!(tiny.get_marker().unwrap(), 0xF0);
-        let small = Integer::from(-50);
+        let small = Integer::from(-50_i8);
         assert_eq!(small.get_marker().unwrap(), MARKER_INT_8);
-        let medium = Integer::from(-8000);
+        let medium = Integer::from(-8000_i16);
         assert_eq!(medium.get_marker().unwrap(), MARKER_INT_16);
-        let large = Integer::from(-1_000_000_000);
+        let large = Integer::from(-1_000_000_000_i32);
         assert_eq!(large.get_marker().unwrap(), MARKER_INT_32);
         let very_large = Integer::from(-9_000_000_000_000_000_000_i64);
         assert_eq!(very_large.get_marker().unwrap(), MARKER_INT_64);
@@ -110,12 +140,12 @@ mod tests {
             small.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_INT_8, 0xCE])
         );
-        let medium = Integer::from(-8000);
+        let medium = Integer::from(-8000_i16);
         assert_eq!(
             medium.try_into_bytes().unwrap(),
-            Bytes::from_static(&[MARKER_INT_16, 0xFF, 0xFF, 0xE0, 0xC0])
+            Bytes::from_static(&[MARKER_INT_16, 0xE0, 0xC0])
         );
-        let large = Integer::from(-1_000_000_000);
+        let large = Integer::from(-1_000_000_000_i32);
         assert_eq!(
             large.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_INT_32, 0xC4, 0x65, 0x36, 0x00])
@@ -134,6 +164,35 @@ mod tests {
                 0x00,
                 0x00
             ])
+        );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let tiny = Integer::from(-16_i8);
+        assert_eq!(
+            Integer::try_from(tiny.clone().try_into_bytes().unwrap()).unwrap(),
+            tiny
+        );
+        let small = Integer::from(-50_i8);
+        assert_eq!(
+            Integer::try_from(small.clone().try_into_bytes().unwrap()).unwrap(),
+            small
+        );
+        let medium = Integer::from(-8000_i16);
+        assert_eq!(
+            Integer::try_from(medium.clone().try_into_bytes().unwrap()).unwrap(),
+            medium
+        );
+        let large = Integer::from(-1_000_000_000_i32);
+        assert_eq!(
+            Integer::try_from(large.clone().try_into_bytes().unwrap()).unwrap(),
+            large
+        );
+        let very_large = Integer::from(-9_000_000_000_000_000_000_i64);
+        assert_eq!(
+            Integer::try_from(very_large.clone().try_into_bytes().unwrap()).unwrap(),
+            very_large
         );
     }
 }
