@@ -7,6 +7,7 @@ use failure::Error;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
+use std::sync::Mutex;
 
 const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
@@ -48,13 +49,15 @@ impl TryInto<Bytes> for Boolean {
     }
 }
 
-impl Deserialize for Boolean {}
+impl Deserialize<'_> for Boolean {}
 
-impl TryFrom<Bytes> for Boolean {
+impl TryFrom<&mut Bytes> for Boolean {
     type Error = Error;
 
-    fn try_from(mut input_bytes: Bytes) -> Result<Self, Self::Error> {
+    fn try_from(input_bytes: &mut Bytes) -> Result<Self, Self::Error> {
+        let input_bytes = Mutex::new(input_bytes);
         let result: Result<Boolean, Error> = catch_unwind(move || {
+            let mut input_bytes = input_bytes.lock().unwrap();
             let marker = input_bytes.get_u8();
             debug_assert!(!input_bytes.has_remaining());
             match marker {
@@ -108,14 +111,14 @@ mod tests {
     fn try_from_bytes() {
         let f = Boolean::from(false);
         assert_eq!(
-            Boolean::try_from(f.clone().try_into_bytes().unwrap()).unwrap(),
+            Boolean::try_from(&mut f.clone().try_into_bytes().unwrap()).unwrap(),
             f
         );
         let t = Boolean::from(true);
         assert_eq!(
-            Boolean::try_from(t.clone().try_into_bytes().unwrap()).unwrap(),
+            Boolean::try_from(&mut t.clone().try_into_bytes().unwrap()).unwrap(),
             t
         );
-        assert!(Boolean::try_from(Bytes::from_static(&[0x01])).is_err());
+        assert!(Boolean::try_from(&mut Bytes::from_static(&[0x01])).is_err());
     }
 }

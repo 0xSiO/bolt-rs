@@ -8,6 +8,7 @@ use failure::_core::convert::TryFrom;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
+use std::sync::Mutex;
 
 const MARKER: u8 = 0xC0;
 
@@ -36,13 +37,15 @@ impl TryInto<Bytes> for Null {
     }
 }
 
-impl Deserialize for Null {}
+impl Deserialize<'_> for Null {}
 
-impl TryFrom<Bytes> for Null {
+impl TryFrom<&mut Bytes> for Null {
     type Error = Error;
 
-    fn try_from(mut input_bytes: Bytes) -> Result<Self, Self::Error> {
+    fn try_from(input_bytes: &mut Bytes) -> Result<Self, Self::Error> {
+        let input_bytes = Mutex::new(input_bytes);
         let result: Result<Null, Error> = catch_unwind(move || {
+            let mut input_bytes = input_bytes.lock().unwrap();
             let marker = input_bytes.get_u8();
             debug_assert!(!input_bytes.has_remaining());
             if marker == MARKER {
@@ -85,9 +88,9 @@ mod tests {
     #[test]
     fn try_from_bytes() {
         assert_eq!(
-            Null::try_from(Null.try_into_bytes().unwrap()).unwrap(),
+            Null::try_from(&mut Null.try_into_bytes().unwrap()).unwrap(),
             Null
         );
-        assert!(Null::try_from(Bytes::from_static(&[0x01])).is_err());
+        assert!(Null::try_from(&mut Bytes::from_static(&[0x01])).is_err());
     }
 }

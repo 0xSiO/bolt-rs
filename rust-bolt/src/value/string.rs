@@ -9,6 +9,7 @@ use failure::Error;
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
+use std::sync::Mutex;
 
 const MARKER_TINY: u8 = 0x80;
 const MARKER_SMALL: u8 = 0xD0;
@@ -76,13 +77,15 @@ impl TryInto<Bytes> for String {
     }
 }
 
-impl Deserialize for String {}
+impl Deserialize<'_> for String {}
 
-impl TryFrom<Bytes> for String {
+impl TryFrom<&mut Bytes> for String {
     type Error = Error;
 
-    fn try_from(mut input_bytes: Bytes) -> Result<Self, Self::Error> {
+    fn try_from(input_bytes: &mut Bytes) -> Result<Self, Self::Error> {
+        let input_bytes = Mutex::new(input_bytes);
         let result: Result<String, Error> = catch_unwind(move || {
+            let mut input_bytes = input_bytes.lock().unwrap();
             let marker = input_bytes.get_u8();
             let size = match marker {
                 // Lower-order nibble of tiny string marker
@@ -98,6 +101,7 @@ impl TryFrom<Bytes> for String {
             };
             let mut string_bytes = BytesMut::with_capacity(size);
             input_bytes.copy_to_slice(&mut string_bytes);
+            // TODO: This should be string_bytes, not input bytes!!
             Ok(String::from(str::from_utf8(&input_bytes)?))
         })
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
@@ -164,27 +168,27 @@ mod tests {
     fn try_from_bytes() {
         let tiny = String::from("string".repeat(1));
         assert_eq!(
-            String::try_from(tiny.clone().try_into_bytes().unwrap()).unwrap(),
+            String::try_from(&mut tiny.clone().try_into_bytes().unwrap()).unwrap(),
             tiny
         );
         let small = String::from("string".repeat(10));
         assert_eq!(
-            String::try_from(small.clone().try_into_bytes().unwrap()).unwrap(),
+            String::try_from(&mut small.clone().try_into_bytes().unwrap()).unwrap(),
             small
         );
         let medium = String::from("string".repeat(1000));
         assert_eq!(
-            String::try_from(medium.clone().try_into_bytes().unwrap()).unwrap(),
+            String::try_from(&mut medium.clone().try_into_bytes().unwrap()).unwrap(),
             medium
         );
         let large = String::from("string".repeat(100_000));
         assert_eq!(
-            String::try_from(large.clone().try_into_bytes().unwrap()).unwrap(),
+            String::try_from(&mut large.clone().try_into_bytes().unwrap()).unwrap(),
             large
         );
         let special = String::from("En å flöt över ängen");
         assert_eq!(
-            String::try_from(special.clone().try_into_bytes().unwrap()).unwrap(),
+            String::try_from(&mut special.clone().try_into_bytes().unwrap()).unwrap(),
             special
         );
     }
