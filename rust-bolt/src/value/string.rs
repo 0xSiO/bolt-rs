@@ -103,7 +103,7 @@ impl TryFrom<Bytes> for String {
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError(format!("Error creating String from Bytes: {:?}", err))
+            DeserializeError(format!("Error creating String from Bytes: {}", err))
         })?)
     }
 }
