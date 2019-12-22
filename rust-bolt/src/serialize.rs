@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::sync::{Arc, Mutex};
 
 use bytes::Bytes;
 use failure::Error;
@@ -10,4 +11,4 @@ pub trait Serialize: TryInto<Bytes, Error = Error> {
     }
 }
 
-pub trait Deserialize<'a>: TryFrom<&'a mut Bytes, Error = Error> {}
+pub trait Deserialize: TryFrom<Arc<Mutex<Bytes>>, Error = Error> {}

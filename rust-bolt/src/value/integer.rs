@@ -8,7 +8,7 @@ use crate::error::{DeserializeError, SerializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
 use std::panic::catch_unwind;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 const MARKER_INT_8: u8 = 0xC8;
 const MARKER_INT_16: u8 = 0xC9;
@@ -81,15 +81,14 @@ impl TryInto<Bytes> for Integer {
     }
 }
 
-impl Deserialize<'_> for Integer {}
+impl Deserialize for Integer {}
 
-impl TryFrom<&mut Bytes> for Integer {
+impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
     type Error = Error;
 
-    fn try_from(input_bytes: &mut Bytes) -> Result<Self, Self::Error> {
-        let input_bytes = Mutex::new(input_bytes);
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
         let result: Result<Integer, Error> = catch_unwind(move || {
-            let mut input_bytes = input_bytes.lock().unwrap();
+            let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
             if !input_bytes.has_remaining() {
                 // Tiny int
@@ -174,27 +173,40 @@ mod tests {
     fn try_from_bytes() {
         let tiny = Integer::from(-16_i8);
         assert_eq!(
-            Integer::try_from(&mut tiny.clone().try_into_bytes().unwrap()).unwrap(),
+            Integer::try_from(Arc::new(Mutex::new(tiny.clone().try_into_bytes().unwrap())))
+                .unwrap(),
             tiny
         );
         let small = Integer::from(-50_i8);
         assert_eq!(
-            Integer::try_from(&mut small.clone().try_into_bytes().unwrap()).unwrap(),
+            Integer::try_from(Arc::new(Mutex::new(
+                small.clone().try_into_bytes().unwrap()
+            )))
+            .unwrap(),
             small
         );
         let medium = Integer::from(-8000_i16);
         assert_eq!(
-            Integer::try_from(&mut medium.clone().try_into_bytes().unwrap()).unwrap(),
+            Integer::try_from(Arc::new(Mutex::new(
+                medium.clone().try_into_bytes().unwrap()
+            )))
+            .unwrap(),
             medium
         );
         let large = Integer::from(-1_000_000_000_i32);
         assert_eq!(
-            Integer::try_from(&mut large.clone().try_into_bytes().unwrap()).unwrap(),
+            Integer::try_from(Arc::new(Mutex::new(
+                large.clone().try_into_bytes().unwrap()
+            )))
+            .unwrap(),
             large
         );
         let very_large = Integer::from(-9_000_000_000_000_000_000_i64);
         assert_eq!(
-            Integer::try_from(&mut very_large.clone().try_into_bytes().unwrap()).unwrap(),
+            Integer::try_from(Arc::new(Mutex::new(
+                very_large.clone().try_into_bytes().unwrap()
+            )))
+            .unwrap(),
             very_large
         );
     }

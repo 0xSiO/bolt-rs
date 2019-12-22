@@ -1,9 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 use std::hash::Hash;
+use std::panic::catch_unwind;
+use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, Bytes};
 use failure::Error;
 
+use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 
 pub use self::boolean::Boolean;
@@ -11,9 +14,6 @@ pub use self::integer::Integer;
 pub use self::map::Map;
 pub use self::null::Null;
 pub use self::string::String;
-use crate::error::DeserializeError;
-use std::panic::catch_unwind;
-use std::sync::Mutex;
 
 mod boolean;
 mod integer;
@@ -62,24 +62,22 @@ impl TryInto<Bytes> for Value {
     }
 }
 
-impl Deserialize<'_> for Value {}
+impl Deserialize for Value {}
 
-impl TryFrom<&mut Bytes> for Value {
+impl TryFrom<Arc<Mutex<Bytes>>> for Value {
     type Error = Error;
 
-    fn try_from(input_bytes: &mut Bytes) -> Result<Self, Self::Error> {
-        let input_bytes = Mutex::new(input_bytes);
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
         let result: Result<Value, Error> = catch_unwind(move || {
-            let input_bytes = input_bytes.lock().unwrap();
+            let input_bytes = input_arc.lock().unwrap();
             // TODO: Make sure clone() also preserves position of buffer cursor
             let marker = input_bytes.clone().get_u8();
 
             match marker {
-                // TODO: Can't do the below; try_from should take an Arc<Mutex<Bytes>>
-                // null::MARKER => Ok(Value::Null(Null::try_from(*input_bytes)?)),
-                // boolean::MARKER_FALSE | boolean::MARKER_TRUE => {
-                //     Ok(Value::Boolean(Boolean::try_from(*input_bytes)?))
-                // }
+                null::MARKER => Ok(Value::Null(Null::try_from(Arc::clone(&input_arc))?)),
+                boolean::MARKER_FALSE | boolean::MARKER_TRUE => {
+                    Ok(Value::Boolean(Boolean::try_from(Arc::clone(&input_arc))?))
+                }
                 _ => todo!(),
             }
         })
