@@ -7,18 +7,18 @@ use crate::structure::Structure;
 use crate::value::{Map, String, Value};
 
 #[derive(Debug, Structure)]
-pub struct InitRaw {
+pub struct BoltInit {
     client_name: String,
     auth_token: Map<String, Value>,
 }
 
-impl InitRaw {
-    pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> InitRaw
+impl BoltInit {
+    pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> BoltInit
     where
         K: Into<String>,
         V: Into<Value>,
     {
-        InitRaw {
+        BoltInit {
             client_name: client_name.into(),
             auth_token: auth_token.into(),
         }
@@ -38,8 +38,8 @@ mod tests {
 
     use super::*;
 
-    fn new_msg() -> InitRaw {
-        InitRaw::new(
+    fn new_msg() -> BoltInit {
+        BoltInit::new(
             "MyClient/1.0",
             HashMap::from_iter(vec![("scheme", "basic")]),
         )

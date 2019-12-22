@@ -1,14 +1,14 @@
+pub use bolt::init::BoltInit;
+pub use bolt::success::BoltSuccess;
 pub use chunk::Chunk;
 pub use message_bytes::MessageBytes;
-pub use raw::init::InitRaw;
-pub use raw::success::SuccessRaw;
 
+mod bolt;
 mod chunk;
 mod message_bytes;
-mod raw;
 
 #[derive(Debug)]
 pub enum Message {
-    Init(InitRaw),
-    Success(SuccessRaw),
+    Init(BoltInit),
+    Success(BoltSuccess),
 }

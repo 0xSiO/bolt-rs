@@ -86,8 +86,8 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
 
 fn get_structure_signature(struct_name: &str) -> u8 {
     match struct_name {
-        "InitRaw" => 0x01,
-        "SuccessRaw" => 0x70,
+        "BoltInit" => 0x01,
+        "BoltSuccess" => 0x70,
         _ => panic!("Invalid message type: {}", struct_name),
     }
 }
