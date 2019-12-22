@@ -9,7 +9,7 @@ use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use crate::bolt::message::{BoltInit, BoltSuccess, Chunk, MessageBytes};
+use crate::bolt::message::{BoltInit, BoltMessageBytes, BoltSuccess, Chunk};
 use crate::serialize::Serialize;
 use std::sync::{Arc, Mutex};
 
@@ -52,14 +52,14 @@ impl Client {
             ]),
         );
         let bytes = init.try_into_bytes()?;
-        let mut message = MessageBytes::new();
+        let mut message = BoltMessageBytes::new();
         message.add_chunk(Chunk::try_from(bytes)?);
         println!("Created message.");
         let mut bytes: Bytes = message.into();
         self.stream.write_buf(&mut bytes).await?;
         self.stream.flush().await?;
         println!("Wrote init.");
-        let msg = MessageBytes::from_stream(&mut self.stream).await?;
+        let msg = BoltMessageBytes::from_stream(&mut self.stream).await?;
         Ok(BoltSuccess::try_from(Arc::new(Mutex::new(
             msg.bytes.freeze(),
         )))?)
