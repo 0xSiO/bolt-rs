@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 use std::panic::catch_unwind;
+use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, Bytes};
 use failure::Error;
@@ -8,7 +9,6 @@ use failure::_core::convert::TryFrom;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
-use std::sync::Mutex;
 
 pub const MARKER: u8 = 0xC0;
 
@@ -37,15 +37,14 @@ impl TryInto<Bytes> for Null {
     }
 }
 
-impl Deserialize<'_> for Null {}
+impl Deserialize for Null {}
 
-impl TryFrom<&mut Bytes> for Null {
+impl TryFrom<Arc<Mutex<Bytes>>> for Null {
     type Error = Error;
 
-    fn try_from(input_bytes: &mut Bytes) -> Result<Self, Self::Error> {
-        let input_bytes = Mutex::new(input_bytes);
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
         let result: Result<Null, Error> = catch_unwind(move || {
-            let mut input_bytes = input_bytes.lock().unwrap();
+            let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
             debug_assert!(!input_bytes.has_remaining());
             if marker == MARKER {
@@ -64,13 +63,15 @@ impl TryFrom<&mut Bytes> for Null {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+    use std::sync::{Arc, Mutex};
+
     use bytes::Bytes;
 
     use crate::serialize::Serialize;
     use crate::value::Marker;
 
     use super::{Null, MARKER};
-    use std::convert::TryFrom;
 
     #[test]
     fn get_marker() {
@@ -88,9 +89,9 @@ mod tests {
     #[test]
     fn try_from_bytes() {
         assert_eq!(
-            Null::try_from(&mut Null.try_into_bytes().unwrap()).unwrap(),
+            Null::try_from(Arc::new(Mutex::new(Null.try_into_bytes().unwrap()))).unwrap(),
             Null
         );
-        assert!(Null::try_from(&mut Bytes::from_static(&[0x01])).is_err());
+        assert!(Null::try_from(Arc::new(Mutex::new(Bytes::from_static(&[0x01])))).is_err());
     }
 }
