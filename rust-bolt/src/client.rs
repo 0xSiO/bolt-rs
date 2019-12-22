@@ -59,8 +59,9 @@ impl Client {
         self.stream.flush().await?;
         println!("Wrote init.");
         // Success messages don't give us an EOF, so read exact number of bytes
-        // TODO: To avoid this, we need to read on-demand from the stream: consider making Deserialize use
-        //       a TcpStream instead of a Bytes (maybe even a Box<dyn AsyncBufRead> if that's possible)
+        // TODO: To avoid this, we need to read on-demand from the stream: consider making Message read from
+        //       a TcpStream instead of a Bytes (maybe even a Box<dyn AsyncBufRead> if that's possible).
+        //       Remember to consume the last two 0 bytes when deserializing.
         let mut buf = vec![0u8; 27];
         self.stream.read_exact(&mut buf).await?;
         println!("Read response: {:?}", &buf[..]);
