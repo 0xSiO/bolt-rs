@@ -1,12 +1,11 @@
 pub use chunk::Chunk;
-pub use init::InitRaw;
 pub use message_bytes::MessageBytes;
-pub use success::SuccessRaw;
+pub use raw::init::InitRaw;
+pub use raw::success::SuccessRaw;
 
 mod chunk;
-mod init;
 mod message_bytes;
-mod success;
+mod raw;
 
 #[derive(Debug)]
 pub enum Message {

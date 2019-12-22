@@ -32,10 +32,11 @@ mod tests {
 
     use bytes::Bytes;
 
-    use crate::message::init::InitRaw;
     use crate::serialize::Serialize;
     use crate::structure::Structure;
     use crate::value::Marker;
+
+    use super::*;
 
     fn new_msg() -> InitRaw {
         InitRaw::new(
