@@ -12,7 +12,7 @@ use crate::value::{Marker, Value};
 
 pub const MARKER: u8 = 0xC0;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Null;
 
 impl From<Null> for Value {

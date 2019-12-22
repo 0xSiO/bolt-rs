@@ -11,10 +11,10 @@ use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
 
-const MARKER_TINY: u8 = 0x80;
-const MARKER_SMALL: u8 = 0xD0;
-const MARKER_MEDIUM: u8 = 0xD1;
-const MARKER_LARGE: u8 = 0xD2;
+pub const MARKER_TINY: u8 = 0x80;
+pub const MARKER_SMALL: u8 = 0xD0;
+pub const MARKER_MEDIUM: u8 = 0xD1;
+pub const MARKER_LARGE: u8 = 0xD2;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct String {

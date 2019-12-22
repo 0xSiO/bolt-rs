@@ -69,15 +69,26 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
         let result: Result<Value, Error> = catch_unwind(move || {
-            let input_bytes = input_arc.lock().unwrap();
             // TODO: Make sure clone() also preserves position of buffer cursor
-            let marker = input_bytes.clone().get_u8();
+            let marker = { input_arc.lock().unwrap().clone().get_u8() };
 
             match marker {
-                null::MARKER => Ok(Value::Null(Null::try_from(Arc::clone(&input_arc))?)),
-                boolean::MARKER_FALSE | boolean::MARKER_TRUE => {
-                    Ok(Value::Boolean(Boolean::try_from(Arc::clone(&input_arc))?))
+                null::MARKER => Ok(Value::Null(Null)),
+                boolean::MARKER_FALSE => Ok(Value::Boolean(Boolean::from(false))),
+                boolean::MARKER_TRUE => Ok(Value::Boolean(Boolean::from(true))),
+                // Tiny int
+                marker if (-16..=127).contains(&(marker as i8)) => {
+                    Ok(Value::Integer(Integer::from(marker as i8)))
                 }
+                // Other int types
+                integer::MARKER_INT_8
+                | integer::MARKER_INT_16
+                | integer::MARKER_INT_32
+                | integer::MARKER_INT_64 => Ok(Value::Integer(Integer::try_from(input_arc)?)),
+                string::MARKER_TINY
+                | string::MARKER_SMALL
+                | string::MARKER_MEDIUM
+                | string::MARKER_LARGE => Ok(Value::String(String::try_from(input_arc)?)),
                 _ => todo!(),
             }
         })
@@ -86,5 +97,72 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
         Ok(result.map_err(|err: Error| {
             DeserializeError(format!("Error creating Value from Bytes: {}", err))
         })?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::serialize::Serialize;
+
+    use super::*;
+
+    #[test]
+    fn null_from_bytes() {
+        let null = Null;
+        let null_bytes = null.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(null_bytes))).unwrap(),
+            Value::Null(null)
+        );
+    }
+
+    #[test]
+    fn boolean_from_bytes() {
+        let t = Boolean::from(true);
+        let true_bytes = t.clone().try_into_bytes().unwrap();
+        let f = Boolean::from(false);
+        let false_bytes = f.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(true_bytes))).unwrap(),
+            Value::Boolean(t)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(false_bytes))).unwrap(),
+            Value::Boolean(f)
+        );
+    }
+
+    #[test]
+    fn integer_from_bytes() {
+        let tiny = Integer::from(110_i8);
+        let tiny_bytes = tiny.clone().try_into_bytes().unwrap();
+        let small = Integer::from(-50_i8);
+        let small_bytes = small.clone().try_into_bytes().unwrap();
+        let medium = Integer::from(8000_i16);
+        let medium_bytes = medium.clone().try_into_bytes().unwrap();
+        let large = Integer::from(-1_000_000_000_i32);
+        let large_bytes = large.clone().try_into_bytes().unwrap();
+        let very_large = Integer::from(9_000_000_000_000_000_000_i64);
+        let very_large_bytes = very_large.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
+            Value::Integer(tiny)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
+            Value::Integer(small)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
+            Value::Integer(medium)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
+            Value::Integer(large)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(very_large_bytes))).unwrap(),
+            Value::Integer(very_large)
+        );
     }
 }

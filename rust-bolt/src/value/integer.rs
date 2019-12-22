@@ -10,10 +10,10 @@ use crate::value::{Marker, Value};
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
-const MARKER_INT_8: u8 = 0xC8;
-const MARKER_INT_16: u8 = 0xC9;
-const MARKER_INT_32: u8 = 0xCA;
-const MARKER_INT_64: u8 = 0xCB;
+pub const MARKER_INT_8: u8 = 0xC8;
+pub const MARKER_INT_16: u8 = 0xC9;
+pub const MARKER_INT_32: u8 = 0xCA;
+pub const MARKER_INT_64: u8 = 0xCB;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Integer {
@@ -90,12 +90,9 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
         let result: Result<Integer, Error> = catch_unwind(move || {
             let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
-            if !input_bytes.has_remaining() {
-                // Tiny int
-                return Ok(Integer::from(marker as i8));
-            }
 
             match marker {
+                marker if (-16..=127).contains(&(marker as i8)) => Ok(Integer::from(marker as i8)),
                 MARKER_INT_8 => Ok(Integer::from(input_bytes.get_i8())),
                 MARKER_INT_16 => Ok(Integer::from(input_bytes.get_i16())),
                 MARKER_INT_32 => Ok(Integer::from(input_bytes.get_i32())),
