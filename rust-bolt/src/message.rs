@@ -55,7 +55,7 @@ impl TryFrom<Bytes> for Message {
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError(format!("Error creating Message from Bytes: {:?}", err))
+            DeserializeError(format!("Error creating Message from Bytes: {}", err))
         })?)
     }
 }

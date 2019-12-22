@@ -1,9 +1,12 @@
 use std::convert::TryInto;
+use std::panic::catch_unwind;
 
-use bytes::Bytes;
+use bytes::{Buf, Bytes};
 use failure::Error;
+use failure::_core::convert::TryFrom;
 
-use crate::serialize::Serialize;
+use crate::error::DeserializeError;
+use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
 
 const MARKER: u8 = 0xC0;
@@ -33,6 +36,29 @@ impl TryInto<Bytes> for Null {
     }
 }
 
+impl Deserialize for Null {}
+
+impl TryFrom<Bytes> for Null {
+    type Error = Error;
+
+    fn try_from(mut input_bytes: Bytes) -> Result<Self, Self::Error> {
+        let result: Result<Null, Error> = catch_unwind(move || {
+            let marker = input_bytes.get_u8();
+            debug_assert!(!input_bytes.has_remaining());
+            if marker == MARKER {
+                Ok(Null)
+            } else {
+                Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into())
+            }
+        })
+        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+
+        Ok(result.map_err(|err: Error| {
+            DeserializeError(format!("Error creating Null from Bytes: {}", err))
+        })?)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bytes::Bytes;
@@ -41,6 +67,7 @@ mod tests {
     use crate::value::Marker;
 
     use super::{Null, MARKER};
+    use std::convert::TryFrom;
 
     #[test]
     fn get_marker() {
@@ -53,5 +80,14 @@ mod tests {
             Null.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER])
         );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        assert_eq!(
+            Null::try_from(Null.try_into_bytes().unwrap()).unwrap(),
+            Null
+        );
+        assert!(Null::try_from(Bytes::from_static(&[0x01])).is_err());
     }
 }
