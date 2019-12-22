@@ -1,7 +1,7 @@
 pub use chunk::Chunk;
-pub use init::Init;
+pub use init::InitRaw;
 pub use message_bytes::MessageBytes;
-pub use success::Success;
+pub use success::SuccessRaw;
 
 mod chunk;
 mod init;
@@ -10,6 +10,6 @@ mod success;
 
 #[derive(Debug)]
 pub enum Message {
-    Init(Init),
-    Success(Success),
+    Init(InitRaw),
+    Success(SuccessRaw),
 }

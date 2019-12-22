@@ -13,22 +13,22 @@ use crate::structure::Structure;
 use crate::value::Value;
 
 #[derive(Debug, Structure)]
-pub struct Success {
+pub struct SuccessRaw {
     metadata: Value,
 }
 
 // TODO: You may be able to move this all into a derive macro
-impl Deserialize for Success {}
+impl Deserialize for SuccessRaw {}
 
 const MARKER_TINY_STRUCTURE: u8 = 0xB0;
 const MARKER_SMALL_STRUCTURE: u8 = 0xDC;
 const MARKER_MEDIUM_STRUCTURE: u8 = 0xDD;
 
-impl TryFrom<Arc<Mutex<Bytes>>> for Success {
+impl TryFrom<Arc<Mutex<Bytes>>> for SuccessRaw {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<Success, Error> = catch_unwind(move || {
+        let result: Result<SuccessRaw, Error> = catch_unwind(move || {
             let marker = input_arc.lock().unwrap().get_u8();
             let size = match marker {
                 marker
@@ -48,7 +48,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Success {
             let signature = input_arc.lock().unwrap().get_u8();
 
             if signature == 0x70 {
-                Ok(Success {
+                Ok(SuccessRaw {
                     metadata: Value::try_from(Arc::clone(&input_arc))?,
                 })
             } else {
