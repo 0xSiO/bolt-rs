@@ -11,6 +11,11 @@ pub fn structure_derive(input: TokenStream) -> TokenStream {
     impl_structure(&syn::parse(input).unwrap())
 }
 
+#[proc_macro_derive(Marker)]
+pub fn marker_derive(input: TokenStream) -> TokenStream {
+    impl_marker(&syn::parse(input).unwrap())
+}
+
 #[proc_macro_derive(Serialize)]
 pub fn serialize_derive(input: TokenStream) -> TokenStream {
     impl_serialize(&syn::parse(input).unwrap())
@@ -43,7 +48,7 @@ fn get_structure_signature(name: &str) -> u8 {
     }
 }
 
-fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
+fn impl_marker(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let type_args = &ast.generics;
     let where_clause = &ast.generics.where_clause;
@@ -52,6 +57,29 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
         _ => panic!("Macro must be used on a struct."),
     };
     let marker = get_structure_marker(fields.len());
+
+    let gen = quote! {
+        use crate::value::Marker;
+
+        impl#type_args crate::value::Marker for #name#type_args
+        #where_clause
+        {
+            fn get_marker(&self) -> Result<u8, ::failure::Error> {
+                Ok(#marker)
+            }
+        }
+    };
+    gen.into()
+}
+
+fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
+    let name = &ast.ident;
+    let type_args = &ast.generics;
+    let where_clause = &ast.generics.where_clause;
+    let fields = match &ast.data {
+        Data::Struct(DataStruct { fields, .. }) => fields,
+        _ => panic!("Macro must be used on a struct."),
+    };
 
     let byte_var_names: Vec<Ident> = fields
         .iter()
@@ -66,17 +94,8 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
     let size_bytes = get_size_bytes(fields.len());
 
     let gen = quote! {
-        use ::bytes::BufMut;
-        use crate::value::Marker;
         use ::std::convert::TryInto;
-
-        impl#type_args crate::value::Marker for #name#type_args
-        #where_clause
-        {
-            fn get_marker(&self) -> Result<u8, ::failure::Error> {
-                Ok(#marker)
-            }
-        }
+        use ::bytes::BufMut;
 
         impl#type_args crate::serialize::Serialize for #name#type_args
         #where_clause
