@@ -100,9 +100,9 @@ impl TryFrom<&mut Bytes> for String {
                 }
             };
             let mut string_bytes = BytesMut::with_capacity(size);
+            string_bytes.resize(size, 0);
             input_bytes.copy_to_slice(&mut string_bytes);
-            // TODO: This should be string_bytes, not input bytes!!
-            Ok(String::from(str::from_utf8(&input_bytes)?))
+            Ok(String::from(str::from_utf8(&string_bytes)?))
         })
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
