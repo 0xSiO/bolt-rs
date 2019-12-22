@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
 use failure::Error;
@@ -9,3 +9,5 @@ pub trait Serialize: TryInto<Bytes, Error = Error> {
         self.try_into()
     }
 }
+
+pub trait Deserialize: TryFrom<Bytes, Error = Error> {}
