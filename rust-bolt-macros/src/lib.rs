@@ -21,10 +21,7 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     let type_args = &ast.generics;
     let where_clause = &ast.generics.where_clause;
     let name_str = name.to_string();
-    let signature: u8 = match name_str.as_str() {
-        "Init" => 0x01,
-        _ => panic!("Invalid message type: {}", name_str),
-    };
+    let signature = get_structure_signature(&name_str);
 
     let gen = quote! {
         impl#type_args crate::structure::Structure for #name#type_args
@@ -36,6 +33,14 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
         }
     };
     gen.into()
+}
+
+fn get_structure_signature(name: &str) -> u8 {
+    match name {
+        "Init" => 0x01,
+        "Success" => 0x70,
+        _ => panic!("Invalid message type: {}", name),
+    }
 }
 
 fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
@@ -62,6 +67,8 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
 
     let gen = quote! {
         use ::bytes::BufMut;
+        use crate::value::Marker;
+        use ::std::convert::TryInto;
 
         impl#type_args crate::value::Marker for #name#type_args
         #where_clause
@@ -85,7 +92,9 @@ fn impl_serialize(ast: &syn::DeriveInput) -> TokenStream {
                 let signature = self.get_signature();
                 #(#byte_vars)*
                 // Marker byte, up to 2 size bytes, signature byte, then the rest of the data
-                let mut result_bytes_mut = ::bytes::BytesMut::with_capacity(std::mem::size_of::<u8>() * 4 #(+ #byte_var_names.len())*);
+                let mut result_bytes_mut = ::bytes::BytesMut::with_capacity(
+                    std::mem::size_of::<u8>() * 4 #(+ #byte_var_names.len())*
+                );
                 result_bytes_mut.put_u8(marker);
                 #(result_bytes_mut.put_u8(#size_bytes);)*
                 result_bytes_mut.put_u8(signature);
