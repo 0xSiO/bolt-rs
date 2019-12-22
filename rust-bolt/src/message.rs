@@ -7,6 +7,7 @@ use failure::Error;
 
 pub use chunk::Chunk;
 pub use init::Init;
+pub use success::Success;
 
 use crate::error::DeserializeError;
 
