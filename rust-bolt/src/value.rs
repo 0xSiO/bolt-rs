@@ -104,7 +104,13 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
                     Ok(Value::String(String::try_from(input_arc)?))
                 }
-                _ => todo!(),
+                marker if (map::MARKER_TINY..=(map::MARKER_TINY | 0x0F)).contains(&marker) => {
+                    Ok(Value::Map(Map::try_from(input_arc)?))
+                }
+                map::MARKER_SMALL | map::MARKER_MEDIUM | map::MARKER_LARGE => {
+                    Ok(Value::String(String::try_from(input_arc)?))
+                }
+                _ => todo!("{:x}", marker),
             }
         })
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
