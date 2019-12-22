@@ -7,18 +7,18 @@ use crate::structure::Structure;
 use crate::value::{Map, String, Value};
 
 #[derive(Debug, Structure)]
-pub struct Init {
+pub struct InitRaw {
     client_name: String,
     auth_token: Map<String, Value>,
 }
 
-impl Init {
-    pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> Init
+impl InitRaw {
+    pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> InitRaw
     where
         K: Into<String>,
         V: Into<Value>,
     {
-        Init {
+        InitRaw {
             client_name: client_name.into(),
             auth_token: auth_token.into(),
         }
@@ -32,13 +32,13 @@ mod tests {
 
     use bytes::Bytes;
 
-    use crate::message::init::Init;
+    use crate::message::init::InitRaw;
     use crate::serialize::Serialize;
     use crate::structure::Structure;
     use crate::value::Marker;
 
-    fn new_msg() -> Init {
-        Init::new(
+    fn new_msg() -> InitRaw {
+        InitRaw::new(
             "MyClient/1.0",
             HashMap::from_iter(vec![("scheme", "basic")]),
         )

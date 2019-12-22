@@ -84,11 +84,11 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     gen.into()
 }
 
-fn get_structure_signature(name: &str) -> u8 {
-    match name {
-        "Init" => 0x01,
-        "Success" => 0x70,
-        _ => panic!("Invalid message type: {}", name),
+fn get_structure_signature(struct_name: &str) -> u8 {
+    match struct_name {
+        "InitRaw" => 0x01,
+        "SuccessRaw" => 0x70,
+        _ => panic!("Invalid message type: {}", struct_name),
     }
 }
 
