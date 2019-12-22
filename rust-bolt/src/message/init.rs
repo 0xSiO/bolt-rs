@@ -6,7 +6,7 @@ use crate::serialize::Serialize;
 use crate::structure::Structure;
 use crate::value::{Map, String, Value};
 
-#[derive(Debug, Structure, Serialize)]
+#[derive(Debug, Structure, Marker, Serialize)]
 pub struct Init {
     client_name: String,
     auth_token: Map<String, Value>,
