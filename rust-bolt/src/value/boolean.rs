@@ -1,15 +1,17 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
+use std::panic::catch_unwind;
 
-use bytes::Bytes;
+use bytes::{Buf, Bytes};
 use failure::Error;
 
-use crate::serialize::Serialize;
+use crate::error::DeserializeError;
+use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
 
 const MARKER_FALSE: u8 = 0xC2;
 const MARKER_TRUE: u8 = 0xC3;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Boolean {
     value: bool,
 }
@@ -46,8 +48,33 @@ impl TryInto<Bytes> for Boolean {
     }
 }
 
+impl Deserialize for Boolean {}
+
+impl TryFrom<Bytes> for Boolean {
+    type Error = Error;
+
+    fn try_from(mut input_bytes: Bytes) -> Result<Self, Self::Error> {
+        let result: Result<Boolean, Error> = catch_unwind(move || {
+            let marker = input_bytes.get_u8();
+            debug_assert!(!input_bytes.has_remaining());
+            match marker {
+                MARKER_TRUE => Ok(Boolean::from(true)),
+                MARKER_FALSE => Ok(Boolean::from(false)),
+                _ => Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into()),
+            }
+        })
+        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+
+        Ok(result.map_err(|err: Error| {
+            DeserializeError(format!("Error creating Boolean from Bytes: {}", err))
+        })?)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use bytes::Bytes;
 
     use crate::serialize::Serialize;
@@ -75,5 +102,20 @@ mod tests {
             t.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_TRUE])
         );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let f = Boolean::from(false);
+        assert_eq!(
+            Boolean::try_from(f.clone().try_into_bytes().unwrap()).unwrap(),
+            f
+        );
+        let t = Boolean::from(true);
+        assert_eq!(
+            Boolean::try_from(t.clone().try_into_bytes().unwrap()).unwrap(),
+            t
+        );
+        assert!(Boolean::try_from(Bytes::from_static(&[0x01])).is_err());
     }
 }
