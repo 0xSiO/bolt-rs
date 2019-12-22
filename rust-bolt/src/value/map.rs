@@ -1,13 +1,15 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
+use std::panic::catch_unwind;
+use std::sync::{Arc, Mutex};
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::error::ValueError;
-use crate::serialize::Serialize;
+use crate::error::{DeserializeError, ValueError};
+use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
 
 const MARKER_TINY: u8 = 0xA0;
@@ -15,7 +17,7 @@ const MARKER_SMALL: u8 = 0xD8;
 const MARKER_MEDIUM: u8 = 0xD9;
 const MARKER_LARGE: u8 = 0xDA;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Map<K, V>
 where
     // TODO: Waiting for trait aliases https://github.com/rust-lang/rust/issues/41517
@@ -112,19 +114,55 @@ where
     }
 }
 
-// TODO: Impl Deserialize
-// Maybe implement a conversion to Value for some Bytes and then consume N Values where N is the number of items in
-// the Map
+impl Deserialize for Map<Value, Value> {}
+
+impl TryFrom<Arc<Mutex<Bytes>>> for Map<Value, Value> {
+    type Error = Error;
+
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
+        let result: Result<Map<Value, Value>, Error> = catch_unwind(move || {
+            let marker = input_arc.lock().unwrap().get_u8();
+            let size = match marker {
+                marker if (MARKER_TINY..=(MARKER_TINY | 0x0F)).contains(&marker) => {
+                    0x0F & marker as usize
+                }
+                MARKER_SMALL => input_arc.lock().unwrap().get_u8() as usize,
+                MARKER_MEDIUM => input_arc.lock().unwrap().get_u16() as usize,
+                MARKER_LARGE => input_arc.lock().unwrap().get_u32() as usize,
+                _ => {
+                    return Err(
+                        DeserializeError(format!("Invalid marker byte: {:x}", marker)).into(),
+                    );
+                }
+            };
+            let mut hash_map: HashMap<Value, Value> = HashMap::with_capacity(size);
+            for _ in 0..size {
+                let key = Value::try_from(Arc::clone(&input_arc))?;
+                let value = Value::try_from(Arc::clone(&input_arc))?;
+                hash_map.insert(key, value);
+            }
+            Ok(Map::from(hash_map))
+        })
+        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+
+        Ok(result.map_err(|err: Error| {
+            DeserializeError(format!("Error creating Map from Bytes: {}", err))
+        })?)
+    }
+}
 
 #[cfg(test)]
 mod tests {
+    use std::clone::Clone;
     use std::collections::HashMap;
+    use std::convert::TryFrom;
     use std::iter::FromIterator;
+    use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
 
     use crate::serialize::Serialize;
-    use crate::value::{Integer, Marker, String};
+    use crate::value::{Integer, Marker, String, Value};
 
     use super::{Map, MARKER_SMALL, MARKER_TINY};
 
@@ -179,5 +217,46 @@ mod tests {
         assert_eq!(small_bytes[0], MARKER_SMALL);
         // Marker byte, size (u8), then list of 2-byte String (marker, value) + 1-byte tiny ints
         assert_eq!(small_bytes.len(), 2 + small_len * 3);
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let empty_map: Map<Value, Value> = HashMap::<&str, i8>::new().into();
+        let empty_map_bytes = empty_map.clone().try_into_bytes().unwrap();
+        let tiny_map: Map<Value, Value> = HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
+        let tiny_map_bytes = tiny_map.clone().try_into_bytes().unwrap();
+        let small_map: Map<Value, Value> = HashMap::<&str, i8>::from_iter(vec![
+            ("a", 1_i8),
+            ("b", 1_i8),
+            ("c", 3_i8),
+            ("d", 4_i8),
+            ("e", 5_i8),
+            ("f", 6_i8),
+            ("g", 7_i8),
+            ("h", 8_i8),
+            ("i", 9_i8),
+            ("j", 0_i8),
+            ("k", 1_i8),
+            ("l", 2_i8),
+            ("m", 3_i8),
+            ("n", 4_i8),
+            ("o", 5_i8),
+            ("p", 6_i8),
+        ])
+        .into();
+        let small_map_bytes = small_map.clone().try_into_bytes().unwrap();
+
+        assert_eq!(
+            Map::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),
+            empty_map
+        );
+        assert_eq!(
+            Map::try_from(Arc::new(Mutex::new(tiny_map_bytes))).unwrap(),
+            tiny_map
+        );
+        assert_eq!(
+            Map::try_from(Arc::new(Mutex::new(small_map_bytes))).unwrap(),
+            small_map
+        );
     }
 }
