@@ -112,6 +112,10 @@ where
     }
 }
 
+// TODO: Impl Deserialize
+// Can't just call try_from since that consumes the whole Bytes instance. Maybe implement a conversion to Value for some
+// Bytes and then consume N Values where N is the number of items in the Map
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
