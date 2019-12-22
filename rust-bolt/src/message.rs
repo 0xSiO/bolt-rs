@@ -17,7 +17,7 @@ mod success;
 
 #[derive(Debug)]
 pub struct Message {
-    bytes: BytesMut,
+    pub(crate) bytes: BytesMut,
 }
 
 impl Message {

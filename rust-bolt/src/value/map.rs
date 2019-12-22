@@ -12,10 +12,10 @@ use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 use crate::value::{Marker, Value};
 
-const MARKER_TINY: u8 = 0xA0;
-const MARKER_SMALL: u8 = 0xD8;
-const MARKER_MEDIUM: u8 = 0xD9;
-const MARKER_LARGE: u8 = 0xDA;
+pub const MARKER_TINY: u8 = 0xA0;
+pub const MARKER_SMALL: u8 = 0xD8;
+pub const MARKER_MEDIUM: u8 = 0xD9;
+pub const MARKER_LARGE: u8 = 0xDA;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Map<K, V>

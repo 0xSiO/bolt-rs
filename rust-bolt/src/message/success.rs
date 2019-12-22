@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
@@ -11,7 +10,7 @@ use rust_bolt_macros::*;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 use crate::structure::Structure;
-use crate::value::{Map, String, Value};
+use crate::value::Value;
 
 #[derive(Debug, Structure)]
 pub struct Success {
@@ -62,4 +61,12 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Success {
             DeserializeError(format!("Error creating Success from Bytes: {}", err))
         })?)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    //    #[test]
+    //    fn try_from_bytes() {
+    //        todo!()
+    //    }
 }

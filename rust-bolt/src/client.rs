@@ -8,8 +8,9 @@ use failure::Error;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use crate::message::{Chunk, Init, Message};
+use crate::message::{Chunk, Init, Message, Success};
 use crate::serialize::Serialize;
+use std::sync::{Arc, Mutex};
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
@@ -39,14 +40,14 @@ impl Client {
 
     // TODO: Clean this up, this is just an experiment
     // Have to implement conversion from Bytes to value types before we can implement this
-    pub async fn init(&mut self) -> Result<Message, Error> {
+    pub async fn init(&mut self) -> Result<Success, Error> {
         println!("Starting init.");
         let init = Init::new(
             "rust-bolt/0.1.0",
             HashMap::from_iter(vec![
                 ("scheme", "basic"),
                 ("principal", "neo4j"),
-                ("credentials", "invalid"),
+                ("credentials", "test"),
             ]),
         );
         let bytes = init.try_into_bytes()?;
@@ -57,9 +58,13 @@ impl Client {
         self.stream.write_buf(&mut bytes).await?;
         self.stream.flush().await?;
         println!("Wrote init.");
-        let mut buf = Vec::new();
-        self.stream.read_to_end(&mut buf).await?;
+        // Success messages don't give us an EOF, so read exact number of bytes
+        // TODO: To avoid this, we need to read on-demand from the stream: consider making Deserialize use
+        //       a TcpStream instead of a Bytes (maybe even a Box<dyn AsyncBufRead> if that's possible)
+        let mut buf = vec![0u8; 27];
+        self.stream.read_exact(&mut buf).await?;
         println!("Read response: {:?}", &buf[..]);
-        Ok(Message::try_from(Bytes::from(buf))?)
+        let msg = Message::try_from(Bytes::from(buf))?;
+        Ok(Success::try_from(Arc::new(Mutex::new(msg.bytes.freeze())))?)
     }
 }
