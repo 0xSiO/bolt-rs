@@ -9,13 +9,13 @@ use tokio::prelude::*;
 use crate::bolt::message::Chunk;
 
 #[derive(Debug)]
-pub struct MessageBytes {
+pub struct BoltMessageBytes {
     pub(crate) bytes: BytesMut,
 }
 
-impl MessageBytes {
-    pub fn new() -> MessageBytes {
-        MessageBytes {
+impl BoltMessageBytes {
+    pub fn new() -> BoltMessageBytes {
+        BoltMessageBytes {
             bytes: BytesMut::new(),
         }
     }
@@ -26,8 +26,8 @@ impl MessageBytes {
 
     pub async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
         buf_stream: &mut BufStream<T>,
-    ) -> Result<MessageBytes, Error> {
-        let mut message = MessageBytes::new();
+    ) -> Result<BoltMessageBytes, Error> {
+        let mut message = BoltMessageBytes::new();
         loop {
             let size = buf_stream.read_u16().await? as usize;
             if size == 0 {
@@ -44,7 +44,7 @@ impl MessageBytes {
     }
 }
 
-impl Into<Bytes> for MessageBytes {
+impl Into<Bytes> for BoltMessageBytes {
     // TODO: This puts the message into a single chunk, consider breaking up large messages into several chunk
     fn into(self) -> Bytes {
         let mut bytes = BytesMut::with_capacity(
@@ -74,8 +74,8 @@ mod tests {
         .unwrap()
     }
 
-    fn new_message() -> MessageBytes {
-        let mut msg = MessageBytes::new();
+    fn new_message() -> BoltMessageBytes {
+        let mut msg = BoltMessageBytes::new();
         msg.add_chunk(new_chunk());
         msg
     }
@@ -102,7 +102,7 @@ mod tests {
             0x0C, 0x0D, 0x0E, 0x0F, 0x00, 0x00,
         ];
         let mut stream = BufStream::new(Cursor::new(bytes));
-        let message = MessageBytes::from_stream(&mut stream).await;
+        let message = BoltMessageBytes::from_stream(&mut stream).await;
         assert_eq!(message.unwrap().bytes, new_chunk().data);
     }
 
@@ -113,7 +113,7 @@ mod tests {
             0x0C, 0x0D, 0x0E, 0x0F, 0x00, 0x04, 0x01, 0x02, 0x03, 0x04, 0x00, 0x00,
         ];
         let mut stream = BufStream::new(Cursor::new(bytes));
-        let message = MessageBytes::from_stream(&mut stream).await;
+        let message = BoltMessageBytes::from_stream(&mut stream).await;
         assert_eq!(
             message.unwrap().bytes,
             Bytes::from_static(&[

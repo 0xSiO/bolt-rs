@@ -1,7 +1,7 @@
 pub use bolt::init::BoltInit;
 pub use bolt::success::BoltSuccess;
 pub use chunk::Chunk;
-pub use message_bytes::MessageBytes;
+pub use message_bytes::BoltMessageBytes;
 
 mod bolt;
 mod chunk;
