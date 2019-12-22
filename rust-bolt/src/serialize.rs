@@ -10,4 +10,4 @@ pub trait Serialize: TryInto<Bytes, Error = Error> {
     }
 }
 
-pub trait Deserialize: TryFrom<Bytes, Error = Error> {}
+pub trait Deserialize<'a>: TryFrom<&'a mut Bytes, Error = Error> {}
