@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use rust_bolt_macros::*;
 
+use crate::bolt::value::{BoltValue, Map, String};
 use crate::serialize::Serialize;
 use crate::structure::Structure;
-use crate::value::{BoltValue, Map, String};
 
 #[derive(Debug, Structure)]
 pub struct BoltInit {
@@ -32,9 +32,9 @@ mod tests {
 
     use bytes::Bytes;
 
+    use crate::bolt::value::Marker;
     use crate::serialize::Serialize;
     use crate::structure::Structure;
-    use crate::value::Marker;
 
     use super::*;
 

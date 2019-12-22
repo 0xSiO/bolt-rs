@@ -9,7 +9,7 @@ use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use crate::message::{BoltInit, BoltSuccess, Chunk, MessageBytes};
+use crate::bolt::message::{BoltInit, BoltSuccess, Chunk, MessageBytes};
 use crate::serialize::Serialize;
 use std::sync::{Arc, Mutex};
 

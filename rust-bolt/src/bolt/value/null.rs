@@ -6,9 +6,9 @@ use bytes::{Buf, Bytes};
 use failure::Error;
 use failure::_core::convert::TryFrom;
 
+use crate::bolt::value::{BoltValue, Marker};
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
-use crate::value::{BoltValue, Marker};
 
 pub const MARKER: u8 = 0xC0;
 
@@ -68,8 +68,8 @@ mod tests {
 
     use bytes::Bytes;
 
+    use crate::bolt::value::Marker;
     use crate::serialize::Serialize;
-    use crate::value::Marker;
 
     use super::{Null, MARKER};
 

@@ -38,7 +38,7 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         use ::std::convert::TryInto;
         use ::bytes::BufMut;
-        use crate::value::Marker;
+        use crate::bolt::value::Marker;
 
         impl#type_args crate::structure::Structure for #name#type_args
         #where_clause
@@ -48,7 +48,7 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
             }
         }
 
-        impl#type_args crate::value::Marker for #name#type_args
+        impl#type_args crate::bolt::value::Marker for #name#type_args
         #where_clause
         {
             fn get_marker(&self) -> Result<u8, ::failure::Error> {

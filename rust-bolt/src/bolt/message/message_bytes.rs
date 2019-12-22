@@ -6,7 +6,7 @@ use failure::Error;
 use tokio::io::BufStream;
 use tokio::prelude::*;
 
-use crate::message::Chunk;
+use crate::bolt::message::Chunk;
 
 #[derive(Debug)]
 pub struct MessageBytes {

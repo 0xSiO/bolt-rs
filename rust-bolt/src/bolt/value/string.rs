@@ -7,9 +7,9 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
+use crate::bolt::value::{BoltValue, Marker};
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
-use crate::value::{BoltValue, Marker};
 
 pub const MARKER_TINY: u8 = 0x80;
 pub const MARKER_SMALL: u8 = 0xD0;
@@ -118,8 +118,8 @@ mod tests {
 
     use bytes::Bytes;
 
+    use crate::bolt::value::Marker;
     use crate::serialize::Serialize;
-    use crate::value::Marker;
 
     use super::{String, MARKER_LARGE, MARKER_MEDIUM, MARKER_SMALL, MARKER_TINY};
 
