@@ -25,7 +25,7 @@ pub trait Marker {
     fn get_marker(&self) -> Result<u8, Error>;
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Value {
     Boolean(Boolean),
     Integer(Integer),
@@ -70,14 +70,24 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
         let result: Result<Value, Error> = catch_unwind(move || {
             // TODO: Make sure clone() also preserves position of buffer cursor
-            let marker = { input_arc.lock().unwrap().clone().get_u8() };
+            let marker = input_arc.lock().unwrap().clone().get_u8();
 
             match marker {
-                null::MARKER => Ok(Value::Null(Null)),
-                boolean::MARKER_FALSE => Ok(Value::Boolean(Boolean::from(false))),
-                boolean::MARKER_TRUE => Ok(Value::Boolean(Boolean::from(true))),
+                null::MARKER => {
+                    input_arc.lock().unwrap().advance(1);
+                    Ok(Value::Null(Null))
+                }
+                boolean::MARKER_FALSE => {
+                    input_arc.lock().unwrap().advance(1);
+                    Ok(Value::Boolean(Boolean::from(false)))
+                }
+                boolean::MARKER_TRUE => {
+                    input_arc.lock().unwrap().advance(1);
+                    Ok(Value::Boolean(Boolean::from(true)))
+                }
                 // Tiny int
                 marker if (-16..=127).contains(&(marker as i8)) => {
+                    input_arc.lock().unwrap().advance(1);
                     Ok(Value::Integer(Integer::from(marker as i8)))
                 }
                 // Other int types
