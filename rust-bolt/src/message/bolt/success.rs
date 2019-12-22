@@ -10,11 +10,11 @@ use rust_bolt_macros::*;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 use crate::structure::Structure;
-use crate::value::Value;
+use crate::value::BoltValue;
 
 #[derive(Debug, Structure)]
 pub struct BoltSuccess {
-    metadata: Value,
+    metadata: BoltValue,
 }
 
 // TODO: You may be able to move this all into a derive macro
@@ -49,7 +49,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltSuccess {
 
             if signature == 0x70 {
                 Ok(BoltSuccess {
-                    metadata: Value::try_from(Arc::clone(&input_arc))?,
+                    metadata: BoltValue::try_from(Arc::clone(&input_arc))?,
                 })
             } else {
                 Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())

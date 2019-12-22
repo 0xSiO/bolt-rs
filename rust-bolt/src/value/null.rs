@@ -8,16 +8,16 @@ use failure::_core::convert::TryFrom;
 
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
-use crate::value::{Marker, Value};
+use crate::value::{BoltValue, Marker};
 
 pub const MARKER: u8 = 0xC0;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Null;
 
-impl From<Null> for Value {
+impl From<Null> for BoltValue {
     fn from(value: Null) -> Self {
-        Value::Null(value)
+        BoltValue::Null(value)
     }
 }
 

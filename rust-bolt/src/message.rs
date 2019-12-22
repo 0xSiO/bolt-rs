@@ -8,7 +8,7 @@ mod chunk;
 mod message_bytes;
 
 #[derive(Debug)]
-pub enum Message {
+pub enum BoltMessage {
     Init(BoltInit),
     Success(BoltSuccess),
 }

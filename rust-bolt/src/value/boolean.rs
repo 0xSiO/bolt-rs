@@ -6,7 +6,7 @@ use failure::Error;
 
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
-use crate::value::{Marker, Value};
+use crate::value::{BoltValue, Marker};
 use std::sync::{Arc, Mutex};
 
 pub const MARKER_FALSE: u8 = 0xC2;
@@ -23,9 +23,9 @@ impl From<bool> for Boolean {
     }
 }
 
-impl From<bool> for Value {
+impl From<bool> for BoltValue {
     fn from(value: bool) -> Self {
-        Value::Boolean(value.into())
+        BoltValue::Boolean(value.into())
     }
 }
 
