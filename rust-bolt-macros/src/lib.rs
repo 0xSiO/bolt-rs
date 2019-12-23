@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 
-use syn::{Data, DataStruct, Ident};
+use syn::{Data, DataStruct, GenericArgument, Ident, PathArguments, Type, TypePath};
 
 use quote::{format_ident, quote};
 
@@ -41,8 +41,6 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     };
     let marker = get_structure_marker(fields.len());
 
-    let field_names: Vec<Ident> = fields.iter().map(|f| f.ident.clone().unwrap()).collect();
-
     let byte_var_names: Vec<Ident> = fields
         .iter()
         .map(|f| format_ident!("{}_bytes", f.ident.clone().unwrap()))
@@ -52,6 +50,38 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
         let field_name = field.ident.clone();
         quote!(let #var_name = self.#field_name.try_into_bytes()?;)
     });
+
+    let deserialize_fields =
+        fields
+            .iter()
+            .map(|field| match (&field.ident.clone().unwrap(), field.ty.clone()) {
+                (field_name, Type::Path(TypePath { path, .. })) => {
+                    let types: Vec<String> = path.segments.iter().map(|s| {
+                        let type_args = match &s.arguments {
+                            PathArguments::AngleBracketed(args) => {
+                                match &args.args[0] {
+                                    GenericArgument::Type(Type::Path(TypePath { path, .. })) => {
+                                        format!("<{}>", path.segments[0].ident)
+                                    }
+                                    arg => panic!("Can't derive Deserialize for type argument {:?} on field {}", arg, field_name)
+                                }
+                            }
+                            _ => "".to_string(),
+                        };
+                        s.ident.to_string() + &type_args
+                    }).collect();
+                    match types[0].as_str() {
+                        "Box<BoltValue>" => {
+                            quote!(#field_name: Box::new(BoltValue::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?),)
+                        }
+                        "BoltValue" => {
+                            quote!(#field_name: BoltValue::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?,)
+                        }
+                        other => panic!("Can't deserialize {} with type {}", field_name, other),
+                    }
+                }
+                _ => unreachable!(),
+            });
 
     let size_bytes = get_size_bytes(fields.len());
 
@@ -113,7 +143,7 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
 
             fn try_from(remaining_bytes_arc: ::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>) -> Result<Self, Self::Error> {
                 Ok(#name {
-                    #(#field_names: BoltValue::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?,)*
+                    #(#deserialize_fields)*
                 })
             }
         }
