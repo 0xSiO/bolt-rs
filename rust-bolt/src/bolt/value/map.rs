@@ -18,33 +18,22 @@ pub const MARKER_MEDIUM: u8 = 0xD9;
 pub const MARKER_LARGE: u8 = 0xDA;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Map<K, V>
-where
-    // TODO: Waiting for trait aliases https://github.com/rust-lang/rust/issues/41517
-    K: Marker + Serialize + Hash + Eq,
-    V: Marker + Serialize,
-{
-    pub(crate) value: HashMap<K, V>,
+pub struct Map {
+    pub(crate) value: HashMap<BoltValue, BoltValue>,
 }
 
-impl<K, V> Hash for Map<K, V>
-where
-    K: Marker + Serialize + Hash + Eq,
-    V: Marker + Serialize,
-{
+impl Hash for Map {
     fn hash<H: Hasher>(&self, _state: &mut H) {
         panic!("Cannot hash a Map")
     }
 }
 
-impl<K, V, X, Y> From<HashMap<X, Y>> for Map<K, V>
+impl<K, V> From<HashMap<K, V>> for Map
 where
-    X: Into<K>,
-    Y: Into<V>,
-    K: Marker + Serialize + Hash + Eq,
-    V: Marker + Serialize,
+    K: Into<BoltValue>,
+    V: Into<BoltValue>,
 {
-    fn from(value: HashMap<X, Y, RandomState>) -> Self {
+    fn from(value: HashMap<K, V, RandomState>) -> Self {
         Self {
             value: value
                 .into_iter()
@@ -54,7 +43,7 @@ where
     }
 }
 
-impl TryFrom<BoltValue> for Map<BoltValue, BoltValue> {
+impl TryFrom<BoltValue> for Map {
     type Error = Error;
 
     fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
@@ -75,11 +64,7 @@ where
     }
 }
 
-impl<K, V> Marker for Map<K, V>
-where
-    K: Marker + Serialize + Hash + Eq,
-    V: Marker + Serialize,
-{
+impl Marker for Map {
     fn get_marker(&self) -> Result<u8, Error> {
         match self.value.len() {
             0..=15 => Ok(MARKER_TINY | self.value.len() as u8),
@@ -91,18 +76,9 @@ where
     }
 }
 
-impl<K, V> Serialize for Map<K, V>
-where
-    K: Marker + Serialize + Hash + Eq,
-    V: Marker + Serialize,
-{
-}
+impl Serialize for Map {}
 
-impl<K, V> TryInto<Bytes> for Map<K, V>
-where
-    K: Marker + Serialize + Hash + Eq,
-    V: Marker + Serialize,
-{
+impl TryInto<Bytes> for Map {
     type Error = Error;
 
     fn try_into(self) -> Result<Bytes, Self::Error> {
@@ -125,13 +101,13 @@ where
     }
 }
 
-impl Deserialize for Map<BoltValue, BoltValue> {}
+impl Deserialize for Map {}
 
-impl TryFrom<Arc<Mutex<Bytes>>> for Map<BoltValue, BoltValue> {
+impl TryFrom<Arc<Mutex<Bytes>>> for Map {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<Map<BoltValue, BoltValue>, Error> = catch_unwind(move || {
+        let result: Result<Map, Error> = catch_unwind(move || {
             let marker = input_arc.lock().unwrap().get_u8();
             let size = match marker {
                 marker if (MARKER_TINY..=(MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -172,16 +148,16 @@ mod tests {
 
     use bytes::Bytes;
 
-    use crate::bolt::value::{BoltValue, Integer, Marker, String};
+    use crate::bolt::value::Marker;
     use crate::serialize::Serialize;
 
     use super::{Map, MARKER_SMALL, MARKER_TINY};
 
     #[test]
     fn get_marker() {
-        let empty_map: Map<String, Integer> = HashMap::<&str, i8>::new().into();
+        let empty_map: Map = HashMap::<&str, i8>::new().into();
         assert_eq!(empty_map.get_marker().unwrap(), MARKER_TINY);
-        let tiny_map: Map<String, Integer> =
+        let tiny_map: Map =
             HashMap::<&str, i8>::from_iter(vec![("a", 1_i8), ("b", 2_i8), ("c", 3_i8)]).into();
         assert_eq!(
             tiny_map.get_marker().unwrap(),
@@ -191,19 +167,18 @@ mod tests {
 
     #[test]
     fn try_into_bytes() {
-        let empty_map: Map<String, Integer> = HashMap::<&str, i8>::new().into();
+        let empty_map: Map = HashMap::<&str, i8>::new().into();
         assert_eq!(
             empty_map.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_TINY | 0 as u8])
         );
-        let tiny_map: Map<String, Integer> =
-            HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
+        let tiny_map: Map = HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
         assert_eq!(
             tiny_map.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_TINY | 1, 0x81, 0x61, 0x01])
         );
 
-        let small_map: Map<String, Integer> = HashMap::<&str, i8>::from_iter(vec![
+        let small_map: Map = HashMap::<&str, i8>::from_iter(vec![
             ("a", 1_i8),
             ("b", 1_i8),
             ("c", 3_i8),
@@ -232,12 +207,11 @@ mod tests {
 
     #[test]
     fn try_from_bytes() {
-        let empty_map: Map<BoltValue, BoltValue> = HashMap::<&str, i8>::new().into();
+        let empty_map: Map = HashMap::<&str, i8>::new().into();
         let empty_map_bytes = empty_map.clone().try_into_bytes().unwrap();
-        let tiny_map: Map<BoltValue, BoltValue> =
-            HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
+        let tiny_map: Map = HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
         let tiny_map_bytes = tiny_map.clone().try_into_bytes().unwrap();
-        let small_map: Map<BoltValue, BoltValue> = HashMap::<&str, i8>::from_iter(vec![
+        let small_map: Map = HashMap::<&str, i8>::from_iter(vec![
             ("a", 1_i8),
             ("b", 1_i8),
             ("c", 3_i8),
