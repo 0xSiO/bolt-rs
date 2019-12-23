@@ -6,10 +6,30 @@ use syn::{Data, DataStruct, Ident};
 
 use quote::{format_ident, quote};
 
-#[proc_macro_derive(Structure)]
+#[proc_macro_derive(Signature)]
 pub fn structure_derive(input: TokenStream) -> TokenStream {
     impl_structure(&syn::parse(input).unwrap())
 }
+
+// I am so lazy, I just put all the impls into the Signature derive and made the other derives do nothing. This is so
+// message structures can derive from all the traits and I only need to do the parsing and macro stuff once. Yes, I
+// am aware this is a terrible thing to do.
+// ------------------------------------------------------------------------------------------------------------------
+#[proc_macro_derive(Marker)]
+pub fn marker_derive(_input: TokenStream) -> TokenStream {
+    quote!().into()
+}
+
+#[proc_macro_derive(Serialize)]
+pub fn serialize_derive(_input: TokenStream) -> TokenStream {
+    quote!().into()
+}
+
+#[proc_macro_derive(Deserialize)]
+pub fn deserialize_derive(_input: TokenStream) -> TokenStream {
+    quote!().into()
+}
+// ------------------------------------------------------------------------------------------------------------------
 
 fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
@@ -38,10 +58,10 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         use ::bytes::BufMut;
         use crate::bolt::value::Marker;
-        use crate::structure::Structure;
+        use crate::structure::Signature;
         use crate::serialize::Serialize;
 
-        impl#type_args crate::structure::Structure for #name#type_args
+        impl#type_args crate::structure::Signature for #name#type_args
         #where_clause
         {
             fn get_signature(&self) -> u8 {

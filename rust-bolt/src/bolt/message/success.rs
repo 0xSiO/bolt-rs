@@ -4,7 +4,7 @@ use crate::bolt::value::BoltValue;
 
 pub const SIGNATURE: u8 = 0x70;
 
-#[derive(Debug, Structure)]
+#[derive(Debug, Signature, Marker, Serialize, Deserialize)]
 pub struct BoltSuccess {
     metadata: BoltValue,
 }

@@ -6,7 +6,7 @@ use crate::bolt::value::BoltValue;
 
 pub const SIGNATURE: u8 = 0x01;
 
-#[derive(Debug, Structure)]
+#[derive(Debug, Signature, Marker, Serialize, Deserialize)]
 pub struct BoltInit {
     client_name: BoltValue,
     auth_token: BoltValue,
@@ -34,7 +34,7 @@ mod tests {
 
     use crate::bolt::value::Marker;
     use crate::serialize::Serialize;
-    use crate::structure::Structure;
+    use crate::structure::Signature;
 
     use super::*;
 
