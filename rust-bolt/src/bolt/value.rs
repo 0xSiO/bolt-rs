@@ -7,6 +7,7 @@ use bytes::{Buf, Bytes};
 use failure::Error;
 
 use crate::bolt::structure;
+use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 
@@ -18,7 +19,6 @@ pub use self::map::Map;
 pub use self::node::Node;
 pub use self::null::Null;
 pub use self::string::String;
-use crate::bolt::structure::get_signature_from_bytes;
 
 mod boolean;
 mod float;
@@ -147,7 +147,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
                 _ => {
                     return Err(
                         DeserializeError(format!("Invalid marker byte: {:x}", marker)).into(),
-                    )
+                    );
                 }
             }
         })
@@ -171,6 +171,9 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<BoltValue, Erro
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::iter::FromIterator;
+
     use crate::serialize::Serialize;
 
     use super::*;
@@ -293,12 +296,81 @@ mod tests {
 
     #[test]
     fn list_from_bytes() {
-        todo!()
+        let empty_list: List = Vec::<i32>::new().into();
+        let empty_list_bytes = empty_list.clone().try_into_bytes().unwrap();
+        let tiny_list: List = vec![100_000_000_000_i64; 10].into();
+        let tiny_list_bytes = tiny_list.clone().try_into_bytes().unwrap();
+        let small_list: List = vec!["item"; 100].into();
+        let small_list_bytes = small_list.clone().try_into_bytes().unwrap();
+        let medium_list: List = vec![false; 1000].into();
+        let medium_list_bytes = medium_list.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(empty_list_bytes))).unwrap(),
+            BoltValue::List(empty_list)
+        );
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(tiny_list_bytes))).unwrap(),
+            BoltValue::List(tiny_list)
+        );
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(small_list_bytes))).unwrap(),
+            BoltValue::List(small_list)
+        );
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(medium_list_bytes))).unwrap(),
+            BoltValue::List(medium_list)
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn large_list_from_bytes() {
+        let large_list: List = vec![1_i8; 70_000].into();
+        let large_list_bytes = large_list.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(large_list_bytes))).unwrap(),
+            BoltValue::List(large_list)
+        );
     }
 
     #[test]
     fn map_from_bytes() {
-        todo!()
+        let empty_map: Map = HashMap::<&str, i8>::new().into();
+        let empty_map_bytes = empty_map.clone().try_into_bytes().unwrap();
+        let tiny_map: Map = HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
+        let tiny_map_bytes = tiny_map.clone().try_into_bytes().unwrap();
+        let small_map: Map = HashMap::<&str, i8>::from_iter(vec![
+            ("a", 1_i8),
+            ("b", 1_i8),
+            ("c", 3_i8),
+            ("d", 4_i8),
+            ("e", 5_i8),
+            ("f", 6_i8),
+            ("g", 7_i8),
+            ("h", 8_i8),
+            ("i", 9_i8),
+            ("j", 0_i8),
+            ("k", 1_i8),
+            ("l", 2_i8),
+            ("m", 3_i8),
+            ("n", 4_i8),
+            ("o", 5_i8),
+            ("p", 6_i8),
+        ])
+        .into();
+        let small_map_bytes = small_map.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),
+            BoltValue::Map(empty_map)
+        );
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(tiny_map_bytes))).unwrap(),
+            BoltValue::Map(tiny_map)
+        );
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(small_map_bytes))).unwrap(),
+            BoltValue::Map(small_map)
+        );
     }
 
     #[test]

@@ -123,8 +123,9 @@ impl TryFrom<Arc<Mutex<Bytes>>> for List {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::bolt::value::{Boolean, Integer, String};
+
+    use super::*;
 
     #[test]
     fn get_marker() {
@@ -132,7 +133,6 @@ mod tests {
         let tiny_list: List = vec![0; 10].into();
         let small_list: List = vec![0; 100].into();
         let medium_list: List = vec![0; 1000].into();
-        let large_list: List = vec![0; 100_000].into();
         assert_eq!(empty_list.get_marker().unwrap(), MARKER_TINY);
         assert_eq!(
             tiny_list.get_marker().unwrap(),
@@ -140,6 +140,12 @@ mod tests {
         );
         assert_eq!(small_list.get_marker().unwrap(), MARKER_SMALL);
         assert_eq!(medium_list.get_marker().unwrap(), MARKER_MEDIUM);
+    }
+
+    #[test]
+    #[ignore]
+    fn get_marker_large() {
+        let large_list: List = vec![0; 100_000].into();
         assert_eq!(large_list.get_marker().unwrap(), MARKER_LARGE);
     }
 
@@ -149,7 +155,6 @@ mod tests {
         let tiny_list: List = vec![100_000_000_000_i64; 10].into();
         let small_list: List = vec!["item"; 100].into();
         let medium_list: List = vec![false; 1000].into();
-        let large_list: List = vec![1_i8; 100_000].into();
         assert_eq!(
             empty_list.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_TINY])
@@ -181,6 +186,12 @@ mod tests {
             medium_list.try_into_bytes().unwrap(),
             Bytes::from(medium_list_expected_bytes)
         );
+    }
+
+    #[test]
+    #[ignore]
+    fn try_into_large_bytes() {
+        let large_list: List = vec![1_i8; 100_000].into();
         let large_list_item_bytes = Integer::from(1_i8).try_into_bytes().unwrap();
         let large_list_expected_bytes: Vec<u8> = vec![MARKER_LARGE, 0x00, 0x01, 0x86, 0xA0] // marker, size
             .into_iter()
@@ -202,8 +213,6 @@ mod tests {
         let small_list_bytes = small_list.clone().try_into_bytes().unwrap();
         let medium_list: List = vec![false; 1000].into();
         let medium_list_bytes = medium_list.clone().try_into_bytes().unwrap();
-        let large_list: List = vec![1_i8; 100_000].into();
-        let large_list_bytes = large_list.clone().try_into_bytes().unwrap();
         assert_eq!(
             List::try_from(Arc::new(Mutex::new(empty_list_bytes))).unwrap(),
             empty_list
@@ -220,6 +229,13 @@ mod tests {
             List::try_from(Arc::new(Mutex::new(medium_list_bytes))).unwrap(),
             medium_list
         );
+    }
+
+    #[test]
+    #[ignore]
+    fn try_from_large_bytes() {
+        let large_list: List = vec![1_i8; 100_000].into();
+        let large_list_bytes = large_list.clone().try_into_bytes().unwrap();
         assert_eq!(
             List::try_from(Arc::new(Mutex::new(large_list_bytes))).unwrap(),
             large_list
