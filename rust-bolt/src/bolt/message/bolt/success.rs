@@ -10,7 +10,7 @@ use rust_bolt_macros::*;
 use crate::bolt::value::BoltValue;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
-use crate::structure::Structure;
+use crate::structure::*;
 
 #[derive(Debug, Structure)]
 pub struct BoltSuccess {
@@ -19,10 +19,6 @@ pub struct BoltSuccess {
 
 // TODO: You may be able to move this all into a derive macro
 impl Deserialize for BoltSuccess {}
-
-const MARKER_TINY_STRUCTURE: u8 = 0xB0;
-const MARKER_SMALL_STRUCTURE: u8 = 0xDC;
-const MARKER_MEDIUM_STRUCTURE: u8 = 0xDD;
 
 impl TryFrom<Arc<Mutex<Bytes>>> for BoltSuccess {
     type Error = Error;
