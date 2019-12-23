@@ -29,6 +29,12 @@ impl From<&str> for String {
     }
 }
 
+impl From<std::string::String> for String {
+    fn from(value: std::string::String) -> Self {
+        Self { value }
+    }
+}
+
 impl TryFrom<BoltValue> for String {
     type Error = Error;
 
@@ -43,12 +49,6 @@ impl TryFrom<BoltValue> for String {
 impl From<&str> for BoltValue {
     fn from(value: &str) -> Self {
         BoltValue::String(value.into())
-    }
-}
-
-impl From<std::string::String> for String {
-    fn from(value: std::string::String) -> Self {
-        Self { value }
     }
 }
 

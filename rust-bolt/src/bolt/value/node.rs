@@ -28,3 +28,5 @@ impl TryFrom<BoltValue> for Node {
         }
     }
 }
+
+// TODO: impl From<[Native Node type]> for BoltValue
