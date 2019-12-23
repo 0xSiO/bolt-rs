@@ -13,7 +13,7 @@ pub trait Signature: Marker {
 }
 
 // Might panic. Use this inside a catch_unwind block
-pub fn get_signature_from_bytes(bytes: &mut dyn Buf) -> Result<u8, Error> {
+pub fn get_signature_from_bytes(bytes: &mut impl Buf) -> Result<u8, Error> {
     let marker = bytes.get_u8();
     let _size = match marker {
         marker if (MARKER_TINY..=(MARKER_TINY | 0x0F)).contains(&marker) => 0x0F & marker as usize,
