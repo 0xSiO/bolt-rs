@@ -23,7 +23,7 @@ mod map;
 mod null;
 mod string;
 
-pub trait Marker {
+pub trait Marker: Serialize + Deserialize {
     fn get_marker(&self) -> Result<u8, Error>;
 }
 
@@ -32,7 +32,7 @@ pub enum BoltValue {
     Boolean(Boolean),
     Integer(Integer),
     Float(Float),
-    Map(Map<BoltValue, BoltValue>),
+    Map(Map),
     Null(Null),
     String(String),
 }
