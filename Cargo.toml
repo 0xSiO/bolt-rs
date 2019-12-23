@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "bolt-client",
     "bolt-proto",
     "bolt-proto-derive"
 ]
