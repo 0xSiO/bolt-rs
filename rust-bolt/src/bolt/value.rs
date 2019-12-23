@@ -116,7 +116,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError(format!("Error creating Value from Bytes: {}", err))
+            DeserializeError(format!("Error creating BoltValue from Bytes: {}", err))
         })?)
     }
 }
