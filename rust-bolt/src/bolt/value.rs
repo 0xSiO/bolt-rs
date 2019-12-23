@@ -99,6 +99,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
                 | integer::MARKER_INT_16
                 | integer::MARKER_INT_32
                 | integer::MARKER_INT_64 => Ok(BoltValue::Integer(Integer::try_from(input_arc)?)),
+                float::MARKER => Ok(BoltValue::Float(Float::try_from(input_arc)?)),
                 // Tiny string
                 marker
                     if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
@@ -108,6 +109,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
                     Ok(BoltValue::String(String::try_from(input_arc)?))
                 }
+                // Tiny map
                 marker if (map::MARKER_TINY..=(map::MARKER_TINY | 0x0F)).contains(&marker) => {
                     Ok(BoltValue::Map(Map::try_from(input_arc)?))
                 }
@@ -188,6 +190,34 @@ mod tests {
         assert_eq!(
             BoltValue::try_from(Arc::new(Mutex::new(very_large_bytes))).unwrap(),
             BoltValue::Integer(very_large)
+        );
+    }
+
+    #[test]
+    fn float_from_bytes() {
+        let min = Float::from(std::f64::MIN_POSITIVE);
+        let min_bytes = min.clone().try_into_bytes().unwrap();
+        let max = Float::from(std::f64::MAX);
+        let max_bytes = max.clone().try_into_bytes().unwrap();
+        let e = Float::from(std::f64::consts::E);
+        let e_bytes = e.clone().try_into_bytes().unwrap();
+        let pi = Float::from(std::f64::consts::PI);
+        let pi_bytes = pi.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(min_bytes))).unwrap(),
+            BoltValue::Float(min)
+        );
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(max_bytes))).unwrap(),
+            BoltValue::Float(max)
+        );
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(e_bytes))).unwrap(),
+            BoltValue::Float(e)
+        );
+        assert_eq!(
+            BoltValue::try_from(Arc::new(Mutex::new(pi_bytes))).unwrap(),
+            BoltValue::Float(pi)
         );
     }
 
