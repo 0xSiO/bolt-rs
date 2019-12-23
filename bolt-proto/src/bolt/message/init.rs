@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use rust_bolt_macros::*;
+use bolt_proto_derive::*;
 
 use crate::bolt::value::BoltValue;
 

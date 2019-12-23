@@ -43,7 +43,7 @@ impl Client {
     pub async fn init(&mut self) -> Result<BoltMessage, Error> {
         println!("Starting init.");
         let init = BoltInit::new(
-            "rust-bolt/0.1.0",
+            "bolt-proto/0.1.0",
             HashMap::from_iter(vec![
                 ("scheme", "basic"),
                 ("principal", "neo4j"),

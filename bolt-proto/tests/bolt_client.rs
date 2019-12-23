@@ -1,6 +1,6 @@
 use failure::Error;
 
-use rust_bolt::Client;
+use bolt_proto::Client;
 
 async fn new_client() -> Result<Client, Error> {
     Client::new("127.0.0.1".parse().unwrap(), 7687).await

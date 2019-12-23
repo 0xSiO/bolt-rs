@@ -151,7 +151,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
     gen.into()
 }
 
-// Copied from structure module in rust_bolt
+// Copied from structure module in bolt_proto
 const MARKER_TINY_STRUCTURE: u8 = 0xB0;
 const MARKER_SMALL_STRUCTURE: u8 = 0xDC;
 const MARKER_MEDIUM_STRUCTURE: u8 = 0xDD;
