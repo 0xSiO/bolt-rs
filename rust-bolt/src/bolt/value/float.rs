@@ -21,7 +21,11 @@ impl Hash for Float {
     }
 }
 
-impl Eq for Float {}
+impl Eq for Float {
+    fn assert_receiver_is_total_eq(&self) {
+        panic!("Floats cannot be Eq")
+    }
+}
 
 impl TryFrom<BoltValue> for Float {
     type Error = Error;
