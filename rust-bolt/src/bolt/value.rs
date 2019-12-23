@@ -400,4 +400,19 @@ mod tests {
     fn node_from_bytes() {
         todo!()
     }
+
+    #[test]
+    fn relationship_from_bytes() {
+        todo!()
+    }
+
+    #[test]
+    fn path_from_bytes() {
+        todo!()
+    }
+
+    #[test]
+    fn unbound_relationship_from_bytes() {
+        todo!()
+    }
 }
