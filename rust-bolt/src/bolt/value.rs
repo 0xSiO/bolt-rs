@@ -12,6 +12,7 @@ use crate::serialize::{Deserialize, Serialize};
 pub use self::boolean::Boolean;
 pub use self::float::Float;
 pub use self::integer::Integer;
+pub use self::list::List;
 pub use self::map::Map;
 pub use self::null::Null;
 pub use self::string::String;
@@ -19,6 +20,7 @@ pub use self::string::String;
 mod boolean;
 mod float;
 mod integer;
+mod list;
 mod map;
 mod null;
 mod string;
@@ -32,6 +34,7 @@ pub enum BoltValue {
     Boolean(Boolean),
     Integer(Integer),
     Float(Float),
+    List(List),
     Map(Map),
     Null(Null),
     String(String),
@@ -43,6 +46,7 @@ impl Marker for BoltValue {
             BoltValue::Boolean(boolean) => boolean.get_marker(),
             BoltValue::Integer(integer) => integer.get_marker(),
             BoltValue::Float(float) => float.get_marker(),
+            BoltValue::List(list) => list.get_marker(),
             BoltValue::Map(map) => map.get_marker(),
             BoltValue::Null(null) => null.get_marker(),
             BoltValue::String(string) => string.get_marker(),
@@ -60,6 +64,7 @@ impl TryInto<Bytes> for BoltValue {
             BoltValue::Boolean(boolean) => boolean.try_into(),
             BoltValue::Integer(integer) => integer.try_into(),
             BoltValue::Float(float) => float.try_into(),
+            BoltValue::List(list) => list.try_into(),
             BoltValue::Map(map) => map.try_into(),
             BoltValue::Null(null) => null.try_into(),
             BoltValue::String(string) => string.try_into(),
@@ -109,12 +114,19 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
                     Ok(BoltValue::String(String::try_from(input_arc)?))
                 }
+                // Tiny list
+                marker if (list::MARKER_TINY..=(list::MARKER_TINY | 0x0F)).contains(&marker) => {
+                    Ok(BoltValue::List(List::try_from(input_arc)?))
+                }
+                list::MARKER_SMALL | list::MARKER_MEDIUM | list::MARKER_LARGE => {
+                    Ok(BoltValue::List(List::try_from(input_arc)?))
+                }
                 // Tiny map
                 marker if (map::MARKER_TINY..=(map::MARKER_TINY | 0x0F)).contains(&marker) => {
                     Ok(BoltValue::Map(Map::try_from(input_arc)?))
                 }
                 map::MARKER_SMALL | map::MARKER_MEDIUM | map::MARKER_LARGE => {
-                    Ok(BoltValue::String(String::try_from(input_arc)?))
+                    Ok(BoltValue::Map(Map::try_from(input_arc)?))
                 }
                 _ => todo!("{:x}", marker),
             }
@@ -247,5 +259,15 @@ mod tests {
             BoltValue::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
             BoltValue::String(large)
         );
+    }
+
+    #[test]
+    fn list_from_bytes() {
+        todo!()
+    }
+
+    #[test]
+    fn map_from_bytes() {
+        todo!()
     }
 }
