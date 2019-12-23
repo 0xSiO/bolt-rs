@@ -2,7 +2,6 @@ use std::convert::TryFrom;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
-use bytes::Buf;
 use failure::Error;
 
 pub use chunk::Chunk;
@@ -29,20 +28,7 @@ impl TryFrom<BoltMessageBytes> for BoltMessage {
 
     fn try_from(mut message_bytes: BoltMessageBytes) -> Result<Self, Self::Error> {
         let result: Result<BoltMessage, Error> = catch_unwind(move || {
-            let marker = message_bytes.get_u8();
-            let _size = match marker {
-                marker if (MARKER_TINY..=(MARKER_TINY | 0x0F)).contains(&marker) => {
-                    0x0F & marker as usize
-                }
-                MARKER_SMALL => message_bytes.get_u8() as usize,
-                MARKER_MEDIUM => message_bytes.get_u16() as usize,
-                _ => {
-                    return Err(
-                        DeserializeError(format!("Invalid marker byte: {:x}", marker)).into(),
-                    );
-                }
-            };
-            let signature = message_bytes.get_u8();
+            let signature = get_signature_from_bytes(&mut message_bytes)?;
             let remaining_bytes_arc =
                 Arc::new(Mutex::new(message_bytes.split_to(message_bytes.len())));
 
