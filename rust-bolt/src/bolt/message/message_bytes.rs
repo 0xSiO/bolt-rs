@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::mem;
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 use tokio::io::BufStream;
 use tokio::prelude::*;
@@ -10,7 +10,7 @@ use crate::bolt::message::Chunk;
 
 #[derive(Debug)]
 pub struct BoltMessageBytes {
-    pub(crate) bytes: BytesMut,
+    bytes: BytesMut,
 }
 
 impl BoltMessageBytes {
@@ -18,6 +18,14 @@ impl BoltMessageBytes {
         BoltMessageBytes {
             bytes: BytesMut::new(),
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+
+    pub fn split_to(&mut self, at: usize) -> Bytes {
+        self.bytes.split_to(at).freeze()
     }
 
     pub fn add_chunk(&mut self, chunk: Chunk) {
@@ -44,13 +52,27 @@ impl BoltMessageBytes {
     }
 }
 
+impl Buf for BoltMessageBytes {
+    fn remaining(&self) -> usize {
+        self.bytes.remaining()
+    }
+
+    fn bytes(&self) -> &[u8] {
+        self.bytes.bytes()
+    }
+
+    fn advance(&mut self, cnt: usize) {
+        self.bytes.advance(cnt)
+    }
+}
+
 impl Into<Bytes> for BoltMessageBytes {
     // TODO: This puts the message into a single chunk, consider breaking up large messages into several chunk
     fn into(self) -> Bytes {
         let mut bytes = BytesMut::with_capacity(
-            mem::size_of::<u8>() * 2 + self.bytes.len() + mem::size_of::<u8>() * 2,
+            mem::size_of::<u8>() * 2 + self.len() + mem::size_of::<u8>() * 2,
         );
-        bytes.put_u16(self.bytes.len() as u16);
+        bytes.put_u16(self.len() as u16);
         bytes.put(self.bytes);
         bytes.put_u16(0);
         bytes.freeze()
