@@ -10,12 +10,14 @@ use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
 
 pub use self::boolean::Boolean;
+pub use self::float::Float;
 pub use self::integer::Integer;
 pub use self::map::Map;
 pub use self::null::Null;
 pub use self::string::String;
 
 mod boolean;
+mod float;
 mod integer;
 mod map;
 mod null;
@@ -29,6 +31,7 @@ pub trait Marker {
 pub enum BoltValue {
     Boolean(Boolean),
     Integer(Integer),
+    Float(Float),
     Map(Map<BoltValue, BoltValue>),
     Null(Null),
     String(String),
@@ -39,6 +42,7 @@ impl Marker for BoltValue {
         match self {
             BoltValue::Boolean(boolean) => boolean.get_marker(),
             BoltValue::Integer(integer) => integer.get_marker(),
+            BoltValue::Float(float) => float.get_marker(),
             BoltValue::Map(map) => map.get_marker(),
             BoltValue::Null(null) => null.get_marker(),
             BoltValue::String(string) => string.get_marker(),
@@ -55,6 +59,7 @@ impl TryInto<Bytes> for BoltValue {
         match self {
             BoltValue::Boolean(boolean) => boolean.try_into(),
             BoltValue::Integer(integer) => integer.try_into(),
+            BoltValue::Float(float) => float.try_into(),
             BoltValue::Map(map) => map.try_into(),
             BoltValue::Null(null) => null.try_into(),
             BoltValue::String(string) => string.try_into(),
