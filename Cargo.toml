@@ -1,6 +1,6 @@
 [workspace]
 
 members = [
-    "rust-bolt",
-    "rust-bolt-macros"
+    "bolt-proto",
+    "bolt-proto-derive"
 ]

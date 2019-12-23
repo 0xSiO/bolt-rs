@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use failure::Error;
 
-use rust_bolt_macros::*;
+use bolt_proto_derive::*;
 
 use crate::bolt::value::BoltValue;
 use crate::error::ValueError;
