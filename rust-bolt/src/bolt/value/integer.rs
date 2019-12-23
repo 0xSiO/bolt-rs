@@ -1,5 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 use std::mem;
+use std::panic::catch_unwind;
+use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
@@ -7,8 +9,6 @@ use failure::Error;
 use crate::bolt::value::{BoltValue, Marker};
 use crate::error::{DeserializeError, SerializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
-use std::panic::catch_unwind;
-use std::sync::{Arc, Mutex};
 
 pub const MARKER_INT_8: u8 = 0xC8;
 pub const MARKER_INT_16: u8 = 0xC9;
@@ -37,6 +37,17 @@ macro_rules! impl_from_int {
             }
         )*
     };
+}
+
+impl TryFrom<BoltValue> for Integer {
+    type Error = Error;
+
+    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+        match value {
+            BoltValue::Integer(integer) => Ok(integer),
+            _ => Err(ValueError::InvalidConversion(value).into()),
+        }
+    }
 }
 
 impl_from_int!(i8, i16, i32, i64);

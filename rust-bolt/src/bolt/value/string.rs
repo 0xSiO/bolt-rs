@@ -29,6 +29,17 @@ impl From<&str> for String {
     }
 }
 
+impl TryFrom<BoltValue> for String {
+    type Error = Error;
+
+    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+        match value {
+            BoltValue::String(string) => Ok(string),
+            _ => Err(ValueError::InvalidConversion(value).into()),
+        }
+    }
+}
+
 impl From<&str> for BoltValue {
     fn from(value: &str) -> Self {
         BoltValue::String(value.into())
