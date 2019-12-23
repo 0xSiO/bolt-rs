@@ -8,12 +8,14 @@ use failure::Error;
 
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
+use crate::structure;
 
 pub use self::boolean::Boolean;
 pub use self::float::Float;
 pub use self::integer::Integer;
 pub use self::list::List;
 pub use self::map::Map;
+pub use self::node::Node;
 pub use self::null::Null;
 pub use self::string::String;
 
@@ -22,6 +24,7 @@ mod float;
 mod integer;
 mod list;
 mod map;
+mod node;
 mod null;
 mod string;
 
@@ -38,6 +41,7 @@ pub enum BoltValue {
     Map(Map),
     Null(Null),
     String(String),
+    Node(Node),
 }
 
 impl Marker for BoltValue {
@@ -50,6 +54,7 @@ impl Marker for BoltValue {
             BoltValue::Map(map) => map.get_marker(),
             BoltValue::Null(null) => null.get_marker(),
             BoltValue::String(string) => string.get_marker(),
+            BoltValue::Node(node) => node.get_marker(),
         }
     }
 }
@@ -68,6 +73,7 @@ impl TryInto<Bytes> for BoltValue {
             BoltValue::Map(map) => map.try_into(),
             BoltValue::Null(null) => null.try_into(),
             BoltValue::String(string) => string.try_into(),
+            BoltValue::Node(node) => node.try_into(),
         }
     }
 }
@@ -128,6 +134,14 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
                 map::MARKER_SMALL | map::MARKER_MEDIUM | map::MARKER_LARGE => {
                     Ok(BoltValue::Map(Map::try_from(input_arc)?))
                 }
+                // Tiny structure
+                // TODO: For structure types, read the signature and try to create the corresponding value
+                marker
+                    if (structure::MARKER_TINY..=(list::MARKER_TINY | 0x0F)).contains(&marker) =>
+                {
+                    todo!()
+                }
+                structure::MARKER_SMALL | structure::MARKER_MEDIUM => todo!(),
                 _ => todo!("{:x}", marker),
             }
         })
@@ -268,6 +282,11 @@ mod tests {
 
     #[test]
     fn map_from_bytes() {
+        todo!()
+    }
+
+    #[test]
+    fn node_from_bytes() {
         todo!()
     }
 }
