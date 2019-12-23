@@ -7,8 +7,8 @@ use syn::{Data, DataStruct, GenericArgument, Ident, PathArguments, Type, TypePat
 use quote::{format_ident, quote};
 
 #[proc_macro_derive(Signature)]
-pub fn structure_derive(input: TokenStream) -> TokenStream {
-    impl_structure(&syn::parse(input).unwrap())
+pub fn signature_derive(input: TokenStream) -> TokenStream {
+    impl_signature(&syn::parse(input).unwrap())
 }
 
 // I am so lazy, I just put all the impls into the Signature derive and made the other derives do nothing. This is so
@@ -31,7 +31,7 @@ pub fn deserialize_derive(_input: TokenStream) -> TokenStream {
 }
 // ------------------------------------------------------------------------------------------------------------------
 
-fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
+fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let type_args = &ast.generics;
     let where_clause = &ast.generics.where_clause;
