@@ -9,8 +9,8 @@ use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use crate::bolt::message::{BoltInit, BoltMessage, BoltMessageBytes, Chunk};
-use crate::serialize::Serialize;
+use bolt_proto::bolt::message::{BoltInit, BoltMessage, BoltMessageBytes, Chunk};
+use bolt_proto::Serialize;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
