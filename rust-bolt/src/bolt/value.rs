@@ -18,7 +18,10 @@ pub use self::list::List;
 pub use self::map::Map;
 pub use self::node::Node;
 pub use self::null::Null;
+pub use self::path::Path;
+pub use self::relationship::Relationship;
 pub use self::string::String;
+pub use self::unbound_relationship::UnboundRelationship;
 
 mod boolean;
 mod float;
@@ -27,7 +30,10 @@ mod list;
 mod map;
 mod node;
 mod null;
+mod path;
+mod relationship;
 mod string;
+mod unbound_relationship;
 
 pub trait Marker: Serialize + Deserialize {
     fn get_marker(&self) -> Result<u8, Error>;
@@ -43,6 +49,9 @@ pub enum BoltValue {
     Null(Null),
     String(String),
     Node(Node),
+    Relationship(Relationship),
+    Path(Path),
+    UnboundRelationship(UnboundRelationship),
 }
 
 impl Marker for BoltValue {
@@ -56,6 +65,9 @@ impl Marker for BoltValue {
             BoltValue::Null(null) => null.get_marker(),
             BoltValue::String(string) => string.get_marker(),
             BoltValue::Node(node) => node.get_marker(),
+            BoltValue::Relationship(rel) => rel.get_marker(),
+            BoltValue::Path(path) => path.get_marker(),
+            BoltValue::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
         }
     }
 }
@@ -75,6 +87,9 @@ impl TryInto<Bytes> for BoltValue {
             BoltValue::Null(null) => null.try_into(),
             BoltValue::String(string) => string.try_into(),
             BoltValue::Node(node) => node.try_into(),
+            BoltValue::Relationship(rel) => rel.try_into(),
+            BoltValue::Path(path) => path.try_into(),
+            BoltValue::UnboundRelationship(unbound_rel) => unbound_rel.try_into(),
         }
     }
 }
@@ -162,10 +177,18 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
 // Might panic. Use this inside a catch_unwind block
 fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<BoltValue, Error> {
     let signature = get_signature_from_bytes(&mut *input_arc.lock().unwrap())?;
-    // TODO: Other values
     match signature {
         node::SIGNATURE => Ok(BoltValue::Node(Node::try_from(input_arc)?)),
-        _ => todo!("{:x}", signature),
+        relationship::SIGNATURE => Ok(BoltValue::Relationship(Relationship::try_from(input_arc)?)),
+        path::SIGNATURE => Ok(BoltValue::Path(Path::try_from(input_arc)?)),
+        unbound_relationship::SIGNATURE => Ok(BoltValue::UnboundRelationship(
+            UnboundRelationship::try_from(input_arc)?,
+        )),
+        _ => {
+            return Err(
+                DeserializeError(format!("Invalid signature byte: {:x}", signature)).into(),
+            );
+        }
     }
 }
 
