@@ -9,9 +9,8 @@ use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use crate::bolt::message::{BoltInit, BoltMessageBytes, BoltSuccess, Chunk};
+use crate::bolt::message::{BoltInit, BoltMessage, BoltMessageBytes, Chunk};
 use crate::serialize::Serialize;
-use std::sync::{Arc, Mutex};
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
@@ -41,7 +40,7 @@ impl Client {
 
     // TODO: Clean this up, this is just an experiment
     // Have to implement conversion from Bytes to value types before we can implement this
-    pub async fn init(&mut self) -> Result<BoltSuccess, Error> {
+    pub async fn init(&mut self) -> Result<BoltMessage, Error> {
         println!("Starting init.");
         let init = BoltInit::new(
             "rust-bolt/0.1.0",
@@ -60,8 +59,7 @@ impl Client {
         self.stream.flush().await?;
         println!("Wrote init.");
         let msg = BoltMessageBytes::from_stream(&mut self.stream).await?;
-        Ok(BoltSuccess::try_from(Arc::new(Mutex::new(
-            msg.bytes.freeze(),
-        )))?)
+        println!("got msg {:?}", msg);
+        Ok(BoltMessage::try_from(msg)?)
     }
 }

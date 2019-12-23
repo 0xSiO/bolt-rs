@@ -84,6 +84,7 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     gen.into()
 }
 
+// TODO: Replace this with using the associated consts
 fn get_structure_signature(struct_name: &str) -> u8 {
     match struct_name {
         "BoltInit" => 0x01,

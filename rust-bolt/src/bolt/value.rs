@@ -69,7 +69,6 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
         let result: Result<BoltValue, Error> = catch_unwind(move || {
-            // TODO: Make sure clone() also preserves position of buffer cursor
             let marker = input_arc.lock().unwrap().clone().get_u8();
 
             match marker {
