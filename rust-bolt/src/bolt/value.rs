@@ -6,9 +6,9 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, Bytes};
 use failure::Error;
 
+use crate::bolt::structure;
 use crate::error::DeserializeError;
 use crate::serialize::{Deserialize, Serialize};
-use crate::structure;
 
 pub use self::boolean::Boolean;
 pub use self::float::Float;

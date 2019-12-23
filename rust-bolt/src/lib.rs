@@ -5,6 +5,5 @@ mod client;
 mod error;
 mod native;
 mod serialize;
-mod structure;
 
 // TODO: Maybe use tokio-tower to build the protocol instead of manually encoding/decoding everything

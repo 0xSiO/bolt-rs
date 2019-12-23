@@ -58,10 +58,10 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     let gen = quote! {
         use ::bytes::BufMut;
         use crate::bolt::value::Marker;
-        use crate::structure::Signature;
+        use crate::bolt::structure::Signature;
         use crate::serialize::Serialize;
 
-        impl#type_args crate::structure::Signature for #name#type_args
+        impl#type_args crate::bolt::structure::Signature for #name#type_args
         #where_clause
         {
             fn get_signature(&self) -> u8 {
