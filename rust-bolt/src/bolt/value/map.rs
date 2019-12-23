@@ -54,17 +54,13 @@ where
     }
 }
 
-impl<K, V> TryFrom<BoltValue> for Map<K, V>
-where
-    K: Into<BoltValue>,
-    V: Into<BoltValue>,
-{
+impl TryFrom<BoltValue> for Map<BoltValue, BoltValue> {
     type Error = Error;
 
     fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
         match value {
             BoltValue::Map(map) => Ok(map),
-            _ => Err(ValueError::InvalidConversion(map).into()),
+            _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
 }
