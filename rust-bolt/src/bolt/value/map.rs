@@ -54,6 +54,21 @@ where
     }
 }
 
+impl<K, V> TryFrom<BoltValue> for Map<K, V>
+where
+    K: Into<BoltValue>,
+    V: Into<BoltValue>,
+{
+    type Error = Error;
+
+    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+        match value {
+            BoltValue::Map(map) => Ok(map),
+            _ => Err(ValueError::InvalidConversion(map).into()),
+        }
+    }
+}
+
 impl<K, V> From<HashMap<K, V>> for BoltValue
 where
     K: Into<BoltValue>,

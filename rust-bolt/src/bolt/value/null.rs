@@ -7,13 +7,24 @@ use failure::Error;
 use failure::_core::convert::TryFrom;
 
 use crate::bolt::value::{BoltValue, Marker};
-use crate::error::DeserializeError;
+use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 
 pub const MARKER: u8 = 0xC0;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Null;
+
+impl TryFrom<BoltValue> for Null {
+    type Error = Error;
+
+    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+        match value {
+            BoltValue::Null(null) => Ok(null),
+            _ => Err(ValueError::InvalidConversion(value).into()),
+        }
+    }
+}
 
 impl From<Null> for BoltValue {
     fn from(value: Null) -> Self {

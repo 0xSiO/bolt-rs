@@ -5,7 +5,7 @@ use bytes::{Buf, Bytes};
 use failure::Error;
 
 use crate::bolt::value::{BoltValue, Marker};
-use crate::error::DeserializeError;
+use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 
@@ -20,6 +20,17 @@ pub struct Boolean {
 impl From<bool> for Boolean {
     fn from(value: bool) -> Self {
         Self { value }
+    }
+}
+
+impl TryFrom<BoltValue> for Boolean {
+    type Error = Error;
+
+    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+        match value {
+            BoltValue::Boolean(boolean) => Ok(boolean),
+            _ => Err(ValueError::InvalidConversion(value).into()),
+        }
     }
 }
 
