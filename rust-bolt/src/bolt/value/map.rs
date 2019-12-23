@@ -11,6 +11,7 @@ use failure::Error;
 use crate::bolt::value::{BoltValue, Marker};
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
+use std::mem;
 
 pub const MARKER_TINY: u8 = 0xA0;
 pub const MARKER_SMALL: u8 = 0xD8;
@@ -83,8 +84,7 @@ impl TryInto<Bytes> for Map {
 
     fn try_into(self) -> Result<Bytes, Self::Error> {
         let marker = self.get_marker()?;
-        // There is no "good" worst case capacity to use here
-        let mut bytes = BytesMut::with_capacity(self.value.len());
+        let mut bytes = BytesMut::with_capacity(mem::size_of::<BoltValue>() * 2 * self.value.len());
         bytes.put_u8(marker);
         match self.value.len() {
             0..=15 => {}
