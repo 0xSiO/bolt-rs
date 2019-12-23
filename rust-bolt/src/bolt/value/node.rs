@@ -9,8 +9,7 @@ use crate::error::ValueError;
 
 pub const SIGNATURE: u8 = 0x4E;
 
-// TODO: Can't derive Signature et. al. if struct fields are Boxes, need to impl Serialize/Deserialize separately
-//       and make the derive macro implement the traits separately :(
+// TODO: Can't derive Signature et. al. if struct fields are Boxes, need to make the derive macro smarter
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Node {
