@@ -32,9 +32,9 @@ mod tests {
 
     use bytes::Bytes;
 
+    use crate::bolt::structure::Signature;
     use crate::bolt::value::Marker;
     use crate::serialize::Serialize;
-    use crate::structure::Signature;
 
     use super::*;
 

@@ -10,8 +10,8 @@ pub use init::BoltInit;
 pub use message_bytes::BoltMessageBytes;
 pub use success::BoltSuccess;
 
+use crate::bolt::structure::*;
 use crate::error::DeserializeError;
-use crate::structure::*;
 
 mod chunk;
 mod init;
