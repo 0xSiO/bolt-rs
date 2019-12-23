@@ -1,9 +1,8 @@
-pub use self::client::Client;
+pub use serialize::{Deserialize, Serialize};
 
-mod bolt;
-mod client;
-mod error;
-mod native;
+pub mod bolt;
+pub mod error;
+pub mod native;
 mod serialize;
 
 // TODO: Maybe use tokio-tower to build the protocol instead of manually encoding/decoding everything
