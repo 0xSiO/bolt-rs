@@ -18,6 +18,7 @@ pub use self::map::Map;
 pub use self::node::Node;
 pub use self::null::Null;
 pub use self::string::String;
+use crate::bolt::structure::get_signature_from_bytes;
 
 mod boolean;
 mod float;
@@ -135,14 +136,19 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
                     Ok(BoltValue::Map(Map::try_from(input_arc)?))
                 }
                 // Tiny structure
-                // TODO: For structure types, read the signature and try to create the corresponding value
                 marker
                     if (structure::MARKER_TINY..=(list::MARKER_TINY | 0x0F)).contains(&marker) =>
                 {
-                    todo!()
+                    deserialize_structure(input_arc)
                 }
-                structure::MARKER_SMALL | structure::MARKER_MEDIUM => todo!(),
-                _ => todo!("{:x}", marker),
+                structure::MARKER_SMALL | structure::MARKER_MEDIUM => {
+                    deserialize_structure(input_arc)
+                }
+                _ => {
+                    return Err(
+                        DeserializeError(format!("Invalid marker byte: {:x}", marker)).into(),
+                    )
+                }
             }
         })
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
@@ -150,6 +156,16 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
         Ok(result.map_err(|err: Error| {
             DeserializeError(format!("Error creating BoltValue from Bytes: {}", err))
         })?)
+    }
+}
+
+// Might panic. Use this inside a catch_unwind block
+fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<BoltValue, Error> {
+    let signature = get_signature_from_bytes(&mut *input_arc.lock().unwrap())?;
+    // TODO: Other values
+    match signature {
+        node::SIGNATURE => Ok(BoltValue::Node(Node::try_from(input_arc)?)),
+        _ => todo!("{:x}", signature),
     }
 }
 
