@@ -3,6 +3,7 @@ pub use self::client::Client;
 mod bolt;
 mod client;
 mod error;
+mod native;
 mod serialize;
 mod structure;
 
