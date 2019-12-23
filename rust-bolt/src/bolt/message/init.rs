@@ -2,20 +2,20 @@ use std::collections::HashMap;
 
 use rust_bolt_macros::*;
 
-use crate::bolt::value::{BoltValue, Map, String};
-use crate::serialize::Serialize;
-use crate::structure::Structure;
+use crate::bolt::value::BoltValue;
+
+pub const SIGNATURE: u8 = 0x01;
 
 #[derive(Debug, Structure)]
 pub struct BoltInit {
-    client_name: String,
-    auth_token: Map<String, BoltValue>,
+    client_name: BoltValue,
+    auth_token: BoltValue,
 }
 
 impl BoltInit {
     pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> BoltInit
     where
-        K: Into<String>,
+        K: Into<BoltValue>,
         V: Into<BoltValue>,
     {
         BoltInit {

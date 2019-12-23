@@ -20,8 +20,8 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
         _ => panic!("Macro must be used on a struct."),
     };
     let marker = get_structure_marker(fields.len());
-    let name_str = name.to_string();
-    let signature = get_structure_signature(&name_str);
+
+    let field_names: Vec<Ident> = fields.iter().map(|f| f.ident.clone().unwrap()).collect();
 
     let byte_var_names: Vec<Ident> = fields
         .iter()
@@ -36,15 +36,16 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
     let size_bytes = get_size_bytes(fields.len());
 
     let gen = quote! {
-        use ::std::convert::TryInto;
         use ::bytes::BufMut;
         use crate::bolt::value::Marker;
+        use crate::structure::Structure;
+        use crate::serialize::Serialize;
 
         impl#type_args crate::structure::Structure for #name#type_args
         #where_clause
         {
             fn get_signature(&self) -> u8 {
-                #signature
+                SIGNATURE
             }
         }
 
@@ -60,7 +61,7 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
         #where_clause
         {}
 
-        impl#type_args TryInto<::bytes::Bytes> for #name#type_args
+        impl#type_args ::std::convert::TryInto<::bytes::Bytes> for #name#type_args
         #where_clause
         {
             type Error = ::failure::Error;
@@ -80,17 +81,24 @@ fn impl_structure(ast: &syn::DeriveInput) -> TokenStream {
                 Ok(result_bytes_mut.freeze())
             }
         }
+
+        impl crate::serialize::Deserialize for #name#type_args
+        #where_clause
+        {}
+
+        impl ::std::convert::TryFrom<::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>> for #name#type_args
+        #where_clause
+        {
+            type Error = ::failure::Error;
+
+            fn try_from(remaining_bytes_arc: ::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>) -> Result<Self, Self::Error> {
+                Ok(#name {
+                    #(#field_names: BoltValue::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?,)*
+                })
+            }
+        }
     };
     gen.into()
-}
-
-// TODO: Replace this with using the associated consts
-fn get_structure_signature(struct_name: &str) -> u8 {
-    match struct_name {
-        "BoltInit" => 0x01,
-        "BoltSuccess" => 0x70,
-        _ => panic!("Invalid message type: {}", struct_name),
-    }
 }
 
 const MARKER_TINY_STRUCTURE: u8 = 0xB0;
