@@ -43,8 +43,10 @@ impl Client {
     }
 
     pub async fn send_message(&mut self, message: Message) -> Result<(), Error> {
-        let mut bytes: Bytes = message.try_into()?;
-        self.stream.write_buf(&mut bytes).await?;
+        let chunks: Vec<Bytes> = message.try_into()?;
+        for mut chunk in chunks {
+            self.stream.write_buf(&mut chunk).await?;
+        }
         self.stream.flush().await?;
         Ok(())
     }
@@ -86,6 +88,7 @@ mod tests {
             .await
             .is_ok());
         let response = client.read_message().await.unwrap();
+        // println!("{:?}", response);
         assert!(Success::try_from(response).is_ok())
     }
 }

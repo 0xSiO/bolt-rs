@@ -1,10 +1,9 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, Bytes};
 use failure::Error;
-use failure::_core::convert::TryFrom;
 
 use crate::bolt::value::Marker;
 use crate::error::{DeserializeError, ValueError};
