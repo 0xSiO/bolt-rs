@@ -14,7 +14,7 @@ pub const MARKER_TRUE: u8 = 0xC3;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Boolean {
-    value: bool,
+    pub value: bool,
 }
 
 impl From<bool> for Boolean {
