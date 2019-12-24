@@ -1,15 +1,21 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
+
+use failure::Error;
 
 use bolt_proto_derive::*;
 
+use crate::bolt::message::Message;
 use crate::bolt::value::Value;
+use crate::error::MessageError;
+use crate::native;
 
 pub const SIGNATURE: u8 = 0x01;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
 pub struct Init {
-    client_name: Value,
-    auth_token: Value,
+    pub client_name: Value,
+    pub auth_token: Value,
 }
 
 impl Init {
@@ -21,6 +27,26 @@ impl Init {
         Init {
             client_name: client_name.into(),
             auth_token: auth_token.into(),
+        }
+    }
+}
+
+impl From<native::message::Init> for Init {
+    fn from(native_init: native::message::Init) -> Self {
+        Self {
+            client_name: Value::from(native_init.client_name),
+            auth_token: Value::from(native_init.auth_token),
+        }
+    }
+}
+
+impl TryFrom<Message> for Init {
+    type Error = Error;
+
+    fn try_from(message: Message) -> Result<Self, Self::Error> {
+        match message {
+            Message::Init(init) => Ok(init),
+            _ => Err(MessageError::InvalidConversion(message).into()),
         }
     }
 }
