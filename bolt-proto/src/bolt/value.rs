@@ -122,6 +122,12 @@ impl From<native::value::Node> for Value {
     }
 }
 
+impl From<native::value::Relationship> for Value {
+    fn from(value: native::value::Relationship) -> Self {
+        Value::Relationship(Relationship::from(value))
+    }
+}
+
 impl Marker for Value {
     fn get_marker(&self) -> Result<u8, Error> {
         match self {

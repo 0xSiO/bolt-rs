@@ -6,19 +6,30 @@ use bolt_proto_derive::*;
 
 use crate::bolt::value::Value;
 use crate::error::ValueError;
+use crate::native;
 
 pub const SIGNATURE: u8 = 0x52;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Relationship {
-    rel_identity: Box<Value>,
-    start_node_identity: Box<Value>,
-    end_node_identity: Box<Value>,
-    rel_type: Box<Value>,
-    properties: Box<Value>,
+    pub rel_identity: Box<Value>,
+    pub start_node_identity: Box<Value>,
+    pub end_node_identity: Box<Value>,
+    pub rel_type: Box<Value>,
+    pub properties: Box<Value>,
 }
 
-// TODO: impl From<[Native Relationship type]> for Node
+impl From<native::value::Relationship> for Relationship {
+    fn from(native_rel: native::value::Relationship) -> Self {
+        Self {
+            rel_identity: Box::new(Value::from(native_rel.rel_identity)),
+            start_node_identity: Box::new(Value::from(native_rel.start_node_identity)),
+            end_node_identity: Box::new(Value::from(native_rel.end_node_identity)),
+            rel_type: Box::new(Value::from(native_rel.rel_type)),
+            properties: Box::new(Value::from(native_rel.properties)),
+        }
+    }
+}
 
 impl TryFrom<Value> for Relationship {
     type Error = Error;
@@ -30,5 +41,3 @@ impl TryFrom<Value> for Relationship {
         }
     }
 }
-
-// TODO: impl From<[Native Relationship type]> for Value
