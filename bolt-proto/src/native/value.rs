@@ -7,6 +7,7 @@ mod boolean;
 mod float;
 mod integer;
 mod list;
+mod map;
 mod node;
 mod path;
 mod relationship;

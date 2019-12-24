@@ -42,6 +42,7 @@ pub trait Marker: Serialize + Deserialize {
     fn get_marker(&self) -> Result<u8, Error>;
 }
 
+// TODO: Consider manually implementing Hash here and only deriving hash on the values that support it
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Value {
     Boolean(Boolean),
