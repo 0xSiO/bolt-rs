@@ -11,6 +11,7 @@ use failure::Error;
 use crate::bolt::structure;
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
+use crate::native;
 use crate::serialize::{Deserialize, Serialize};
 
 pub use self::boolean::Boolean;
@@ -24,7 +25,6 @@ pub use self::path::Path;
 pub use self::relationship::Relationship;
 pub use self::string::String;
 pub use self::unbound_relationship::UnboundRelationship;
-use crate::native;
 
 mod boolean;
 mod float;
@@ -125,6 +125,12 @@ impl From<native::value::Node> for Value {
 impl From<native::value::Relationship> for Value {
     fn from(value: native::value::Relationship) -> Self {
         Value::Relationship(Relationship::from(value))
+    }
+}
+
+impl From<native::value::Path> for Value {
+    fn from(value: native::value::Path) -> Self {
+        Value::Path(Path::from(value))
     }
 }
 
