@@ -15,7 +15,7 @@ pub const MARKER: u8 = 0xC1;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Float {
-    value: f64,
+    pub value: f64,
 }
 
 impl Hash for Float {
