@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::convert::TryFrom;
 
 use failure::Error;
@@ -16,19 +15,6 @@ pub(crate) const SIGNATURE: u8 = 0x01;
 pub struct Init {
     pub(crate) client_name: Value,
     pub(crate) auth_token: Value,
-}
-
-impl Init {
-    pub(crate) fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> Init
-    where
-        K: Into<Value>,
-        V: Into<Value>,
-    {
-        Init {
-            client_name: client_name.into(),
-            auth_token: auth_token.into(),
-        }
-    }
 }
 
 impl From<native::message::Init> for Init {
@@ -65,10 +51,10 @@ mod tests {
     use super::*;
 
     fn new_msg() -> Init {
-        Init::new(
-            "MyClient/1.0",
-            HashMap::from_iter(vec![("scheme", "basic")]),
-        )
+        Init {
+            client_name: Value::from("MyClient/1.0"),
+            auth_token: Value::from(HashMap::from_iter(vec![("scheme", "basic")])),
+        }
     }
 
     #[test]
