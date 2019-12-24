@@ -11,4 +11,5 @@ mod map;
 mod node;
 mod path;
 mod relationship;
+mod string;
 mod unbound_relationship;
