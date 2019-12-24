@@ -2,6 +2,11 @@
 name = "bolt-proto-derive"
 version = "0.1.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
+description = "Procedural macros for bolt-proto.\n"
+homepage = "https://github.com/lucis-fluxum/bolt-rs"
+repository = "https://github.com/lucis-fluxum/bolt-rs"
+keywords    = ["bolt", "derive"]
+license = "MIT"
 edition = "2018"
 
 [lib]
