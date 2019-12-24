@@ -5,7 +5,7 @@ use crate::bolt::value::Value;
 pub const SIGNATURE: u8 = 0x70;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
-pub struct BoltSuccess {
+pub struct Success {
     metadata: Value,
 }
 
@@ -103,7 +103,7 @@ mod tests {
             0x73, 0x65, 0x74, 0x00, 0x86, 0x63, 0x6F, 0x6C, 0x75, 0x6D, 0x6E, 0x01, 0x84, 0x6C,
             0x69, 0x6E, 0x65, 0x01,
         ]);
-        let success = BoltSuccess::try_from(Arc::new(Mutex::new(bytes)));
+        let success = Success::try_from(Arc::new(Mutex::new(bytes)));
         assert!(success.is_ok());
     }
 }
