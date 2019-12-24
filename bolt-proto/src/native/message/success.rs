@@ -13,6 +13,12 @@ pub struct Success {
     pub(crate) metadata: HashMap<String, Value>,
 }
 
+impl Success {
+    pub fn new(metadata: HashMap<String, Value>) -> Self {
+        Self { metadata }
+    }
+}
+
 impl TryFrom<bolt::message::Success> for Success {
     type Error = Error;
 
