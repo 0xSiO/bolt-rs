@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::iter::FromIterator;
 use std::net::IpAddr;
 
 use bytes::*;
@@ -9,22 +6,23 @@ use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use bolt_proto::message::Init;
 use bolt_proto::Message;
-use bolt_proto::Serialize;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
 
 pub struct Client {
-    stream: BufStream<TcpStream>,
+    pub(crate) stream: BufStream<TcpStream>,
+    pub(crate) version: u8,
 }
 
 impl Client {
     pub async fn new(host: IpAddr, port: usize) -> Result<Self, Error> {
-        let client = Client {
+        let mut client = Client {
             stream: BufStream::new(TcpStream::connect(format!("{}:{}", host, port)).await?),
+            version: 0,
         };
+        client.version = client.handshake().await? as u8;
         Ok(client)
     }
 
@@ -39,29 +37,28 @@ impl Client {
         Ok(self.stream.read_u32().await?)
     }
 
-    // TODO: Clean this up, this is just an experiment
-    // Have to implement conversion from Bytes to value types before we can implement this
-    pub async fn init(&mut self) -> Result<Message, Error> {
-        //        println!("Starting init.");
-        //        let init = Init::new(
-        //            "bolt-proto/0.1.0",
-        //            HashMap::from_iter(vec![
-        //                ("scheme", "basic"),
-        //                ("principal", "neo4j"),
-        //                ("credentials", "test"),
-        //            ]),
-        //        );
-        //        let bytes = init.try_into_bytes()?;
-        //        let mut message = MessageBytes::new();
-        //        message.add_chunk(Chunk::try_from(bytes)?);
-        //        println!("Created message.");
-        //        let mut bytes: Bytes = message.into();
-        //        self.stream.write_buf(&mut bytes).await?;
-        //        self.stream.flush().await?;
-        //        println!("Wrote init.");
-        //        let msg = MessageBytes::from_stream(&mut self.stream).await?;
-        //        println!("got msg {:?}", msg);
-        //        Ok(Message::try_from(msg)?)
-        todo!()
+    pub async fn read_message(&mut self) -> Result<Message, Error> {
+        Message::from_stream(&mut self.stream).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn new_client() -> Result<Client, Error> {
+        Client::new("127.0.0.1".parse().unwrap(), 7687).await
+    }
+
+    #[tokio::test]
+    async fn handshake() {
+        let client = new_client().await.unwrap();
+        assert_eq!(client.version, 1);
+    }
+
+    #[tokio::test]
+    async fn init() {
+        let mut _client = new_client().await.unwrap();
+        // TODO: Send an init message
     }
 }
