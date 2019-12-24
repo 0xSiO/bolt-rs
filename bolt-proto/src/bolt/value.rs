@@ -40,7 +40,7 @@ pub trait Marker: Serialize + Deserialize {
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum BoltValue {
+pub enum Value {
     Boolean(Boolean),
     Integer(Integer),
     Float(Float),
@@ -54,101 +54,101 @@ pub enum BoltValue {
     UnboundRelationship(UnboundRelationship),
 }
 
-impl Marker for BoltValue {
+impl Marker for Value {
     fn get_marker(&self) -> Result<u8, Error> {
         match self {
-            BoltValue::Boolean(boolean) => boolean.get_marker(),
-            BoltValue::Integer(integer) => integer.get_marker(),
-            BoltValue::Float(float) => float.get_marker(),
-            BoltValue::List(list) => list.get_marker(),
-            BoltValue::Map(map) => map.get_marker(),
-            BoltValue::Null(null) => null.get_marker(),
-            BoltValue::String(string) => string.get_marker(),
-            BoltValue::Node(node) => node.get_marker(),
-            BoltValue::Relationship(rel) => rel.get_marker(),
-            BoltValue::Path(path) => path.get_marker(),
-            BoltValue::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
+            Value::Boolean(boolean) => boolean.get_marker(),
+            Value::Integer(integer) => integer.get_marker(),
+            Value::Float(float) => float.get_marker(),
+            Value::List(list) => list.get_marker(),
+            Value::Map(map) => map.get_marker(),
+            Value::Null(null) => null.get_marker(),
+            Value::String(string) => string.get_marker(),
+            Value::Node(node) => node.get_marker(),
+            Value::Relationship(rel) => rel.get_marker(),
+            Value::Path(path) => path.get_marker(),
+            Value::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
         }
     }
 }
 
-impl Serialize for BoltValue {}
+impl Serialize for Value {}
 
-impl TryInto<Bytes> for BoltValue {
+impl TryInto<Bytes> for Value {
     type Error = Error;
 
     fn try_into(self) -> Result<Bytes, Self::Error> {
         match self {
-            BoltValue::Boolean(boolean) => boolean.try_into(),
-            BoltValue::Integer(integer) => integer.try_into(),
-            BoltValue::Float(float) => float.try_into(),
-            BoltValue::List(list) => list.try_into(),
-            BoltValue::Map(map) => map.try_into(),
-            BoltValue::Null(null) => null.try_into(),
-            BoltValue::String(string) => string.try_into(),
-            BoltValue::Node(node) => node.try_into(),
-            BoltValue::Relationship(rel) => rel.try_into(),
-            BoltValue::Path(path) => path.try_into(),
-            BoltValue::UnboundRelationship(unbound_rel) => unbound_rel.try_into(),
+            Value::Boolean(boolean) => boolean.try_into(),
+            Value::Integer(integer) => integer.try_into(),
+            Value::Float(float) => float.try_into(),
+            Value::List(list) => list.try_into(),
+            Value::Map(map) => map.try_into(),
+            Value::Null(null) => null.try_into(),
+            Value::String(string) => string.try_into(),
+            Value::Node(node) => node.try_into(),
+            Value::Relationship(rel) => rel.try_into(),
+            Value::Path(path) => path.try_into(),
+            Value::UnboundRelationship(unbound_rel) => unbound_rel.try_into(),
         }
     }
 }
 
-impl Deserialize for BoltValue {}
+impl Deserialize for Value {}
 
-impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
+impl TryFrom<Arc<Mutex<Bytes>>> for Value {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<BoltValue, Error> = catch_unwind(move || {
+        let result: Result<Value, Error> = catch_unwind(move || {
             let marker = input_arc.lock().unwrap().clone().get_u8();
 
             match marker {
                 null::MARKER => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(BoltValue::Null(Null))
+                    Ok(Value::Null(Null))
                 }
                 boolean::MARKER_FALSE => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(BoltValue::Boolean(Boolean::from(false)))
+                    Ok(Value::Boolean(Boolean::from(false)))
                 }
                 boolean::MARKER_TRUE => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(BoltValue::Boolean(Boolean::from(true)))
+                    Ok(Value::Boolean(Boolean::from(true)))
                 }
                 // Tiny int
                 marker if (-16..=127).contains(&(marker as i8)) => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(BoltValue::Integer(Integer::from(marker as i8)))
+                    Ok(Value::Integer(Integer::from(marker as i8)))
                 }
                 // Other int types
                 integer::MARKER_INT_8
                 | integer::MARKER_INT_16
                 | integer::MARKER_INT_32
-                | integer::MARKER_INT_64 => Ok(BoltValue::Integer(Integer::try_from(input_arc)?)),
-                float::MARKER => Ok(BoltValue::Float(Float::try_from(input_arc)?)),
+                | integer::MARKER_INT_64 => Ok(Value::Integer(Integer::try_from(input_arc)?)),
+                float::MARKER => Ok(Value::Float(Float::try_from(input_arc)?)),
                 // Tiny string
                 marker
                     if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
                 {
-                    Ok(BoltValue::String(String::try_from(input_arc)?))
+                    Ok(Value::String(String::try_from(input_arc)?))
                 }
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
-                    Ok(BoltValue::String(String::try_from(input_arc)?))
+                    Ok(Value::String(String::try_from(input_arc)?))
                 }
                 // Tiny list
                 marker if (list::MARKER_TINY..=(list::MARKER_TINY | 0x0F)).contains(&marker) => {
-                    Ok(BoltValue::List(List::try_from(input_arc)?))
+                    Ok(Value::List(List::try_from(input_arc)?))
                 }
                 list::MARKER_SMALL | list::MARKER_MEDIUM | list::MARKER_LARGE => {
-                    Ok(BoltValue::List(List::try_from(input_arc)?))
+                    Ok(Value::List(List::try_from(input_arc)?))
                 }
                 // Tiny map
                 marker if (map::MARKER_TINY..=(map::MARKER_TINY | 0x0F)).contains(&marker) => {
-                    Ok(BoltValue::Map(Map::try_from(input_arc)?))
+                    Ok(Value::Map(Map::try_from(input_arc)?))
                 }
                 map::MARKER_SMALL | map::MARKER_MEDIUM | map::MARKER_LARGE => {
-                    Ok(BoltValue::Map(Map::try_from(input_arc)?))
+                    Ok(Value::Map(Map::try_from(input_arc)?))
                 }
                 // Tiny structure
                 marker
@@ -169,19 +169,19 @@ impl TryFrom<Arc<Mutex<Bytes>>> for BoltValue {
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError(format!("Error creating BoltValue from Bytes: {}", err))
+            DeserializeError(format!("Error creating Value from Bytes: {}", err))
         })?)
     }
 }
 
 // Might panic. Use this inside a catch_unwind block
-fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<BoltValue, Error> {
+fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value, Error> {
     let signature = get_signature_from_bytes(&mut *input_arc.lock().unwrap())?;
     match signature {
-        node::SIGNATURE => Ok(BoltValue::Node(Node::try_from(input_arc)?)),
-        relationship::SIGNATURE => Ok(BoltValue::Relationship(Relationship::try_from(input_arc)?)),
-        path::SIGNATURE => Ok(BoltValue::Path(Path::try_from(input_arc)?)),
-        unbound_relationship::SIGNATURE => Ok(BoltValue::UnboundRelationship(
+        node::SIGNATURE => Ok(Value::Node(Node::try_from(input_arc)?)),
+        relationship::SIGNATURE => Ok(Value::Relationship(Relationship::try_from(input_arc)?)),
+        path::SIGNATURE => Ok(Value::Path(Path::try_from(input_arc)?)),
+        unbound_relationship::SIGNATURE => Ok(Value::UnboundRelationship(
             UnboundRelationship::try_from(input_arc)?,
         )),
         _ => {
@@ -206,8 +206,8 @@ mod tests {
         let null = Null;
         let null_bytes = null.clone().try_into_bytes().unwrap();
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(null_bytes))).unwrap(),
-            BoltValue::Null(null)
+            Value::try_from(Arc::new(Mutex::new(null_bytes))).unwrap(),
+            Value::Null(null)
         );
     }
 
@@ -218,12 +218,12 @@ mod tests {
         let f = Boolean::from(false);
         let false_bytes = f.clone().try_into_bytes().unwrap();
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(true_bytes))).unwrap(),
-            BoltValue::Boolean(t)
+            Value::try_from(Arc::new(Mutex::new(true_bytes))).unwrap(),
+            Value::Boolean(t)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(false_bytes))).unwrap(),
-            BoltValue::Boolean(f)
+            Value::try_from(Arc::new(Mutex::new(false_bytes))).unwrap(),
+            Value::Boolean(f)
         );
     }
 
@@ -240,24 +240,24 @@ mod tests {
         let very_large = Integer::from(9_000_000_000_000_000_000_i64);
         let very_large_bytes = very_large.clone().try_into_bytes().unwrap();
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
-            BoltValue::Integer(tiny)
+            Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
+            Value::Integer(tiny)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
-            BoltValue::Integer(small)
+            Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
+            Value::Integer(small)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
-            BoltValue::Integer(medium)
+            Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
+            Value::Integer(medium)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
-            BoltValue::Integer(large)
+            Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
+            Value::Integer(large)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(very_large_bytes))).unwrap(),
-            BoltValue::Integer(very_large)
+            Value::try_from(Arc::new(Mutex::new(very_large_bytes))).unwrap(),
+            Value::Integer(very_large)
         );
     }
 
@@ -272,20 +272,20 @@ mod tests {
         let pi = Float::from(std::f64::consts::PI);
         let pi_bytes = pi.clone().try_into_bytes().unwrap();
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(min_bytes))).unwrap(),
-            BoltValue::Float(min)
+            Value::try_from(Arc::new(Mutex::new(min_bytes))).unwrap(),
+            Value::Float(min)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(max_bytes))).unwrap(),
-            BoltValue::Float(max)
+            Value::try_from(Arc::new(Mutex::new(max_bytes))).unwrap(),
+            Value::Float(max)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(e_bytes))).unwrap(),
-            BoltValue::Float(e)
+            Value::try_from(Arc::new(Mutex::new(e_bytes))).unwrap(),
+            Value::Float(e)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(pi_bytes))).unwrap(),
-            BoltValue::Float(pi)
+            Value::try_from(Arc::new(Mutex::new(pi_bytes))).unwrap(),
+            Value::Float(pi)
         );
     }
 
@@ -300,20 +300,20 @@ mod tests {
         let large = String::from("string".repeat(100_000));
         let large_bytes = large.clone().try_into_bytes().unwrap();
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
-            BoltValue::String(tiny)
+            Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
+            Value::String(tiny)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
-            BoltValue::String(small)
+            Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
+            Value::String(small)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
-            BoltValue::String(medium)
+            Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
+            Value::String(medium)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
-            BoltValue::String(large)
+            Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
+            Value::String(large)
         );
     }
 
@@ -328,20 +328,20 @@ mod tests {
         let medium_list: List = vec![false; 1000].into();
         let medium_list_bytes = medium_list.clone().try_into_bytes().unwrap();
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(empty_list_bytes))).unwrap(),
-            BoltValue::List(empty_list)
+            Value::try_from(Arc::new(Mutex::new(empty_list_bytes))).unwrap(),
+            Value::List(empty_list)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(tiny_list_bytes))).unwrap(),
-            BoltValue::List(tiny_list)
+            Value::try_from(Arc::new(Mutex::new(tiny_list_bytes))).unwrap(),
+            Value::List(tiny_list)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(small_list_bytes))).unwrap(),
-            BoltValue::List(small_list)
+            Value::try_from(Arc::new(Mutex::new(small_list_bytes))).unwrap(),
+            Value::List(small_list)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(medium_list_bytes))).unwrap(),
-            BoltValue::List(medium_list)
+            Value::try_from(Arc::new(Mutex::new(medium_list_bytes))).unwrap(),
+            Value::List(medium_list)
         );
     }
 
@@ -351,8 +351,8 @@ mod tests {
         let large_list: List = vec![1_i8; 70_000].into();
         let large_list_bytes = large_list.clone().try_into_bytes().unwrap();
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(large_list_bytes))).unwrap(),
-            BoltValue::List(large_list)
+            Value::try_from(Arc::new(Mutex::new(large_list_bytes))).unwrap(),
+            Value::List(large_list)
         );
     }
 
@@ -383,16 +383,16 @@ mod tests {
         .into();
         let small_map_bytes = small_map.clone().try_into_bytes().unwrap();
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),
-            BoltValue::Map(empty_map)
+            Value::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),
+            Value::Map(empty_map)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(tiny_map_bytes))).unwrap(),
-            BoltValue::Map(tiny_map)
+            Value::try_from(Arc::new(Mutex::new(tiny_map_bytes))).unwrap(),
+            Value::Map(tiny_map)
         );
         assert_eq!(
-            BoltValue::try_from(Arc::new(Mutex::new(small_map_bytes))).unwrap(),
-            BoltValue::Map(small_map)
+            Value::try_from(Arc::new(Mutex::new(small_map_bytes))).unwrap(),
+            Value::Map(small_map)
         );
     }
 

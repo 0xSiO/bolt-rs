@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::bolt::value::{BoltValue, Marker};
+use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 
@@ -17,12 +17,12 @@ pub const MARKER_LARGE: u8 = 0xD6;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct List {
-    pub(crate) value: Vec<BoltValue>,
+    pub(crate) value: Vec<Value>,
 }
 
 impl<T> From<Vec<T>> for List
 where
-    T: Into<BoltValue>,
+    T: Into<Value>,
 {
     fn from(value: Vec<T>) -> Self {
         Self {
@@ -31,23 +31,23 @@ where
     }
 }
 
-impl TryFrom<BoltValue> for List {
+impl TryFrom<Value> for List {
     type Error = Error;
 
-    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            BoltValue::List(list) => Ok(list),
+            Value::List(list) => Ok(list),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
 }
 
-impl<T> From<Vec<T>> for BoltValue
+impl<T> From<Vec<T>> for Value
 where
-    T: Into<BoltValue>,
+    T: Into<Value>,
 {
     fn from(value: Vec<T>) -> Self {
-        BoltValue::List(value.into())
+        Value::List(value.into())
     }
 }
 
@@ -70,7 +70,7 @@ impl TryInto<Bytes> for List {
 
     fn try_into(self) -> Result<Bytes, Self::Error> {
         let marker = self.get_marker()?;
-        let mut bytes = BytesMut::with_capacity(mem::size_of::<BoltValue>() * self.value.len());
+        let mut bytes = BytesMut::with_capacity(mem::size_of::<Value>() * self.value.len());
         bytes.put_u8(marker);
         match self.value.len() {
             0..=15 => {}
@@ -107,9 +107,9 @@ impl TryFrom<Arc<Mutex<Bytes>>> for List {
                     );
                 }
             };
-            let mut list: Vec<BoltValue> = Vec::with_capacity(size);
+            let mut list: Vec<Value> = Vec::with_capacity(size);
             for _ in 0..size {
-                list.push(BoltValue::try_from(Arc::clone(&input_arc))?);
+                list.push(Value::try_from(Arc::clone(&input_arc))?);
             }
             Ok(List::from(list))
         })

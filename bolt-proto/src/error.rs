@@ -1,13 +1,13 @@
 use failure::Fail;
 
-use crate::bolt::value::BoltValue;
+use crate::bolt::value::Value;
 
 #[derive(Debug, Fail)]
 pub enum ValueError {
     #[fail(display = "Value too large (length {})", _0)]
     TooLarge(usize),
     #[fail(display = "Invalid conversion from {:?}", _0)]
-    InvalidConversion(BoltValue),
+    InvalidConversion(Value),
 }
 
 #[derive(Debug, Fail)]

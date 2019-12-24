@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::bolt::value::{BoltValue, Marker};
+use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, SerializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 
@@ -30,21 +30,21 @@ macro_rules! impl_from_int {
                 }
             }
 
-            impl From<$T> for $crate::bolt::value::BoltValue {
+            impl From<$T> for $crate::bolt::value::Value {
                 fn from(value: $T) -> Self {
-                    BoltValue::Integer(value.into())
+                    Value::Integer(value.into())
                 }
             }
         )*
     };
 }
 
-impl TryFrom<BoltValue> for Integer {
+impl TryFrom<Value> for Integer {
     type Error = Error;
 
-    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            BoltValue::Integer(integer) => Ok(integer),
+            Value::Integer(integer) => Ok(integer),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }

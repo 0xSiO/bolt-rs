@@ -6,7 +6,7 @@ use bytes::{Buf, Bytes};
 use failure::Error;
 use failure::_core::convert::TryFrom;
 
-use crate::bolt::value::{BoltValue, Marker};
+use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 
@@ -15,20 +15,20 @@ pub const MARKER: u8 = 0xC0;
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Null;
 
-impl TryFrom<BoltValue> for Null {
+impl TryFrom<Value> for Null {
     type Error = Error;
 
-    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            BoltValue::Null(null) => Ok(null),
+            Value::Null(null) => Ok(null),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
 }
 
-impl From<Null> for BoltValue {
+impl From<Null> for Value {
     fn from(value: Null) -> Self {
-        BoltValue::Null(value)
+        Value::Null(value)
     }
 }
 

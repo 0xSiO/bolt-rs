@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::bolt::value::{BoltValue, Marker};
+use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 
@@ -35,20 +35,20 @@ impl From<std::string::String> for String {
     }
 }
 
-impl TryFrom<BoltValue> for String {
+impl TryFrom<Value> for String {
     type Error = Error;
 
-    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            BoltValue::String(string) => Ok(string),
+            Value::String(string) => Ok(string),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
 }
 
-impl From<&str> for BoltValue {
+impl From<&str> for Value {
     fn from(value: &str) -> Self {
-        BoltValue::String(value.into())
+        Value::String(value.into())
     }
 }
 

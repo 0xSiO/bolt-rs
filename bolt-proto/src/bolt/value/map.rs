@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::bolt::value::{BoltValue, Marker};
+use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 use std::mem;
@@ -20,7 +20,7 @@ pub const MARKER_LARGE: u8 = 0xDA;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Map {
-    pub(crate) value: HashMap<BoltValue, BoltValue>,
+    pub(crate) value: HashMap<Value, Value>,
 }
 
 impl Hash for Map {
@@ -31,8 +31,8 @@ impl Hash for Map {
 
 impl<K, V> From<HashMap<K, V>> for Map
 where
-    K: Into<BoltValue>,
-    V: Into<BoltValue>,
+    K: Into<Value>,
+    V: Into<Value>,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
         Self {
@@ -44,24 +44,24 @@ where
     }
 }
 
-impl TryFrom<BoltValue> for Map {
+impl TryFrom<Value> for Map {
     type Error = Error;
 
-    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            BoltValue::Map(map) => Ok(map),
+            Value::Map(map) => Ok(map),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
 }
 
-impl<K, V> From<HashMap<K, V>> for BoltValue
+impl<K, V> From<HashMap<K, V>> for Value
 where
-    K: Into<BoltValue>,
-    V: Into<BoltValue>,
+    K: Into<Value>,
+    V: Into<Value>,
 {
     fn from(value: HashMap<K, V, RandomState>) -> Self {
-        BoltValue::Map(value.into())
+        Value::Map(value.into())
     }
 }
 
@@ -84,7 +84,7 @@ impl TryInto<Bytes> for Map {
 
     fn try_into(self) -> Result<Bytes, Self::Error> {
         let marker = self.get_marker()?;
-        let mut bytes = BytesMut::with_capacity(mem::size_of::<BoltValue>() * 2 * self.value.len());
+        let mut bytes = BytesMut::with_capacity(mem::size_of::<Value>() * 2 * self.value.len());
         bytes.put_u8(marker);
         match self.value.len() {
             0..=15 => {}
@@ -122,10 +122,10 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Map {
                     );
                 }
             };
-            let mut hash_map: HashMap<BoltValue, BoltValue> = HashMap::with_capacity(size);
+            let mut hash_map: HashMap<Value, Value> = HashMap::with_capacity(size);
             for _ in 0..size {
-                let key = BoltValue::try_from(Arc::clone(&input_arc))?;
-                let value = BoltValue::try_from(Arc::clone(&input_arc))?;
+                let key = Value::try_from(Arc::clone(&input_arc))?;
+                let value = Value::try_from(Arc::clone(&input_arc))?;
                 hash_map.insert(key, value);
             }
             Ok(Map::from(hash_map))
