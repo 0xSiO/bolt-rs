@@ -46,12 +46,6 @@ impl TryFrom<Value> for String {
     }
 }
 
-impl From<&str> for Value {
-    fn from(value: &str) -> Self {
-        Value::String(value.into())
-    }
-}
-
 impl Marker for String {
     fn get_marker(&self) -> Result<u8, Error> {
         match self.value.len() {

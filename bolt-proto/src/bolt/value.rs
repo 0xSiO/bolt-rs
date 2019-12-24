@@ -1,3 +1,5 @@
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::hash::Hash;
 use std::panic::catch_unwind;
@@ -22,6 +24,7 @@ pub use self::path::Path;
 pub use self::relationship::Relationship;
 pub use self::string::String;
 pub use self::unbound_relationship::UnboundRelationship;
+use crate::native;
 
 mod boolean;
 mod float;
@@ -52,6 +55,70 @@ pub enum Value {
     Relationship(Relationship),
     Path(Path),
     UnboundRelationship(UnboundRelationship),
+}
+
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        Value::Boolean(Boolean::from(value))
+    }
+}
+
+macro_rules! impl_from_int {
+    ($($T:ty),+) => {
+        $(
+            impl From<$T> for $crate::bolt::value::Value {
+                fn from(value: $T) -> Self {
+                    Value::Integer(Integer::from(value))
+                }
+            }
+        )*
+    };
+}
+impl_from_int!(i8, i16, i32, i64);
+
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        Value::Float(Float::from(value))
+    }
+}
+
+impl<T> From<Vec<T>> for Value
+where
+    T: Into<Value>,
+{
+    fn from(value: Vec<T>) -> Self {
+        Value::List(List::from(value))
+    }
+}
+
+impl<K, V> From<HashMap<K, V>> for Value
+where
+    K: Into<Value>,
+    V: Into<Value>,
+{
+    fn from(value: HashMap<K, V, RandomState>) -> Self {
+        Value::Map(Map::from(value))
+    }
+}
+
+// TODO: No Rust equivalent for Null, consider removing Null struct and just have an empty variant
+
+impl From<&str> for Value {
+    fn from(value: &str) -> Self {
+        Value::String(String::from(value))
+    }
+}
+
+impl From<std::string::String> for Value {
+    fn from(value: std::string::String) -> Self {
+        Value::String(String::from(value))
+    }
+}
+
+impl From<native::value::Node> for Value {
+    fn from(native_node: native::value::Node) -> Self {
+        Value::Node(Node::from(native_node))
+    }
 }
 
 impl Marker for Value {

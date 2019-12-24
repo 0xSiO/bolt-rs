@@ -1,2 +1,2 @@
 mod message;
-mod value;
+pub mod value;

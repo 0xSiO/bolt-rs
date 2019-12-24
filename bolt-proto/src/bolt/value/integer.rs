@@ -18,7 +18,7 @@ pub const MARKER_INT_64: u8 = 0xCB;
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Integer {
     // Since integers come in many sizes, just store the bytes directly
-    bytes: Bytes,
+    pub bytes: BytesMut,
 }
 
 macro_rules! impl_from_int {
@@ -26,18 +26,13 @@ macro_rules! impl_from_int {
         $(
             impl From<$T> for $crate::bolt::value::Integer {
                 fn from(value: $T) -> Self {
-                    Self { bytes: ::bytes::Bytes::copy_from_slice(&value.to_be_bytes()) }
-                }
-            }
-
-            impl From<$T> for $crate::bolt::value::Value {
-                fn from(value: $T) -> Self {
-                    Value::Integer(value.into())
+                    Self { bytes: ::bytes::BytesMut::from(value.to_be_bytes().as_ref()) }
                 }
             }
         )*
     };
 }
+impl_from_int!(i8, i16, i32, i64);
 
 impl TryFrom<Value> for Integer {
     type Error = Error;
@@ -49,8 +44,6 @@ impl TryFrom<Value> for Integer {
         }
     }
 }
-
-impl_from_int!(i8, i16, i32, i64);
 
 impl Marker for Integer {
     fn get_marker(&self) -> Result<u8, Error> {

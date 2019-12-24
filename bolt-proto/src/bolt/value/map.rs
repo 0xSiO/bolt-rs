@@ -55,16 +55,6 @@ impl TryFrom<Value> for Map {
     }
 }
 
-impl<K, V> From<HashMap<K, V>> for Value
-where
-    K: Into<Value>,
-    V: Into<Value>,
-{
-    fn from(value: HashMap<K, V, RandomState>) -> Self {
-        Value::Map(value.into())
-    }
-}
-
 impl Marker for Map {
     fn get_marker(&self) -> Result<u8, Error> {
         match self.value.len() {
