@@ -10,13 +10,13 @@ use failure::Error;
 
 use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
-use crate::serialize::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize};
 use std::mem;
 
-pub const MARKER_TINY: u8 = 0xA0;
-pub const MARKER_SMALL: u8 = 0xD8;
-pub const MARKER_MEDIUM: u8 = 0xD9;
-pub const MARKER_LARGE: u8 = 0xDA;
+pub(crate) const MARKER_TINY: u8 = 0xA0;
+pub(crate) const MARKER_SMALL: u8 = 0xD8;
+pub(crate) const MARKER_MEDIUM: u8 = 0xD9;
+pub(crate) const MARKER_LARGE: u8 = 0xDA;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Map {
@@ -139,7 +139,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::bolt::value::Marker;
-    use crate::serialize::Serialize;
+    use crate::Serialize;
 
     use super::{Map, MARKER_SMALL, MARKER_TINY};
 

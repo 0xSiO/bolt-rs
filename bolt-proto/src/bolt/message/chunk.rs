@@ -6,7 +6,7 @@ use failure::Error;
 
 use crate::error::DeserializeError;
 
-pub struct Chunk {
+pub(crate) struct Chunk {
     size: u16,
     pub(crate) data: Bytes,
 }

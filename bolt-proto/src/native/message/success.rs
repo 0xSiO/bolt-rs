@@ -4,13 +4,13 @@ use std::convert::{TryFrom, TryInto};
 use failure::Error;
 
 use crate::bolt;
-use crate::bolt::message::Message;
-use crate::bolt::value::Value;
+use crate::bolt::Message;
+use crate::bolt::Value;
 use crate::error::MessageError;
 
 #[derive(Debug)]
 pub struct Success {
-    pub metadata: HashMap<String, Value>,
+    pub(crate) metadata: HashMap<String, Value>,
 }
 
 impl TryFrom<bolt::message::Success> for Success {

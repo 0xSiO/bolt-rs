@@ -1,10 +1,10 @@
 use failure::Fail;
 
-use crate::bolt::message::Message;
-use crate::bolt::value::Value;
+use crate::bolt::Message;
+use crate::bolt::Value;
 
 #[derive(Debug, Fail)]
-pub enum ValueError {
+pub(crate) enum ValueError {
     #[fail(display = "Value too large (length {})", _0)]
     TooLarge(usize),
     #[fail(display = "Invalid conversion from {:?}", _0)]
@@ -12,15 +12,15 @@ pub enum ValueError {
 }
 
 #[derive(Debug, Fail)]
-pub enum MessageError {
+pub(crate) enum MessageError {
     #[fail(display = "Invalid conversion from {:?}", _0)]
     InvalidConversion(Message),
 }
 
 #[derive(Debug, Fail)]
 #[fail(display = "{}", _0)]
-pub struct SerializeError(pub String);
+pub(crate) struct SerializeError(pub(crate) String);
 
 #[derive(Debug, Fail)]
 #[fail(display = "{}", _0)]
-pub struct DeserializeError(pub String);
+pub(crate) struct DeserializeError(pub(crate) String);

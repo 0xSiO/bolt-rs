@@ -9,30 +9,30 @@ use tokio::prelude::*;
 use crate::bolt::message::Chunk;
 
 #[derive(Debug)]
-pub struct MessageBytes {
+pub(crate) struct MessageBytes {
     bytes: BytesMut,
 }
 
 impl MessageBytes {
-    pub fn new() -> MessageBytes {
+    pub(crate) fn new() -> MessageBytes {
         MessageBytes {
             bytes: BytesMut::new(),
         }
     }
 
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.bytes.len()
     }
 
-    pub fn split_to(&mut self, at: usize) -> Bytes {
+    pub(crate) fn split_to(&mut self, at: usize) -> Bytes {
         self.bytes.split_to(at).freeze()
     }
 
-    pub fn add_chunk(&mut self, chunk: Chunk) {
+    fn add_chunk(&mut self, chunk: Chunk) {
         self.bytes.put(chunk.data);
     }
 
-    pub async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
+    pub(crate) async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
         buf_stream: &mut BufStream<T>,
     ) -> Result<MessageBytes, Error> {
         let mut message = MessageBytes::new();

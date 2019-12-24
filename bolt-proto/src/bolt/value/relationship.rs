@@ -4,19 +4,19 @@ use failure::Error;
 
 use bolt_proto_derive::*;
 
-use crate::bolt::value::Value;
+use crate::bolt::Value;
 use crate::error::ValueError;
 use crate::native;
 
-pub const SIGNATURE: u8 = 0x52;
+pub(crate) const SIGNATURE: u8 = 0x52;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Relationship {
-    pub rel_identity: Box<Value>,
-    pub start_node_identity: Box<Value>,
-    pub end_node_identity: Box<Value>,
-    pub rel_type: Box<Value>,
-    pub properties: Box<Value>,
+    pub(crate) rel_identity: Box<Value>,
+    pub(crate) start_node_identity: Box<Value>,
+    pub(crate) end_node_identity: Box<Value>,
+    pub(crate) rel_type: Box<Value>,
+    pub(crate) properties: Box<Value>,
 }
 
 impl From<native::value::Relationship> for Relationship {

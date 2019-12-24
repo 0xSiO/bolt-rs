@@ -4,17 +4,17 @@ use failure::Error;
 
 use bolt_proto_derive::*;
 
-use crate::bolt::value::Value;
+use crate::bolt::Value;
 use crate::error::ValueError;
 use crate::native;
 
-pub const SIGNATURE: u8 = 0x4E;
+pub(crate) const SIGNATURE: u8 = 0x4E;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Node {
-    pub node_identity: Box<Value>,
-    pub labels: Box<Value>,
-    pub properties: Box<Value>,
+    pub(crate) node_identity: Box<Value>,
+    pub(crate) labels: Box<Value>,
+    pub(crate) properties: Box<Value>,
 }
 
 impl From<native::value::Node> for Node {

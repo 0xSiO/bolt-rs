@@ -4,14 +4,14 @@ use std::convert::{TryFrom, TryInto};
 use failure::Error;
 
 use crate::bolt;
-use crate::bolt::value::Value;
+use crate::bolt::Value;
 use crate::error::ValueError;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UnboundRelationship {
-    pub rel_identity: i64,
-    pub rel_type: String,
-    pub properties: HashMap<String, Value>,
+    pub(crate) rel_identity: i64,
+    pub(crate) rel_type: String,
+    pub(crate) properties: HashMap<String, Value>,
 }
 
 impl TryFrom<bolt::value::UnboundRelationship> for UnboundRelationship {

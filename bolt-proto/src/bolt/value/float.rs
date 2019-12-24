@@ -9,13 +9,13 @@ use failure::Error;
 
 use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
-use crate::serialize::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize};
 
-pub const MARKER: u8 = 0xC1;
+pub(crate) const MARKER: u8 = 0xC1;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Float {
-    pub value: f64,
+    pub(crate) value: f64,
 }
 
 impl Hash for Float {
@@ -97,7 +97,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::bolt::value::Marker;
-    use crate::serialize::Serialize;
+    use crate::Serialize;
 
     use super::*;
 

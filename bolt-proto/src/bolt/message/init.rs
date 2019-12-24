@@ -5,21 +5,21 @@ use failure::Error;
 
 use bolt_proto_derive::*;
 
-use crate::bolt::message::Message;
-use crate::bolt::value::Value;
+use crate::bolt::Message;
+use crate::bolt::Value;
 use crate::error::MessageError;
 use crate::native;
 
-pub const SIGNATURE: u8 = 0x01;
+pub(crate) const SIGNATURE: u8 = 0x01;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
 pub struct Init {
-    pub client_name: Value,
-    pub auth_token: Value,
+    pub(crate) client_name: Value,
+    pub(crate) auth_token: Value,
 }
 
 impl Init {
-    pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> Init
+    pub(crate) fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> Init
     where
         K: Into<Value>,
         V: Into<Value>,
@@ -60,7 +60,7 @@ mod tests {
 
     use crate::bolt::structure::Signature;
     use crate::bolt::value::Marker;
-    use crate::serialize::Serialize;
+    use crate::Serialize;
 
     use super::*;
 

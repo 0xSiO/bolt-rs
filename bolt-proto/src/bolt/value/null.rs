@@ -8,9 +8,9 @@ use failure::_core::convert::TryFrom;
 
 use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
-use crate::serialize::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize};
 
-pub const MARKER: u8 = 0xC0;
+pub(crate) const MARKER: u8 = 0xC0;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Null;
@@ -80,7 +80,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::bolt::value::Marker;
-    use crate::serialize::Serialize;
+    use crate::Serialize;
 
     use super::{Null, MARKER};
 
