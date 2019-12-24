@@ -7,30 +7,30 @@ use failure::Error;
 use crate::bolt::value::{Map, Value};
 use crate::error::ValueError;
 
-impl<K, V> TryInto<HashMap<K, V>> for Map
+// Have to use Value for the HashMap values since Value does not impl TryFrom<Value, Error = failure::Error>
+// and we need to support HashMaps with Value values (see Node's properties field)
+impl<K> TryInto<HashMap<K, Value>> for Map
 where
     K: Hash + Eq + TryFrom<Value, Error = Error>,
-    V: TryFrom<Value, Error = Error>,
 {
     type Error = Error;
 
-    fn try_into(self) -> Result<HashMap<K, V>, Self::Error> {
-        let mut map: HashMap<K, V> = HashMap::with_capacity(self.value.len());
+    fn try_into(self) -> Result<HashMap<K, Value>, Self::Error> {
+        let mut map = HashMap::with_capacity(self.value.len());
         for (k, v) in self.value {
-            map.insert(K::try_from(k)?, V::try_from(v)?);
+            map.insert(K::try_from(k)?, v);
         }
         Ok(map)
     }
 }
 
-impl<K, V> TryInto<HashMap<K, V>> for Value
+impl<K> TryInto<HashMap<K, Value>> for Value
 where
     K: Hash + Eq + TryFrom<Value, Error = Error>,
-    V: TryFrom<Value, Error = Error>,
 {
     type Error = Error;
 
-    fn try_into(self) -> Result<HashMap<K, V>, Self::Error> {
+    fn try_into(self) -> Result<HashMap<K, Value>, Self::Error> {
         match self {
             Value::Map(map) => Ok(map.try_into()?),
             _ => Err(ValueError::InvalidConversion(self).into()),
