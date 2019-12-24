@@ -63,7 +63,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
                                     GenericArgument::Type(Type::Path(TypePath { path, .. })) => {
                                         format!("<{}>", path.segments[0].ident)
                                     }
-                                    arg => panic!("Can't derive Deserialize for type argument {:?} on field {}", arg, field_name)
+                                    _ => panic!("Can't derive Deserialize for field {} (review your type arguments)", field_name)
                                 }
                             }
                             _ => "".to_string(),
