@@ -1,7 +1,8 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
+use bytes::Bytes;
 use failure::Error;
 use tokio::io::BufStream;
 use tokio::prelude::*;
@@ -13,9 +14,7 @@ pub use success::Success;
 
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
-use crate::{native, Serialize};
-use bytes::{BufMut, Bytes, BytesMut};
-use failure::_core::convert::TryInto;
+use crate::native;
 
 mod chunk;
 mod init;
@@ -76,25 +75,24 @@ impl TryFrom<MessageBytes> for Message {
     }
 }
 
-impl Serialize for Message {}
-
-impl TryInto<Bytes> for Message {
+impl TryInto<Vec<Bytes>> for Message {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(self) -> Result<Vec<Bytes>, Self::Error> {
         let bytes: Bytes = match self {
             Message::Init(init) => init.try_into()?,
             Message::Success(success) => success.try_into()?,
         };
 
-        // This isn't the right capacity, but it's probably big enough not to notice any re-allocations
-        let mut result = BytesMut::with_capacity(bytes.len());
+        // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
+        let mut result: Vec<Bytes> = Vec::with_capacity(bytes.len() / CHUNK_SIZE + 2);
         for slice in bytes.chunks(CHUNK_SIZE) {
             let chunk_bytes: Bytes = Chunk::try_from(Bytes::copy_from_slice(slice))?.into();
-            result.put(chunk_bytes);
+            result.push(chunk_bytes);
         }
-        result.put_u16(0);
+        // End message
+        result.push(Bytes::from_static(&[0, 0]));
 
-        Ok(result.freeze())
+        Ok(result)
     }
 }
