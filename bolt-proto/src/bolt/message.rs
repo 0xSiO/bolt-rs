@@ -13,12 +13,17 @@ pub use success::Success;
 
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
-use crate::native;
+use crate::{native, Serialize};
+use bytes::{BufMut, Bytes, BytesMut};
+use failure::_core::convert::TryInto;
 
 mod chunk;
 mod init;
 mod message_bytes;
 mod success;
+
+// This is what's used in the protocol spec, but it could technically be any size.
+const CHUNK_SIZE: usize = 16;
 
 #[derive(Debug)]
 pub enum Message {
@@ -68,5 +73,28 @@ impl TryFrom<MessageBytes> for Message {
         Ok(result.map_err(|err: Error| {
             DeserializeError(format!("Error creating Message from Bytes: {}", err))
         })?)
+    }
+}
+
+impl Serialize for Message {}
+
+impl TryInto<Bytes> for Message {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Bytes, Self::Error> {
+        let bytes: Bytes = match self {
+            Message::Init(init) => init.try_into()?,
+            Message::Success(success) => success.try_into()?,
+        };
+
+        // This isn't the right capacity, but it's probably big enough not to notice any re-allocations
+        let mut result = BytesMut::with_capacity(bytes.len());
+        for slice in bytes.chunks(CHUNK_SIZE) {
+            let chunk_bytes: Bytes = Chunk::try_from(Bytes::copy_from_slice(slice))?.into();
+            result.put(chunk_bytes);
+        }
+        result.put_u16(0);
+
+        Ok(result.freeze())
     }
 }

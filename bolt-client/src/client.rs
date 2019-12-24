@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::net::IpAddr;
 
 use bytes::*;
@@ -40,10 +41,24 @@ impl Client {
     pub async fn read_message(&mut self) -> Result<Message, Error> {
         Message::from_stream(&mut self.stream).await
     }
+
+    pub async fn send_message(&mut self, message: Message) -> Result<(), Error> {
+        let mut bytes: Bytes = message.try_into()?;
+        self.stream.write_buf(&mut bytes).await?;
+        self.stream.flush().await?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::convert::TryFrom;
+    use std::iter::FromIterator;
+
+    use bolt_proto::message::{Init, Success};
+    use bolt_proto::Value;
+
     use super::*;
 
     async fn new_client() -> Result<Client, Error> {
@@ -58,7 +73,19 @@ mod tests {
 
     #[tokio::test]
     async fn init() {
-        let mut _client = new_client().await.unwrap();
-        // TODO: Send an init message
+        let mut client = new_client().await.unwrap();
+        assert!(client
+            .send_message(Message::from(Init::new(
+                "bolt-client/0.1.0".to_string(),
+                HashMap::from_iter(vec![
+                    (String::from("scheme"), Value::from("basic")),
+                    (String::from("principal"), Value::from("neo4j")),
+                    (String::from("credentials"), Value::from("test")),
+                ]),
+            )))
+            .await
+            .is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok())
     }
 }
