@@ -1,6 +1,6 @@
 [package]
 name = "bolt-client"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "A client that sends messages using the Bolt protocol.\n"
 homepage = "https://github.com/lucis-fluxum/bolt-rs"
@@ -11,7 +11,7 @@ license = "MIT"
 edition = "2018"
 
 [dependencies]
-bolt-proto = { path = "../bolt-proto", version = "0.1.0" }
+bolt-proto = { path = "../bolt-proto", version = "0.2.0" }
 
 bytes = "0.5.3"
 failure = "0.1.6"
