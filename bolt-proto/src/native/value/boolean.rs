@@ -2,8 +2,9 @@ use std::convert::TryFrom;
 
 use failure::Error;
 
-use crate::bolt::value::{Boolean, Value};
+use crate::bolt::value::Boolean;
 use crate::error::ValueError;
+use crate::Value;
 
 // TODO: This seems a little silly, consider removing the Boolean type if possible
 impl From<Boolean> for bool {

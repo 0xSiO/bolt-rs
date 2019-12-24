@@ -2,8 +2,9 @@ use std::convert::TryFrom;
 
 use failure::Error;
 
-use crate::bolt::value::{Integer, Value};
+use crate::bolt::value::Integer;
 use crate::error::ValueError;
+use crate::Value;
 
 impl From<Integer> for i64 {
     fn from(mut integer: Integer) -> Self {

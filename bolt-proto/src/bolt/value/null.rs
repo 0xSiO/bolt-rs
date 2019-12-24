@@ -6,9 +6,9 @@ use bytes::{Buf, Bytes};
 use failure::Error;
 use failure::_core::convert::TryFrom;
 
-use crate::bolt::value::{Marker, Value};
+use crate::bolt::value::Marker;
 use crate::error::{DeserializeError, ValueError};
-use crate::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize, Value};
 
 pub(crate) const MARKER: u8 = 0xC0;
 
