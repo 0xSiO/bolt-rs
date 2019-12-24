@@ -3,6 +3,8 @@ use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
 use failure::Error;
+use tokio::io::BufStream;
+use tokio::prelude::*;
 
 pub(crate) use chunk::Chunk;
 pub use init::Init;
@@ -22,6 +24,14 @@ mod success;
 pub enum Message {
     Init(Init),
     Success(Success),
+}
+
+impl Message {
+    pub async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
+        buf_stream: &mut BufStream<T>,
+    ) -> Result<Message, Error> {
+        Message::try_from(MessageBytes::from_stream(buf_stream).await?)
+    }
 }
 
 impl From<native::message::Init> for Message {
@@ -46,6 +56,7 @@ impl TryFrom<MessageBytes> for Message {
                 Arc::new(Mutex::new(message_bytes.split_to(message_bytes.len())));
 
             match signature {
+                init::SIGNATURE => Ok(Message::Init(Init::try_from(remaining_bytes_arc)?)),
                 success::SIGNATURE => Ok(Message::Success(Success::try_from(remaining_bytes_arc)?)),
                 _ => {
                     Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())
