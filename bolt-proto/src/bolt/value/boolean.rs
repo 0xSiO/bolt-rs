@@ -6,15 +6,15 @@ use failure::Error;
 
 use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
-use crate::serialize::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 
-pub const MARKER_FALSE: u8 = 0xC2;
-pub const MARKER_TRUE: u8 = 0xC3;
+pub(crate) const MARKER_FALSE: u8 = 0xC2;
+pub(crate) const MARKER_TRUE: u8 = 0xC3;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Boolean {
-    pub value: bool,
+    pub(crate) value: bool,
 }
 
 impl From<bool> for Boolean {
@@ -85,7 +85,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::bolt::value::Marker;
-    use crate::serialize::Serialize;
+    use crate::Serialize;
 
     use super::{Boolean, MARKER_FALSE, MARKER_TRUE};
     use std::sync::{Arc, Mutex};

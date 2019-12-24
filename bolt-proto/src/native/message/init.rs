@@ -4,14 +4,14 @@ use std::convert::{TryFrom, TryInto};
 use failure::Error;
 
 use crate::bolt;
-use crate::bolt::message::Message;
-use crate::bolt::value::Value;
+use crate::bolt::Message;
+use crate::bolt::Value;
 use crate::error::MessageError;
 
 #[derive(Debug)]
 pub struct Init {
-    pub client_name: String,
-    pub auth_token: HashMap<String, Value>,
+    pub(crate) client_name: String,
+    pub(crate) auth_token: HashMap<String, Value>,
 }
 
 impl TryFrom<bolt::message::Init> for Init {

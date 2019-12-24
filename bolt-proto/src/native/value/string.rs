@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use failure::Error;
 
 use crate::bolt;
-use crate::bolt::value::Value;
+use crate::bolt::Value;
 use crate::error::ValueError;
 
 // TODO: Seems a little silly, consider removing Float type if possible

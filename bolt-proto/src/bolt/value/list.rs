@@ -8,12 +8,12 @@ use failure::Error;
 
 use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
-use crate::serialize::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize};
 
-pub const MARKER_TINY: u8 = 0x90;
-pub const MARKER_SMALL: u8 = 0xD4;
-pub const MARKER_MEDIUM: u8 = 0xD5;
-pub const MARKER_LARGE: u8 = 0xD6;
+pub(crate) const MARKER_TINY: u8 = 0x90;
+pub(crate) const MARKER_SMALL: u8 = 0xD4;
+pub(crate) const MARKER_MEDIUM: u8 = 0xD5;
+pub(crate) const MARKER_LARGE: u8 = 0xD6;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct List {

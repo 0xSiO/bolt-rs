@@ -4,16 +4,16 @@ use std::convert::{TryFrom, TryInto};
 use failure::Error;
 
 use crate::bolt;
-use crate::bolt::value::Value;
+use crate::bolt::Value;
 use crate::error::ValueError;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Relationship {
-    pub rel_identity: i64,
-    pub start_node_identity: i64,
-    pub end_node_identity: i64,
-    pub rel_type: String,
-    pub properties: HashMap<String, Value>,
+    pub(crate) rel_identity: i64,
+    pub(crate) start_node_identity: i64,
+    pub(crate) end_node_identity: i64,
+    pub(crate) rel_type: String,
+    pub(crate) properties: HashMap<String, Value>,
 }
 
 impl TryFrom<bolt::value::Relationship> for Relationship {

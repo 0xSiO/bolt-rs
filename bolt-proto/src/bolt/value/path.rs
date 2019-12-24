@@ -4,18 +4,18 @@ use failure::Error;
 
 use bolt_proto_derive::*;
 
-use crate::bolt::value::Value;
+use crate::bolt::Value;
 use crate::error::ValueError;
 use crate::native;
 
-pub const SIGNATURE: u8 = 0x50;
+pub(crate) const SIGNATURE: u8 = 0x50;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Path {
-    pub nodes: Box<Value>,
+    pub(crate) nodes: Box<Value>,
     // TODO: The relationships property is a list of UnboundRelationship - make sure this works as expected
-    pub relationships: Box<Value>,
-    pub sequence: Box<Value>,
+    pub(crate) relationships: Box<Value>,
+    pub(crate) sequence: Box<Value>,
 }
 
 impl From<native::value::Path> for Path {

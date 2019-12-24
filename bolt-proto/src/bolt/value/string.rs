@@ -9,12 +9,12 @@ use failure::Error;
 
 use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
-use crate::serialize::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize};
 
-pub const MARKER_TINY: u8 = 0x80;
-pub const MARKER_SMALL: u8 = 0xD0;
-pub const MARKER_MEDIUM: u8 = 0xD1;
-pub const MARKER_LARGE: u8 = 0xD2;
+pub(crate) const MARKER_TINY: u8 = 0x80;
+pub(crate) const MARKER_SMALL: u8 = 0xD0;
+pub(crate) const MARKER_MEDIUM: u8 = 0xD1;
+pub(crate) const MARKER_LARGE: u8 = 0xD2;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct String {
@@ -124,7 +124,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::bolt::value::Marker;
-    use crate::serialize::Serialize;
+    use crate::Serialize;
 
     use super::{String, MARKER_LARGE, MARKER_MEDIUM, MARKER_SMALL, MARKER_TINY};
 

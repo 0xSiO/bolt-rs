@@ -4,9 +4,9 @@ use std::sync::{Arc, Mutex};
 
 use failure::Error;
 
-pub use chunk::Chunk;
+pub(crate) use chunk::Chunk;
 pub use init::Init;
-pub use message_bytes::MessageBytes;
+pub(crate) use message_bytes::MessageBytes;
 pub use success::Success;
 
 use crate::bolt::structure::*;

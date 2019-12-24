@@ -4,16 +4,16 @@ use failure::Error;
 
 use bolt_proto_derive::*;
 
-use crate::bolt::message::Message;
-use crate::bolt::value::Value;
+use crate::bolt::Message;
+use crate::bolt::Value;
 use crate::error::MessageError;
 use crate::native;
 
-pub const SIGNATURE: u8 = 0x70;
+pub(crate) const SIGNATURE: u8 = 0x70;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
 pub struct Success {
-    pub metadata: Value,
+    pub(crate) metadata: Value,
 }
 
 impl From<native::message::Success> for Success {

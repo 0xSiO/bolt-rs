@@ -8,17 +8,17 @@ use failure::Error;
 
 use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, SerializeError, ValueError};
-use crate::serialize::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize};
 
-pub const MARKER_INT_8: u8 = 0xC8;
-pub const MARKER_INT_16: u8 = 0xC9;
-pub const MARKER_INT_32: u8 = 0xCA;
-pub const MARKER_INT_64: u8 = 0xCB;
+pub(crate) const MARKER_INT_8: u8 = 0xC8;
+pub(crate) const MARKER_INT_16: u8 = 0xC9;
+pub(crate) const MARKER_INT_32: u8 = 0xCA;
+pub(crate) const MARKER_INT_64: u8 = 0xCB;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Integer {
     // Since integers come in many sizes, just store the bytes directly
-    pub bytes: BytesMut,
+    pub(crate) bytes: BytesMut,
 }
 
 macro_rules! impl_from_int {

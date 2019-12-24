@@ -12,19 +12,19 @@ use crate::bolt::structure;
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
 use crate::native;
-use crate::serialize::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize};
 
-pub use self::boolean::Boolean;
-pub use self::float::Float;
-pub use self::integer::Integer;
-pub use self::list::List;
-pub use self::map::Map;
-pub use self::node::Node;
-pub use self::null::Null;
-pub use self::path::Path;
-pub use self::relationship::Relationship;
-pub use self::string::String;
-pub use self::unbound_relationship::UnboundRelationship;
+pub(crate) use boolean::Boolean;
+pub(crate) use float::Float;
+pub(crate) use integer::Integer;
+pub(crate) use list::List;
+pub(crate) use map::Map;
+pub(crate) use node::Node;
+pub(crate) use null::Null;
+pub(crate) use path::Path;
+pub(crate) use relationship::Relationship;
+pub(crate) use string::String;
+pub(crate) use unbound_relationship::UnboundRelationship;
 
 mod boolean;
 mod float;
@@ -38,7 +38,7 @@ mod relationship;
 mod string;
 mod unbound_relationship;
 
-pub trait Marker: Serialize + Deserialize {
+pub(crate) trait Marker: Serialize + Deserialize {
     fn get_marker(&self) -> Result<u8, Error>;
 }
 
@@ -67,7 +67,7 @@ impl From<bool> for Value {
 macro_rules! impl_from_int {
     ($($T:ty),+) => {
         $(
-            impl From<$T> for $crate::bolt::value::Value {
+            impl From<$T> for $crate::bolt::Value {
                 fn from(value: $T) -> Self {
                     Value::Integer(Integer::from(value))
                 }
@@ -283,7 +283,7 @@ mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
 
-    use crate::serialize::Serialize;
+    use crate::Serialize;
 
     use super::*;
 

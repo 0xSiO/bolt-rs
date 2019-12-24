@@ -4,14 +4,14 @@ use std::convert::{TryFrom, TryInto};
 use failure::Error;
 
 use crate::bolt;
-use crate::bolt::value::Value;
+use crate::bolt::Value;
 use crate::error::ValueError;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Node {
-    pub node_identity: i64,
-    pub labels: Vec<String>,
-    pub properties: HashMap<String, Value>,
+    pub(crate) node_identity: i64,
+    pub(crate) labels: Vec<String>,
+    pub(crate) properties: HashMap<String, Value>,
 }
 
 impl TryFrom<bolt::value::Node> for Node {

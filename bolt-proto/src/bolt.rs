@@ -1,3 +1,6 @@
+pub use message::Message;
+pub use value::Value;
+
 pub mod message;
-pub mod structure;
+mod structure;
 pub mod value;
