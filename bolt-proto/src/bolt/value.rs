@@ -134,6 +134,12 @@ impl From<native::value::Path> for Value {
     }
 }
 
+impl From<native::value::UnboundRelationship> for Value {
+    fn from(value: native::value::UnboundRelationship) -> Self {
+        Value::UnboundRelationship(UnboundRelationship::from(value))
+    }
+}
+
 impl Marker for Value {
     fn get_marker(&self) -> Result<u8, Error> {
         match self {
