@@ -2,10 +2,16 @@
 name = "bolt-proto"
 version = "0.1.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
+description = "Bolt protocol primitives: values, messages, and serialization / deserialization.\n"
+homepage = "https://github.com/lucis-fluxum/bolt-rs"
+repository = "https://github.com/lucis-fluxum/bolt-rs"
+categories  = ["network-programming", "database", "encoding"]
+keywords    = ["bolt", "protocol", "neo4j"]
+license = "MIT"
 edition = "2018"
 
 [dependencies]
-bolt-proto-derive = { path = "../bolt-proto-derive" }
+bolt-proto-derive = { path = "../bolt-proto-derive", version = "0.1.0" }
 
 bytes = "0.5.3"
 failure = "0.1.6"
