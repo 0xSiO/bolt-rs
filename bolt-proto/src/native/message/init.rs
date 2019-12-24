@@ -7,7 +7,6 @@ use crate::bolt;
 use crate::bolt::Message;
 use crate::bolt::Value;
 use crate::error::MessageError;
-use failure::_core::hash::Hash;
 
 #[derive(Debug)]
 pub struct Init {
