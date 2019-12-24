@@ -34,12 +34,6 @@ impl TryFrom<Value> for Boolean {
     }
 }
 
-impl From<bool> for Value {
-    fn from(value: bool) -> Self {
-        Value::Boolean(value.into())
-    }
-}
-
 impl Marker for Boolean {
     fn get_marker(&self) -> Result<u8, Error> {
         if self.value {

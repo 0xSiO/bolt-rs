@@ -42,15 +42,6 @@ impl TryFrom<Value> for List {
     }
 }
 
-impl<T> From<Vec<T>> for Value
-where
-    T: Into<Value>,
-{
-    fn from(value: Vec<T>) -> Self {
-        Value::List(value.into())
-    }
-}
-
 impl Marker for List {
     fn get_marker(&self) -> Result<u8, Error> {
         match self.value.len() {

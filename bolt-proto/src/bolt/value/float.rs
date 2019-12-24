@@ -47,12 +47,6 @@ impl TryFrom<Value> for Float {
     }
 }
 
-impl From<f64> for Value {
-    fn from(value: f64) -> Self {
-        Value::Float(value.into())
-    }
-}
-
 impl Marker for Float {
     fn get_marker(&self) -> Result<u8, Error> {
         Ok(MARKER)
