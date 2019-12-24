@@ -11,6 +11,7 @@ pub use success::Success;
 
 use crate::bolt::structure::*;
 use crate::error::DeserializeError;
+use crate::native;
 
 mod chunk;
 mod init;
@@ -21,6 +22,18 @@ mod success;
 pub enum Message {
     Init(Init),
     Success(Success),
+}
+
+impl From<native::message::Init> for Message {
+    fn from(message: native::message::Init) -> Self {
+        Message::Init(Init::from(message))
+    }
+}
+
+impl From<native::message::Success> for Message {
+    fn from(message: native::message::Success) -> Self {
+        Message::Success(Success::from(message))
+    }
 }
 
 impl TryFrom<MessageBytes> for Message {

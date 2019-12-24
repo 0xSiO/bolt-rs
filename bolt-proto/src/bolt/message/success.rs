@@ -1,12 +1,38 @@
+use std::convert::TryFrom;
+
+use failure::Error;
+
 use bolt_proto_derive::*;
 
+use crate::bolt::message::Message;
 use crate::bolt::value::Value;
+use crate::error::MessageError;
+use crate::native;
 
 pub const SIGNATURE: u8 = 0x70;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
 pub struct Success {
-    metadata: Value,
+    pub metadata: Value,
+}
+
+impl From<native::message::Success> for Success {
+    fn from(native_success: native::message::Success) -> Self {
+        Self {
+            metadata: Value::from(native_success.metadata),
+        }
+    }
+}
+
+impl TryFrom<Message> for Success {
+    type Error = Error;
+
+    fn try_from(message: Message) -> Result<Self, Self::Error> {
+        match message {
+            Message::Success(success) => Ok(success),
+            _ => Err(MessageError::InvalidConversion(message).into()),
+        }
+    }
 }
 
 #[cfg(test)]
