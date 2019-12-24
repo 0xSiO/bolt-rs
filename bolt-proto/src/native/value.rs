@@ -3,6 +3,7 @@ pub use path::Path;
 pub use relationship::Relationship;
 pub use unbound_relationship::UnboundRelationship;
 
+mod boolean;
 mod integer;
 mod list;
 mod node;
