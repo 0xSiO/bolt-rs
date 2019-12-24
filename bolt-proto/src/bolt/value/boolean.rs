@@ -1,13 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 use std::panic::catch_unwind;
+use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, Bytes};
 use failure::Error;
 
-use crate::bolt::value::{Marker, Value};
+use crate::bolt::value::Marker;
 use crate::error::{DeserializeError, ValueError};
-use crate::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use crate::{Deserialize, Serialize, Value};
 
 pub(crate) const MARKER_FALSE: u8 = 0xC2;
 pub(crate) const MARKER_TRUE: u8 = 0xC3;
@@ -81,6 +81,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Boolean {
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
 
@@ -88,7 +89,6 @@ mod tests {
     use crate::Serialize;
 
     use super::{Boolean, MARKER_FALSE, MARKER_TRUE};
-    use std::sync::{Arc, Mutex};
 
     #[test]
     fn get_marker() {

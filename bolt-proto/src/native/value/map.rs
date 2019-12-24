@@ -4,8 +4,9 @@ use std::hash::Hash;
 
 use failure::Error;
 
-use crate::bolt::value::{Map, Value};
+use crate::bolt::value::Map;
 use crate::error::ValueError;
+use crate::Value;
 
 // Have to use Value for the HashMap values since Value does not impl TryFrom<Value, Error = failure::Error>
 // and we need to support HashMaps with Value values (see Node's properties field)

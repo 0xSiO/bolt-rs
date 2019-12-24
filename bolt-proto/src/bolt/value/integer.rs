@@ -6,9 +6,9 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
-use crate::bolt::value::{Marker, Value};
+use crate::bolt::value::Marker;
 use crate::error::{DeserializeError, SerializeError, ValueError};
-use crate::{Deserialize, Serialize};
+use crate::{Deserialize, Serialize, Value};
 
 pub(crate) const MARKER_INT_8: u8 = 0xC8;
 pub(crate) const MARKER_INT_16: u8 = 0xC9;

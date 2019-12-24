@@ -32,6 +32,7 @@ impl MessageBytes {
         self.bytes.put(chunk.data);
     }
 
+    // TODO: Implement this method for Message
     pub(crate) async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
         buf_stream: &mut BufStream<T>,
     ) -> Result<MessageBytes, Error> {

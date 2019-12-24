@@ -2,8 +2,9 @@ use std::convert::{TryFrom, TryInto};
 
 use failure::Error;
 
-use crate::bolt::value::{List, Value};
+use crate::bolt::value::List;
 use crate::error::ValueError;
+use crate::Value;
 
 impl<T> TryInto<Vec<T>> for List
 where

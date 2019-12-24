@@ -9,7 +9,7 @@ pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
 pub use success::Success;
 
-use crate::bolt::structure::*;
+use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
 use crate::native;
 

@@ -2,8 +2,9 @@ use std::convert::TryFrom;
 
 use failure::Error;
 
-use crate::bolt::value::{Float, Value};
+use crate::bolt::value::Float;
 use crate::error::ValueError;
+use crate::Value;
 
 // TODO: Seems a little silly, consider removing Float type if possible
 impl From<Float> for f64 {
