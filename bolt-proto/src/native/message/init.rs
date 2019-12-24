@@ -7,11 +7,21 @@ use crate::bolt;
 use crate::bolt::Message;
 use crate::bolt::Value;
 use crate::error::MessageError;
+use failure::_core::hash::Hash;
 
 #[derive(Debug)]
 pub struct Init {
     pub(crate) client_name: String,
     pub(crate) auth_token: HashMap<String, Value>,
+}
+
+impl Init {
+    pub fn new(client_name: String, auth_token: HashMap<String, Value>) -> Self {
+        Self {
+            client_name,
+            auth_token,
+        }
+    }
 }
 
 impl TryFrom<bolt::message::Init> for Init {
