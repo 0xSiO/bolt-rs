@@ -2,21 +2,21 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
-use crate::bolt::value::BoltValue;
+use crate::bolt::value::Value;
 
 pub const SIGNATURE: u8 = 0x01;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
 pub struct BoltInit {
-    client_name: BoltValue,
-    auth_token: BoltValue,
+    client_name: Value,
+    auth_token: Value,
 }
 
 impl BoltInit {
     pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> BoltInit
     where
-        K: Into<BoltValue>,
-        V: Into<BoltValue>,
+        K: Into<Value>,
+        V: Into<Value>,
     {
         BoltInit {
             client_name: client_name.into(),

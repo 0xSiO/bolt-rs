@@ -4,7 +4,7 @@ use std::panic::catch_unwind;
 use bytes::{Buf, Bytes};
 use failure::Error;
 
-use crate::bolt::value::{BoltValue, Marker};
+use crate::bolt::value::{Marker, Value};
 use crate::error::{DeserializeError, ValueError};
 use crate::serialize::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
@@ -23,20 +23,20 @@ impl From<bool> for Boolean {
     }
 }
 
-impl TryFrom<BoltValue> for Boolean {
+impl TryFrom<Value> for Boolean {
     type Error = Error;
 
-    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            BoltValue::Boolean(boolean) => Ok(boolean),
+            Value::Boolean(boolean) => Ok(boolean),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
 }
 
-impl From<bool> for BoltValue {
+impl From<bool> for Value {
     fn from(value: bool) -> Self {
-        BoltValue::Boolean(value.into())
+        Value::Boolean(value.into())
     }
 }
 

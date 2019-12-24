@@ -71,11 +71,11 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
                         s.ident.to_string() + &type_args
                     }).collect();
                     match types[0].as_str() {
-                        "Box<BoltValue>" => {
-                            quote!(#field_name: Box::new(BoltValue::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?),)
+                        "Box<Value>" => {
+                            quote!(#field_name: Box::new(Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?),)
                         }
-                        "BoltValue" => {
-                            quote!(#field_name: BoltValue::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?,)
+                        "Value" => {
+                            quote!(#field_name: Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?,)
                         }
                         other => panic!("Can't deserialize {} with type {}", field_name, other),
                     }

@@ -1,12 +1,12 @@
 use bolt_proto_derive::*;
 
-use crate::bolt::value::BoltValue;
+use crate::bolt::value::Value;
 
 pub const SIGNATURE: u8 = 0x70;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
 pub struct BoltSuccess {
-    metadata: BoltValue,
+    metadata: Value,
 }
 
 #[cfg(test)]

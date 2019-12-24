@@ -4,31 +4,31 @@ use failure::Error;
 
 use bolt_proto_derive::*;
 
-use crate::bolt::value::BoltValue;
+use crate::bolt::value::Value;
 use crate::error::ValueError;
 
 pub const SIGNATURE: u8 = 0x52;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Relationship {
-    rel_identity: Box<BoltValue>,
-    start_node_identity: Box<BoltValue>,
-    end_node_identity: Box<BoltValue>,
-    rel_type: Box<BoltValue>,
-    properties: Box<BoltValue>,
+    rel_identity: Box<Value>,
+    start_node_identity: Box<Value>,
+    end_node_identity: Box<Value>,
+    rel_type: Box<Value>,
+    properties: Box<Value>,
 }
 
 // TODO: impl From<[Native Relationship type]> for Node
 
-impl TryFrom<BoltValue> for Relationship {
+impl TryFrom<Value> for Relationship {
     type Error = Error;
 
-    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            BoltValue::Relationship(rel) => Ok(rel),
+            Value::Relationship(rel) => Ok(rel),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
 }
 
-// TODO: impl From<[Native Relationship type]> for BoltValue
+// TODO: impl From<[Native Relationship type]> for Value

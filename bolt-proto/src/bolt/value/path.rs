@@ -4,30 +4,30 @@ use failure::Error;
 
 use bolt_proto_derive::*;
 
-use crate::bolt::value::BoltValue;
+use crate::bolt::value::Value;
 use crate::error::ValueError;
 
 pub const SIGNATURE: u8 = 0x50;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Path {
-    nodes: Box<BoltValue>,
+    nodes: Box<Value>,
     // TODO: The relationships property is a list of UnboundRelationship - make sure this works as expected
-    relationships: Box<BoltValue>,
-    sequence: Box<BoltValue>,
+    relationships: Box<Value>,
+    sequence: Box<Value>,
 }
 
 // TODO: impl From<[Native Path type]> for Node
 
-impl TryFrom<BoltValue> for Path {
+impl TryFrom<Value> for Path {
     type Error = Error;
 
-    fn try_from(value: BoltValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            BoltValue::Path(path) => Ok(path),
+            Value::Path(path) => Ok(path),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
 }
 
-// TODO: impl From<[Native Path type]> for BoltValue
+// TODO: impl From<[Native Path type]> for Value
