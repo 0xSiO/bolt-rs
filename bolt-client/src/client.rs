@@ -9,7 +9,7 @@ use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use bolt_proto::bolt::message::{BoltInit, BoltMessage, BoltMessageBytes, Chunk};
+use bolt_proto::bolt::message::{Chunk, Init, Message, MessageBytes};
 use bolt_proto::Serialize;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
@@ -40,9 +40,9 @@ impl Client {
 
     // TODO: Clean this up, this is just an experiment
     // Have to implement conversion from Bytes to value types before we can implement this
-    pub async fn init(&mut self) -> Result<BoltMessage, Error> {
+    pub async fn init(&mut self) -> Result<Message, Error> {
         println!("Starting init.");
-        let init = BoltInit::new(
+        let init = Init::new(
             "bolt-proto/0.1.0",
             HashMap::from_iter(vec![
                 ("scheme", "basic"),
@@ -51,15 +51,15 @@ impl Client {
             ]),
         );
         let bytes = init.try_into_bytes()?;
-        let mut message = BoltMessageBytes::new();
+        let mut message = MessageBytes::new();
         message.add_chunk(Chunk::try_from(bytes)?);
         println!("Created message.");
         let mut bytes: Bytes = message.into();
         self.stream.write_buf(&mut bytes).await?;
         self.stream.flush().await?;
         println!("Wrote init.");
-        let msg = BoltMessageBytes::from_stream(&mut self.stream).await?;
+        let msg = MessageBytes::from_stream(&mut self.stream).await?;
         println!("got msg {:?}", msg);
-        Ok(BoltMessage::try_from(msg)?)
+        Ok(Message::try_from(msg)?)
     }
 }

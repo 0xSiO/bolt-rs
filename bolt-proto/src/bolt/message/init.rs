@@ -7,18 +7,18 @@ use crate::bolt::value::Value;
 pub const SIGNATURE: u8 = 0x01;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
-pub struct BoltInit {
+pub struct Init {
     client_name: Value,
     auth_token: Value,
 }
 
-impl BoltInit {
-    pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> BoltInit
+impl Init {
+    pub fn new<K, V>(client_name: &str, auth_token: HashMap<K, V>) -> Init
     where
         K: Into<Value>,
         V: Into<Value>,
     {
-        BoltInit {
+        Init {
             client_name: client_name.into(),
             auth_token: auth_token.into(),
         }
@@ -38,8 +38,8 @@ mod tests {
 
     use super::*;
 
-    fn new_msg() -> BoltInit {
-        BoltInit::new(
+    fn new_msg() -> Init {
+        Init::new(
             "MyClient/1.0",
             HashMap::from_iter(vec![("scheme", "basic")]),
         )
