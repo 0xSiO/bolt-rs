@@ -71,7 +71,7 @@ mod tests {
         let mut client = new_client().await?;
         assert!(client
             .send_message(Message::from(Init::new(
-                "bolt-client/0.2.0".to_string(),
+                "bolt-client/0.2.1".to_string(),
                 HashMap::from_iter(vec![
                     (String::from("scheme"), Value::from("basic")),
                     (String::from("principal"), Value::from("neo4j")),
