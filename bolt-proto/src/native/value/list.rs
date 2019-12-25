@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 
 use failure::Error;
 
@@ -6,28 +6,18 @@ use crate::bolt::value::List;
 use crate::error::ValueError;
 use crate::Value;
 
-impl<T> TryInto<Vec<T>> for List
-where
-    T: TryFrom<Value, Error = Error>,
-{
+impl TryInto<Vec<Value>> for List {
     type Error = Error;
 
-    fn try_into(self) -> Result<Vec<T>, Self::Error> {
-        let mut vec: Vec<T> = Vec::with_capacity(self.value.len());
-        for value in self.value {
-            vec.push(T::try_from(value)?);
-        }
-        Ok(vec)
+    fn try_into(self) -> Result<Vec<Value>, Self::Error> {
+        Ok(self.value)
     }
 }
 
-impl<T> TryInto<Vec<T>> for Value
-where
-    T: TryFrom<Value, Error = Error>,
-{
+impl TryInto<Vec<Value>> for Value {
     type Error = Error;
 
-    fn try_into(self) -> Result<Vec<T>, Self::Error> {
+    fn try_into(self) -> Result<Vec<Value>, Self::Error> {
         match self {
             Value::List(list) => Ok(list.try_into()?),
             _ => Err(ValueError::InvalidConversion(self).into()),

@@ -5,13 +5,11 @@ use failure::Error;
 use crate::bolt;
 use crate::bolt::Value;
 use crate::error::ValueError;
-use crate::native::value::node::Node;
-use crate::native::value::relationship::Relationship;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Path {
-    pub(crate) nodes: Vec<Node>,
-    pub(crate) relationships: Vec<Relationship>,
+    pub(crate) nodes: Vec<Value>,
+    pub(crate) relationships: Vec<Value>,
     pub(crate) sequence: i64,
 }
 
