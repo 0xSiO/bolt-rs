@@ -14,6 +14,20 @@ pub struct Node {
     pub(crate) properties: HashMap<String, Value>,
 }
 
+impl Node {
+    pub fn new(
+        node_identity: i64,
+        labels: Vec<impl Into<Value>>,
+        properties: HashMap<String, impl Into<Value>>,
+    ) -> Self {
+        Self {
+            node_identity,
+            labels: labels.into_iter().map(|v| v.into()).collect(),
+            properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
+        }
+    }
+}
+
 impl TryFrom<bolt::value::Node> for Node {
     type Error = Error;
 
