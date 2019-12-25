@@ -44,14 +44,14 @@ const CHUNK_SIZE: usize = 16;
 pub enum Message {
     Init(Init),
     Run(Run),
-    DiscardAll(DiscardAll),
-    PullAll(PullAll),
-    AckFailure(AckFailure),
-    Reset(Reset),
+    DiscardAll,
+    PullAll,
+    AckFailure,
+    Reset,
     Record(Record),
     Success(Success),
     Failure(Failure),
-    Ignored(Ignored),
+    Ignored,
 }
 
 impl Message {
@@ -76,30 +76,6 @@ impl From<native::message::Run> for Message {
     }
 }
 
-impl From<native::message::DiscardAll> for Message {
-    fn from(message: native::message::DiscardAll) -> Self {
-        Message::DiscardAll(DiscardAll::from(message))
-    }
-}
-
-impl From<native::message::PullAll> for Message {
-    fn from(message: native::message::PullAll) -> Self {
-        Message::PullAll(PullAll::from(message))
-    }
-}
-
-impl From<native::message::AckFailure> for Message {
-    fn from(message: native::message::AckFailure) -> Self {
-        Message::AckFailure(AckFailure::from(message))
-    }
-}
-
-impl From<native::message::Reset> for Message {
-    fn from(message: native::message::Reset) -> Self {
-        Message::Reset(Reset::from(message))
-    }
-}
-
 impl From<native::message::Record> for Message {
     fn from(message: native::message::Record) -> Self {
         Message::Record(Record::from(message))
@@ -118,12 +94,6 @@ impl From<native::message::Failure> for Message {
     }
 }
 
-impl From<native::message::Ignored> for Message {
-    fn from(message: native::message::Ignored) -> Self {
-        Message::Ignored(Ignored::from(message))
-    }
-}
-
 impl TryFrom<MessageBytes> for Message {
     type Error = Error;
 
@@ -136,22 +106,16 @@ impl TryFrom<MessageBytes> for Message {
             match signature {
                 init::SIGNATURE => Ok(Message::Init(Init::try_from(remaining_bytes_arc)?)),
                 run::SIGNATURE => Ok(Message::Run(Run::try_from(remaining_bytes_arc)?)),
-                discard_all::SIGNATURE => Ok(Message::DiscardAll(DiscardAll::try_from(
-                    remaining_bytes_arc,
-                )?)),
-                pull_all::SIGNATURE => {
-                    Ok(Message::PullAll(PullAll::try_from(remaining_bytes_arc)?))
-                }
-                ack_failure::SIGNATURE => Ok(Message::AckFailure(AckFailure::try_from(
-                    remaining_bytes_arc,
-                )?)),
-                reset::SIGNATURE => Ok(Message::Reset(Reset::try_from(remaining_bytes_arc)?)),
+                discard_all::SIGNATURE => Ok(Message::DiscardAll),
+                pull_all::SIGNATURE => Ok(Message::PullAll),
+                ack_failure::SIGNATURE => Ok(Message::AckFailure),
+                reset::SIGNATURE => Ok(Message::Reset),
                 record::SIGNATURE => Ok(Message::Record(Record::try_from(remaining_bytes_arc)?)),
                 success::SIGNATURE => Ok(Message::Success(Success::try_from(remaining_bytes_arc)?)),
                 failure_::SIGNATURE => {
                     Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?))
                 }
-                ignored::SIGNATURE => Ok(Message::Ignored(Ignored::try_from(remaining_bytes_arc)?)),
+                ignored::SIGNATURE => Ok(Message::Ignored),
                 _ => {
                     Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())
                 }
@@ -172,14 +136,14 @@ impl TryInto<Vec<Bytes>> for Message {
         let bytes: Bytes = match self {
             Message::Init(init) => init.try_into()?,
             Message::Run(run) => run.try_into()?,
-            Message::DiscardAll(discard_all) => discard_all.try_into()?,
-            Message::PullAll(pull_all) => pull_all.try_into()?,
-            Message::AckFailure(ack_failure) => ack_failure.try_into()?,
-            Message::Reset(reset) => reset.try_into()?,
+            Message::DiscardAll => DiscardAll.try_into()?,
+            Message::PullAll => PullAll.try_into()?,
+            Message::AckFailure => AckFailure.try_into()?,
+            Message::Reset => Reset.try_into()?,
             Message::Record(record) => record.try_into()?,
             Message::Success(success) => success.try_into()?,
             Message::Failure(failure) => failure.try_into()?,
-            Message::Ignored(ignored) => ignored.try_into()?,
+            Message::Ignored => Ignored.try_into()?,
         };
 
         // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
