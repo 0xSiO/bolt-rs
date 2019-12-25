@@ -58,7 +58,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::iter::FromIterator;
 
-    use bolt_proto::message::{Init, Success};
+    use bolt_proto::message::{Failure, Init, Success};
     use bolt_proto::Value;
 
     use super::*;
@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn init() {
+    async fn init_success() {
         let mut client = new_client().await.unwrap();
         assert!(client
             .send_message(Message::from(Init::new(
@@ -90,5 +90,24 @@ mod tests {
         let response = client.read_message().await.unwrap();
         // println!("{:?}", response);
         assert!(Success::try_from(response).is_ok())
+    }
+
+    #[tokio::test]
+    async fn init_failure() {
+        let mut client = new_client().await.unwrap();
+        assert!(client
+            .send_message(Message::from(Init::new(
+                "bolt-client/0.2.0".to_string(),
+                HashMap::from_iter(vec![
+                    (String::from("scheme"), Value::from("basic")),
+                    (String::from("principal"), Value::from("neo4j")),
+                    (String::from("credentials"), Value::from("invalid!")),
+                ]),
+            )))
+            .await
+            .is_ok());
+        let response = client.read_message().await.unwrap();
+        // println!("{:?}", response);
+        assert!(Failure::try_from(response).is_ok())
     }
 }
