@@ -10,7 +10,7 @@ use crate::error::ValueError;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Node {
     pub(crate) node_identity: i64,
-    pub(crate) labels: Vec<String>,
+    pub(crate) labels: Vec<Value>,
     pub(crate) properties: HashMap<String, Value>,
 }
 

@@ -15,6 +15,7 @@ pub use ignored::Ignored;
 pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
 pub use pull_all::PullAll;
+pub use record::Record;
 pub use reset::Reset;
 pub use run::Run;
 pub use success::Success;
@@ -31,6 +32,7 @@ mod ignored;
 mod init;
 mod message_bytes;
 mod pull_all;
+mod record;
 mod reset;
 mod run;
 mod success;
@@ -48,6 +50,7 @@ pub enum Message {
     DiscardAll(DiscardAll),
     PullAll(PullAll),
     Reset(Reset),
+    Record(Record),
     Ignored(Ignored),
 }
 
@@ -115,6 +118,12 @@ impl From<native::message::Ignored> for Message {
     }
 }
 
+impl From<native::message::Record> for Message {
+    fn from(message: native::message::Record) -> Self {
+        Message::Record(Record::from(message))
+    }
+}
+
 impl TryFrom<MessageBytes> for Message {
     type Error = Error;
 
@@ -141,6 +150,7 @@ impl TryFrom<MessageBytes> for Message {
                     Ok(Message::PullAll(PullAll::try_from(remaining_bytes_arc)?))
                 }
                 reset::SIGNATURE => Ok(Message::Reset(Reset::try_from(remaining_bytes_arc)?)),
+                record::SIGNATURE => Ok(Message::Record(Record::try_from(remaining_bytes_arc)?)),
                 ignored::SIGNATURE => Ok(Message::Ignored(Ignored::try_from(remaining_bytes_arc)?)),
                 _ => {
                     Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())
@@ -168,6 +178,7 @@ impl TryInto<Vec<Bytes>> for Message {
             Message::DiscardAll(discard_all) => discard_all.try_into()?,
             Message::PullAll(pull_all) => pull_all.try_into()?,
             Message::Reset(reset) => reset.try_into()?,
+            Message::Record(record) => record.try_into()?,
             Message::Ignored(ignored) => ignored.try_into()?,
         };
 
