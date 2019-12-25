@@ -8,6 +8,7 @@ use tokio::io::BufStream;
 use tokio::prelude::*;
 
 pub(crate) use chunk::Chunk;
+pub use failure_::Failure;
 pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
 pub use success::Success;
@@ -17,6 +18,7 @@ use crate::error::DeserializeError;
 use crate::native;
 
 mod chunk;
+mod failure_;
 mod init;
 mod message_bytes;
 mod success;
@@ -28,6 +30,7 @@ const CHUNK_SIZE: usize = 16;
 pub enum Message {
     Init(Init),
     Success(Success),
+    Failure(Failure),
 }
 
 impl Message {
@@ -50,6 +53,12 @@ impl From<native::message::Success> for Message {
     }
 }
 
+impl From<native::message::Failure> for Message {
+    fn from(message: native::message::Failure) -> Self {
+        Message::Failure(Failure::from(message))
+    }
+}
+
 impl TryFrom<MessageBytes> for Message {
     type Error = Error;
 
@@ -62,6 +71,9 @@ impl TryFrom<MessageBytes> for Message {
             match signature {
                 init::SIGNATURE => Ok(Message::Init(Init::try_from(remaining_bytes_arc)?)),
                 success::SIGNATURE => Ok(Message::Success(Success::try_from(remaining_bytes_arc)?)),
+                failure_::SIGNATURE => {
+                    Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?))
+                }
                 _ => {
                     Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())
                 }
@@ -82,6 +94,7 @@ impl TryInto<Vec<Bytes>> for Message {
         let bytes: Bytes = match self {
             Message::Init(init) => init.try_into()?,
             Message::Success(success) => success.try_into()?,
+            Message::Failure(failure) => failure.try_into()?,
         };
 
         // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
