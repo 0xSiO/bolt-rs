@@ -11,6 +11,7 @@ pub use ack_failure::AckFailure;
 pub(crate) use chunk::Chunk;
 pub use discard_all::DiscardAll;
 pub use failure_::Failure;
+pub use ignored::Ignored;
 pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
 pub use pull_all::PullAll;
@@ -26,6 +27,7 @@ mod ack_failure;
 mod chunk;
 mod discard_all;
 mod failure_;
+mod ignored;
 mod init;
 mod message_bytes;
 mod pull_all;
@@ -46,6 +48,7 @@ pub enum Message {
     DiscardAll(DiscardAll),
     PullAll(PullAll),
     Reset(Reset),
+    Ignored(Ignored),
 }
 
 impl Message {
@@ -86,6 +89,8 @@ impl From<native::message::Run> for Message {
     }
 }
 
+// TODO: Remove native types for the empty messages and just use the enum variant
+
 impl From<native::message::DiscardAll> for Message {
     fn from(message: native::message::DiscardAll) -> Self {
         Message::DiscardAll(DiscardAll::from(message))
@@ -101,6 +106,12 @@ impl From<native::message::PullAll> for Message {
 impl From<native::message::Reset> for Message {
     fn from(message: native::message::Reset) -> Self {
         Message::Reset(Reset::from(message))
+    }
+}
+
+impl From<native::message::Ignored> for Message {
+    fn from(message: native::message::Ignored) -> Self {
+        Message::Ignored(Ignored::from(message))
     }
 }
 
@@ -130,6 +141,7 @@ impl TryFrom<MessageBytes> for Message {
                     Ok(Message::PullAll(PullAll::try_from(remaining_bytes_arc)?))
                 }
                 reset::SIGNATURE => Ok(Message::Reset(Reset::try_from(remaining_bytes_arc)?)),
+                ignored::SIGNATURE => Ok(Message::Ignored(Ignored::try_from(remaining_bytes_arc)?)),
                 _ => {
                     Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())
                 }
@@ -156,6 +168,7 @@ impl TryInto<Vec<Bytes>> for Message {
             Message::DiscardAll(discard_all) => discard_all.try_into()?,
             Message::PullAll(pull_all) => pull_all.try_into()?,
             Message::Reset(reset) => reset.try_into()?,
+            Message::Ignored(ignored) => ignored.try_into()?,
         };
 
         // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
