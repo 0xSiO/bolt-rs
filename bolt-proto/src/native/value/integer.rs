@@ -1,29 +1,37 @@
 use std::convert::TryFrom;
 
-use failure::Error;
-
-use crate::bolt::value::Integer;
-use crate::error::ValueError;
-use crate::Value;
-
-impl From<Integer> for i64 {
-    fn from(mut integer: Integer) -> Self {
-        // Get bytes in little-endian order
-        integer.bytes.reverse();
-        integer.bytes.resize(8, 0);
-        let mut bytes: [u8; 8] = [0; 8];
-        bytes.copy_from_slice(&integer.bytes);
-        i64::from_le_bytes(bytes)
-    }
+macro_rules! impl_from_integer {
+    ($($T:ty),+) => {
+        $(
+            impl From<crate::bolt::value::Integer> for $T {
+                fn from(mut integer: crate::bolt::value::Integer) -> Self {
+                    // Get bytes in little-endian order
+                    integer.bytes.reverse();
+                    integer.bytes.resize(::std::mem::size_of::<$T>(), 0);
+                    let mut bytes: [u8; ::std::mem::size_of::<$T>()] = [0; ::std::mem::size_of::<$T>()];
+                    bytes.copy_from_slice(&integer.bytes);
+                    <$T>::from_le_bytes(bytes)
+                }
+            }
+        )*
+    };
 }
+impl_from_integer!(i8, i16, i32, i64);
 
-impl TryFrom<Value> for i64 {
-    type Error = Error;
+macro_rules! impl_from_value {
+    ($($T:ty),+) => {
+        $(
+            impl TryFrom<crate::Value> for $T {
+                type Error = ::failure::Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
-        match value {
-            Value::Integer(integer) => Ok(i64::from(integer)),
-            _ => Err(ValueError::InvalidConversion(value).into()),
-        }
-    }
+                fn try_from(value: crate::Value) -> Result<Self, Self::Error> {
+                    match value {
+                        crate::Value::Integer(integer) => Ok(<$T>::from(integer)),
+                        _ => Err(crate::error::ValueError::InvalidConversion(value).into()),
+                    }
+                }
+            }
+        )*
+    };
 }
+impl_from_value!(i8, i16, i32, i64);
