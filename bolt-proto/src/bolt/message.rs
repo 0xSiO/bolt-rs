@@ -12,6 +12,7 @@ pub(crate) use chunk::Chunk;
 pub use failure_::Failure;
 pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
+pub use run::Run;
 pub use success::Success;
 
 use crate::bolt::structure::get_signature_from_bytes;
@@ -23,6 +24,7 @@ mod chunk;
 mod failure_;
 mod init;
 mod message_bytes;
+mod run;
 mod success;
 
 // This is what's used in the protocol spec, but it could technically be any size.
@@ -34,6 +36,7 @@ pub enum Message {
     Success(Success),
     Failure(Failure),
     AckFailure(AckFailure),
+    Run(Run),
 }
 
 impl Message {
@@ -68,6 +71,12 @@ impl From<native::message::AckFailure> for Message {
     }
 }
 
+impl From<native::message::Run> for Message {
+    fn from(message: native::message::Run) -> Self {
+        Message::Run(Run::from(message))
+    }
+}
+
 impl TryFrom<MessageBytes> for Message {
     type Error = Error;
 
@@ -86,6 +95,7 @@ impl TryFrom<MessageBytes> for Message {
                 ack_failure::SIGNATURE => Ok(Message::AckFailure(AckFailure::try_from(
                     remaining_bytes_arc,
                 )?)),
+                run::SIGNATURE => Ok(Message::Run(Run::try_from(remaining_bytes_arc)?)),
                 _ => {
                     Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())
                 }
@@ -108,6 +118,7 @@ impl TryInto<Vec<Bytes>> for Message {
             Message::Success(success) => success.try_into()?,
             Message::Failure(failure) => failure.try_into()?,
             Message::AckFailure(ack_failure) => ack_failure.try_into()?,
+            Message::Run(run) => run.try_into()?,
         };
 
         // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
