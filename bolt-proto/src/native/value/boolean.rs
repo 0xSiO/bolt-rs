@@ -6,7 +6,6 @@ use crate::bolt::value::Boolean;
 use crate::error::ValueError;
 use crate::Value;
 
-// TODO: This seems a little silly, consider removing the Boolean type if possible
 impl From<Boolean> for bool {
     fn from(boolean: Boolean) -> Self {
         boolean.value

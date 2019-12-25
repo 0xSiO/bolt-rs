@@ -71,7 +71,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Float {
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError(format!("Error creating Integer from Bytes: {}", err))
+            DeserializeError(format!("Error creating Float from Bytes: {}", err))
         })?)
     }
 }
