@@ -67,6 +67,22 @@ mod tests {
         Client::new("127.0.0.1".parse().unwrap(), 7687).await
     }
 
+    async fn init_client(credentials: &str) -> Result<Client, Error> {
+        let mut client = new_client().await?;
+        assert!(client
+            .send_message(Message::from(Init::new(
+                "bolt-client/0.2.0".to_string(),
+                HashMap::from_iter(vec![
+                    (String::from("scheme"), Value::from("basic")),
+                    (String::from("principal"), Value::from("neo4j")),
+                    (String::from("credentials"), Value::from(credentials)),
+                ]),
+            )))
+            .await
+            .is_ok());
+        Ok(client)
+    }
+
     #[tokio::test]
     async fn handshake() {
         let client = new_client().await.unwrap();
@@ -75,39 +91,22 @@ mod tests {
 
     #[tokio::test]
     async fn init_success() {
-        let mut client = new_client().await.unwrap();
-        assert!(client
-            .send_message(Message::from(Init::new(
-                "bolt-client/0.2.0".to_string(),
-                HashMap::from_iter(vec![
-                    (String::from("scheme"), Value::from("basic")),
-                    (String::from("principal"), Value::from("neo4j")),
-                    (String::from("credentials"), Value::from("test")),
-                ]),
-            )))
-            .await
-            .is_ok());
+        let mut client = init_client("test").await.unwrap();
         let response = client.read_message().await.unwrap();
         // println!("{:?}", response);
-        assert!(Success::try_from(response).is_ok())
+        assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn init_failure() {
-        let mut client = new_client().await.unwrap();
-        assert!(client
-            .send_message(Message::from(Init::new(
-                "bolt-client/0.2.0".to_string(),
-                HashMap::from_iter(vec![
-                    (String::from("scheme"), Value::from("basic")),
-                    (String::from("principal"), Value::from("neo4j")),
-                    (String::from("credentials"), Value::from("invalid!")),
-                ]),
-            )))
-            .await
-            .is_ok());
+        let mut client = init_client("invalid!").await.unwrap();
         let response = client.read_message().await.unwrap();
         // println!("{:?}", response);
-        assert!(Failure::try_from(response).is_ok())
+        assert!(Failure::try_from(response).is_ok());
+    }
+
+    #[tokio::test]
+    async fn ack_failure() {
+        todo!();
     }
 }
