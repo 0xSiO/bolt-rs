@@ -38,7 +38,7 @@ mod relationship;
 mod string;
 mod unbound_relationship;
 
-pub(crate) trait Marker: Serialize + Deserialize {
+pub trait Marker: Serialize + Deserialize {
     fn get_marker(&self) -> Result<u8, Error>;
 }
 

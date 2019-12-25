@@ -8,7 +8,7 @@ pub(crate) const MARKER_TINY: u8 = 0xB0;
 pub(crate) const MARKER_SMALL: u8 = 0xDC;
 pub(crate) const MARKER_MEDIUM: u8 = 0xDD;
 
-pub(crate) trait Signature: Marker {
+pub trait Signature: Marker {
     fn get_signature(&self) -> u8;
 }
 

@@ -22,7 +22,7 @@ pub use success::Success;
 
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
-use crate::native;
+use crate::{native, Deserialize, Marker, Serialize};
 
 mod ack_failure;
 mod chunk;
@@ -92,6 +92,55 @@ impl From<native::message::Failure> for Message {
     }
 }
 
+impl Marker for Message {
+    fn get_marker(&self) -> Result<u8, Error> {
+        match self {
+            Message::Init(init) => init.get_marker(),
+            Message::Run(run) => run.get_marker(),
+            Message::DiscardAll => DiscardAll.get_marker(),
+            Message::PullAll => PullAll.get_marker(),
+            Message::AckFailure => AckFailure.get_marker(),
+            Message::Reset => Reset.get_marker(),
+            Message::Record(record) => record.get_marker(),
+            Message::Success(success) => success.get_marker(),
+            Message::Failure(failure) => failure.get_marker(),
+            Message::Ignored => Ignored.get_marker(),
+        }
+    }
+}
+
+impl Serialize for Message {}
+
+impl TryInto<Bytes> for Message {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Bytes, Self::Error> {
+        match self {
+            Message::Init(init) => init.try_into(),
+            Message::Run(run) => run.try_into(),
+            Message::DiscardAll => DiscardAll.try_into(),
+            Message::PullAll => PullAll.try_into(),
+            Message::AckFailure => AckFailure.try_into(),
+            Message::Reset => Reset.try_into(),
+            Message::Record(record) => record.try_into(),
+            Message::Success(success) => success.try_into(),
+            Message::Failure(failure) => failure.try_into(),
+            Message::Ignored => Ignored.try_into(),
+        }
+    }
+}
+
+impl Deserialize for Message {}
+
+impl TryFrom<Arc<Mutex<Bytes>>> for Message {
+    type Error = Error;
+
+    fn try_from(value: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
+        let message_bytes = MessageBytes::try_from(value)?;
+        Message::try_from(message_bytes)
+    }
+}
+
 impl TryFrom<MessageBytes> for Message {
     type Error = Error;
 
@@ -131,18 +180,7 @@ impl TryInto<Vec<Bytes>> for Message {
     type Error = Error;
 
     fn try_into(self) -> Result<Vec<Bytes>, Self::Error> {
-        let bytes: Bytes = match self {
-            Message::Init(init) => init.try_into()?,
-            Message::Run(run) => run.try_into()?,
-            Message::DiscardAll => DiscardAll.try_into()?,
-            Message::PullAll => PullAll.try_into()?,
-            Message::AckFailure => AckFailure.try_into()?,
-            Message::Reset => Reset.try_into()?,
-            Message::Record(record) => record.try_into()?,
-            Message::Success(success) => success.try_into()?,
-            Message::Failure(failure) => failure.try_into()?,
-            Message::Ignored => Ignored.try_into()?,
-        };
+        let bytes: Bytes = self.try_into_bytes()?;
 
         // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
         let mut result: Vec<Bytes> = Vec::with_capacity(bytes.len() / CHUNK_SIZE + 2);
