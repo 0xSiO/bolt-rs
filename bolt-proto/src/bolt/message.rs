@@ -43,14 +43,14 @@ const CHUNK_SIZE: usize = 16;
 #[derive(Debug)]
 pub enum Message {
     Init(Init),
-    Success(Success),
-    Failure(Failure),
-    AckFailure(AckFailure),
     Run(Run),
     DiscardAll(DiscardAll),
     PullAll(PullAll),
+    AckFailure(AckFailure),
     Reset(Reset),
     Record(Record),
+    Success(Success),
+    Failure(Failure),
     Ignored(Ignored),
 }
 
@@ -62,9 +62,47 @@ impl Message {
     }
 }
 
+// TODO: Remove native types for the empty messages and just use the enum variant
+
 impl From<native::message::Init> for Message {
     fn from(message: native::message::Init) -> Self {
         Message::Init(Init::from(message))
+    }
+}
+
+impl From<native::message::Run> for Message {
+    fn from(message: native::message::Run) -> Self {
+        Message::Run(Run::from(message))
+    }
+}
+
+impl From<native::message::DiscardAll> for Message {
+    fn from(message: native::message::DiscardAll) -> Self {
+        Message::DiscardAll(DiscardAll::from(message))
+    }
+}
+
+impl From<native::message::PullAll> for Message {
+    fn from(message: native::message::PullAll) -> Self {
+        Message::PullAll(PullAll::from(message))
+    }
+}
+
+impl From<native::message::AckFailure> for Message {
+    fn from(message: native::message::AckFailure) -> Self {
+        Message::AckFailure(AckFailure::from(message))
+    }
+}
+
+impl From<native::message::Reset> for Message {
+    fn from(message: native::message::Reset) -> Self {
+        Message::Reset(Reset::from(message))
+    }
+}
+
+impl From<native::message::Record> for Message {
+    fn from(message: native::message::Record) -> Self {
+        Message::Record(Record::from(message))
     }
 }
 
@@ -80,47 +118,9 @@ impl From<native::message::Failure> for Message {
     }
 }
 
-impl From<native::message::AckFailure> for Message {
-    fn from(message: native::message::AckFailure) -> Self {
-        Message::AckFailure(AckFailure::from(message))
-    }
-}
-
-impl From<native::message::Run> for Message {
-    fn from(message: native::message::Run) -> Self {
-        Message::Run(Run::from(message))
-    }
-}
-
-// TODO: Remove native types for the empty messages and just use the enum variant
-
-impl From<native::message::DiscardAll> for Message {
-    fn from(message: native::message::DiscardAll) -> Self {
-        Message::DiscardAll(DiscardAll::from(message))
-    }
-}
-
-impl From<native::message::PullAll> for Message {
-    fn from(message: native::message::PullAll) -> Self {
-        Message::PullAll(PullAll::from(message))
-    }
-}
-
-impl From<native::message::Reset> for Message {
-    fn from(message: native::message::Reset) -> Self {
-        Message::Reset(Reset::from(message))
-    }
-}
-
 impl From<native::message::Ignored> for Message {
     fn from(message: native::message::Ignored) -> Self {
         Message::Ignored(Ignored::from(message))
-    }
-}
-
-impl From<native::message::Record> for Message {
-    fn from(message: native::message::Record) -> Self {
-        Message::Record(Record::from(message))
     }
 }
 
@@ -135,13 +135,6 @@ impl TryFrom<MessageBytes> for Message {
 
             match signature {
                 init::SIGNATURE => Ok(Message::Init(Init::try_from(remaining_bytes_arc)?)),
-                success::SIGNATURE => Ok(Message::Success(Success::try_from(remaining_bytes_arc)?)),
-                failure_::SIGNATURE => {
-                    Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?))
-                }
-                ack_failure::SIGNATURE => Ok(Message::AckFailure(AckFailure::try_from(
-                    remaining_bytes_arc,
-                )?)),
                 run::SIGNATURE => Ok(Message::Run(Run::try_from(remaining_bytes_arc)?)),
                 discard_all::SIGNATURE => Ok(Message::DiscardAll(DiscardAll::try_from(
                     remaining_bytes_arc,
@@ -149,8 +142,15 @@ impl TryFrom<MessageBytes> for Message {
                 pull_all::SIGNATURE => {
                     Ok(Message::PullAll(PullAll::try_from(remaining_bytes_arc)?))
                 }
+                ack_failure::SIGNATURE => Ok(Message::AckFailure(AckFailure::try_from(
+                    remaining_bytes_arc,
+                )?)),
                 reset::SIGNATURE => Ok(Message::Reset(Reset::try_from(remaining_bytes_arc)?)),
                 record::SIGNATURE => Ok(Message::Record(Record::try_from(remaining_bytes_arc)?)),
+                success::SIGNATURE => Ok(Message::Success(Success::try_from(remaining_bytes_arc)?)),
+                failure_::SIGNATURE => {
+                    Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?))
+                }
                 ignored::SIGNATURE => Ok(Message::Ignored(Ignored::try_from(remaining_bytes_arc)?)),
                 _ => {
                     Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())
@@ -171,14 +171,14 @@ impl TryInto<Vec<Bytes>> for Message {
     fn try_into(self) -> Result<Vec<Bytes>, Self::Error> {
         let bytes: Bytes = match self {
             Message::Init(init) => init.try_into()?,
-            Message::Success(success) => success.try_into()?,
-            Message::Failure(failure) => failure.try_into()?,
-            Message::AckFailure(ack_failure) => ack_failure.try_into()?,
             Message::Run(run) => run.try_into()?,
             Message::DiscardAll(discard_all) => discard_all.try_into()?,
             Message::PullAll(pull_all) => pull_all.try_into()?,
+            Message::AckFailure(ack_failure) => ack_failure.try_into()?,
             Message::Reset(reset) => reset.try_into()?,
             Message::Record(record) => record.try_into()?,
+            Message::Success(success) => success.try_into()?,
+            Message::Failure(failure) => failure.try_into()?,
             Message::Ignored(ignored) => ignored.try_into()?,
         };
 
