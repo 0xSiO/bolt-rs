@@ -14,6 +14,20 @@ pub struct UnboundRelationship {
     pub(crate) properties: HashMap<String, Value>,
 }
 
+impl UnboundRelationship {
+    pub fn new(
+        rel_identity: i64,
+        rel_type: String,
+        properties: HashMap<String, impl Into<Value>>,
+    ) -> Self {
+        Self {
+            rel_identity,
+            rel_type,
+            properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
+        }
+    }
+}
+
 impl TryFrom<bolt::value::UnboundRelationship> for UnboundRelationship {
     type Error = Error;
 
