@@ -1,5 +1,4 @@
 use std::convert::{TryFrom, TryInto};
-use std::hash::{Hash, Hasher};
 use std::mem;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
@@ -18,18 +17,6 @@ pub struct Float {
     pub(crate) value: f64,
 }
 
-impl Hash for Float {
-    fn hash<H: Hasher>(&self, _state: &mut H) {
-        panic!("Cannot hash a Float")
-    }
-}
-
-impl Eq for Float {
-    fn assert_receiver_is_total_eq(&self) {
-        panic!("Floats cannot be Eq")
-    }
-}
-
 impl From<f64> for Float {
     fn from(float: f64) -> Self {
         Self { value: float }
@@ -41,7 +28,7 @@ impl TryFrom<Value> for Float {
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            Value::Float(float) => Ok(float),
+            Value::Float(float) => Ok(Float::from(float)),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }

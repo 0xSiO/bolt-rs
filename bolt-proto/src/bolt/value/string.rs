@@ -40,7 +40,7 @@ impl TryFrom<Value> for String {
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            Value::String(string) => Ok(string),
+            Value::String(string) => Ok(String::from(string)),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }

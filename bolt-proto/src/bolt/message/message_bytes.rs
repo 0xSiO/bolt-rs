@@ -32,7 +32,6 @@ impl MessageBytes {
         self.bytes.put(chunk.data);
     }
 
-    // TODO: Implement this method for Message
     pub(crate) async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
         buf_stream: &mut BufStream<T>,
     ) -> Result<MessageBytes, Error> {
@@ -68,7 +67,6 @@ impl Buf for MessageBytes {
 }
 
 impl Into<Bytes> for MessageBytes {
-    // TODO: This puts the message into a single chunk, consider breaking up large messages into several chunk
     fn into(self) -> Bytes {
         let mut bytes = BytesMut::with_capacity(
             mem::size_of::<u8>() * 2 + self.len() + mem::size_of::<u8>() * 2,
@@ -112,11 +110,6 @@ mod tests {
         result.put_u16(0);
         assert_eq!(bytes, result.freeze())
     }
-
-    //    #[test]
-    //    fn into_bytes_multiple_chunks() {
-    //        todo!();
-    //    }
 
     #[tokio::test]
     async fn from_stream() {
