@@ -1,4 +1,4 @@
-pub use bolt::{Message, Value};
+pub use bolt::{Marker, Message, Signature, Value};
 pub use native::message;
 pub use native::value;
 pub use serialize::{Deserialize, Serialize};

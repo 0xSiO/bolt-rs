@@ -1,6 +1,7 @@
 pub use message::Message;
-pub use value::Value;
+pub use structure::Signature;
+pub use value::{Marker, Value};
 
 pub mod message;
-mod structure;
+pub mod structure;
 pub mod value;

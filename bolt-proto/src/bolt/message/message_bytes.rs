@@ -7,6 +7,9 @@ use tokio::io::BufStream;
 use tokio::prelude::*;
 
 use crate::bolt::message::Chunk;
+use crate::{Deserialize, Serialize};
+use failure::_core::convert::TryInto;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub(crate) struct MessageBytes {
@@ -66,15 +69,31 @@ impl Buf for MessageBytes {
     }
 }
 
-impl Into<Bytes> for MessageBytes {
-    fn into(self) -> Bytes {
+impl Serialize for MessageBytes {}
+
+impl TryInto<Bytes> for MessageBytes {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Bytes, Self::Error> {
         let mut bytes = BytesMut::with_capacity(
             mem::size_of::<u8>() * 2 + self.len() + mem::size_of::<u8>() * 2,
         );
         bytes.put_u16(self.len() as u16);
         bytes.put(self.bytes);
         bytes.put_u16(0);
-        bytes.freeze()
+        Ok(bytes.freeze())
+    }
+}
+
+impl Deserialize for MessageBytes {}
+
+impl TryFrom<Arc<Mutex<Bytes>>> for MessageBytes {
+    type Error = Error;
+
+    fn try_from(value: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
+        let bytes: &[u8] = &*value.lock().unwrap().clone();
+        let bytes = BytesMut::from(bytes);
+        Ok(Self { bytes })
     }
 }
 
@@ -103,7 +122,7 @@ mod tests {
 
     #[test]
     fn into_bytes() {
-        let bytes: Bytes = new_message().into();
+        let bytes: Bytes = new_message().try_into_bytes().unwrap();
         let mut result = BytesMut::new();
         result.put_u16(new_chunk().data.len() as u16);
         result.put(new_chunk().data);
