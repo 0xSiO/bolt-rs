@@ -13,6 +13,20 @@ pub struct Path {
     pub(crate) sequence: i64,
 }
 
+impl Path {
+    pub fn new(
+        nodes: Vec<impl Into<Value>>,
+        relationships: Vec<impl Into<Value>>,
+        sequence: i64,
+    ) -> Self {
+        Self {
+            nodes: nodes.into_iter().map(|v| v.into()).collect(),
+            relationships: relationships.into_iter().map(|v| v.into()).collect(),
+            sequence,
+        }
+    }
+}
+
 impl TryFrom<bolt::value::Path> for Path {
     type Error = Error;
 
