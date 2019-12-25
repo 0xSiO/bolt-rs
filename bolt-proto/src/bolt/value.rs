@@ -76,9 +76,8 @@ impl Hash for Value {
 
 impl Eq for Value {
     fn assert_receiver_is_total_eq(&self) {
-        match self {
-            Value::Float(_) => panic!("Floats do not impl Eq"),
-            _ => {}
+        if let Value::Float(_) = self {
+            panic!("Floats do not impl Eq")
         }
     }
 }
@@ -268,11 +267,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 structure::MARKER_SMALL | structure::MARKER_MEDIUM => {
                     deserialize_structure(input_arc)
                 }
-                _ => {
-                    return Err(
-                        DeserializeError(format!("Invalid marker byte: {:x}", marker)).into(),
-                    );
-                }
+                _ => Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into()),
             }
         })
         .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
@@ -293,11 +288,7 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value, Error> {
         unbound_relationship::SIGNATURE => Ok(Value::UnboundRelationship(
             UnboundRelationship::try_from(input_arc)?,
         )),
-        _ => {
-            return Err(
-                DeserializeError(format!("Invalid signature byte: {:x}", signature)).into(),
-            );
-        }
+        _ => Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into()),
     }
 }
 
