@@ -73,10 +73,12 @@ impl TryInto<Bytes> for Integer {
     fn try_into(self) -> Result<Bytes, Self::Error> {
         let mut bytes = BytesMut::with_capacity(mem::size_of::<u8>() + self.bytes.len());
         bytes.put_u8(self.get_marker()?);
-        let first_byte = *self.bytes.get(0).ok_or(SerializeError(format!(
-            "Unable to get first element of bytes: {:?}",
-            self.bytes
-        )))?;
+        let first_byte = *self.bytes.get(0).ok_or_else(|| {
+            SerializeError(format!(
+                "Unable to get first element of bytes: {:?}",
+                self.bytes
+            ))
+        })?;
         // Anything other than tiny integers need the rest of their bytes added
         if self.get_marker()? != first_byte {
             bytes.put(self.bytes);

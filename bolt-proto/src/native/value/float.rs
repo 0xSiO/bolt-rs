@@ -17,7 +17,7 @@ impl TryFrom<Value> for f64 {
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            Value::Float(float) => Ok(f64::from(float)),
+            Value::Float(float) => Ok(float),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
