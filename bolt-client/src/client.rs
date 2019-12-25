@@ -119,4 +119,9 @@ mod tests {
     async fn discard_all() {
         todo!();
     }
+
+    #[tokio::test]
+    async fn pull_all() {
+        todo!();
+    }
 }

@@ -13,6 +13,7 @@ pub use discard_all::DiscardAll;
 pub use failure_::Failure;
 pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
+pub use pull_all::PullAll;
 pub use run::Run;
 pub use success::Success;
 
@@ -26,6 +27,7 @@ mod discard_all;
 mod failure_;
 mod init;
 mod message_bytes;
+mod pull_all;
 mod run;
 mod success;
 
@@ -40,6 +42,7 @@ pub enum Message {
     AckFailure(AckFailure),
     Run(Run),
     DiscardAll(DiscardAll),
+    PullAll(PullAll),
 }
 
 impl Message {
@@ -86,6 +89,12 @@ impl From<native::message::DiscardAll> for Message {
     }
 }
 
+impl From<native::message::PullAll> for Message {
+    fn from(message: native::message::PullAll) -> Self {
+        Message::PullAll(PullAll::from(message))
+    }
+}
+
 impl TryFrom<MessageBytes> for Message {
     type Error = Error;
 
@@ -108,6 +117,9 @@ impl TryFrom<MessageBytes> for Message {
                 discard_all::SIGNATURE => Ok(Message::DiscardAll(DiscardAll::try_from(
                     remaining_bytes_arc,
                 )?)),
+                pull_all::SIGNATURE => {
+                    Ok(Message::PullAll(PullAll::try_from(remaining_bytes_arc)?))
+                }
                 _ => {
                     Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into())
                 }
@@ -132,6 +144,7 @@ impl TryInto<Vec<Bytes>> for Message {
             Message::AckFailure(ack_failure) => ack_failure.try_into()?,
             Message::Run(run) => run.try_into()?,
             Message::DiscardAll(discard_all) => discard_all.try_into()?,
+            Message::PullAll(pull_all) => pull_all.try_into()?,
         };
 
         // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
