@@ -22,7 +22,7 @@ pub use success::Success;
 
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
-use crate::{native, Deserialize, Marker, Serialize};
+use crate::{native, Deserialize, Marker, Serialize, Signature};
 
 mod ack_failure;
 mod chunk;
@@ -105,6 +105,23 @@ impl Marker for Message {
             Message::Success(success) => success.get_marker(),
             Message::Failure(failure) => failure.get_marker(),
             Message::Ignored => Ignored.get_marker(),
+        }
+    }
+}
+
+impl Signature for Message {
+    fn get_signature(&self) -> u8 {
+        match self {
+            Message::Init(init) => init.get_signature(),
+            Message::Run(run) => run.get_signature(),
+            Message::DiscardAll => DiscardAll.get_signature(),
+            Message::PullAll => PullAll.get_signature(),
+            Message::AckFailure => AckFailure.get_signature(),
+            Message::Reset => Reset.get_signature(),
+            Message::Record(record) => record.get_signature(),
+            Message::Success(success) => success.get_signature(),
+            Message::Failure(failure) => failure.get_signature(),
+            Message::Ignored => Ignored.get_signature(),
         }
     }
 }
