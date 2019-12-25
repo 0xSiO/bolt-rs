@@ -124,4 +124,9 @@ mod tests {
     async fn pull_all() {
         todo!();
     }
+
+    #[tokio::test]
+    async fn reset() {
+        todo!();
+    }
 }
