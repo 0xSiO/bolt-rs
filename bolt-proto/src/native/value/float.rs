@@ -6,7 +6,6 @@ use crate::bolt::value::Float;
 use crate::error::ValueError;
 use crate::Value;
 
-// TODO: Seems a little silly, consider removing Float type if possible
 impl From<Float> for f64 {
     fn from(float: Float) -> Self {
         float.value
