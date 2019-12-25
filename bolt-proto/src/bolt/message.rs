@@ -62,8 +62,6 @@ impl Message {
     }
 }
 
-// TODO: Remove native types for the empty messages and just use the enum variant
-
 impl From<native::message::Init> for Message {
     fn from(message: native::message::Init) -> Self {
         Message::Init(Init::from(message))

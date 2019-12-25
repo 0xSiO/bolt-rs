@@ -28,7 +28,7 @@ impl TryFrom<Value> for Boolean {
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            Value::Boolean(boolean) => Ok(boolean),
+            Value::Boolean(boolean) => Ok(Boolean::from(boolean)),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }

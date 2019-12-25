@@ -1,7 +1,7 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
@@ -42,25 +42,50 @@ pub(crate) trait Marker: Serialize + Deserialize {
     fn get_marker(&self) -> Result<u8, Error>;
 }
 
-// TODO: Consider manually implementing Hash here and only deriving hash on the values that support it
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
-    Boolean(Boolean),
+    Boolean(bool),
     Integer(Integer),
-    Float(Float),
+    Float(f64),
     List(List),
     Map(Map),
-    Null(Null),
-    String(String),
+    Null,
+    String(std::string::String),
     Node(Node),
     Relationship(Relationship),
     Path(Path),
     UnboundRelationship(UnboundRelationship),
 }
 
+impl Hash for Value {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Value::Float(_) | Value::Map(_) => panic!("Cannot hash a {:?}", self),
+            Value::Boolean(boolean) => boolean.hash(state),
+            Value::Integer(integer) => integer.hash(state),
+            Value::List(list) => list.hash(state),
+            Value::Null => Null.hash(state),
+            Value::String(string) => string.hash(state),
+            Value::Node(node) => node.hash(state),
+            Value::Relationship(rel) => rel.hash(state),
+            Value::Path(path) => path.hash(state),
+            Value::UnboundRelationship(unbound_rel) => unbound_rel.hash(state),
+        }
+    }
+}
+
+impl Eq for Value {
+    fn assert_receiver_is_total_eq(&self) {
+        match self {
+            Value::Float(_) => panic!("Floats do not impl Eq"),
+            _ => {}
+        }
+    }
+}
+
 impl From<bool> for Value {
     fn from(value: bool) -> Self {
-        Value::Boolean(Boolean::from(value))
+        Value::Boolean(value)
     }
 }
 
@@ -79,7 +104,7 @@ impl_from_int!(i8, i16, i32, i64);
 
 impl From<f64> for Value {
     fn from(value: f64) -> Self {
-        Value::Float(Float::from(value))
+        Value::Float(value)
     }
 }
 
@@ -102,17 +127,15 @@ where
     }
 }
 
-// TODO: No Rust equivalent for Null, consider removing Null struct and just have an empty variant
-
 impl From<&str> for Value {
     fn from(value: &str) -> Self {
-        Value::String(String::from(value))
+        Value::String(std::string::String::from(value))
     }
 }
 
 impl From<std::string::String> for Value {
     fn from(value: std::string::String) -> Self {
-        Value::String(String::from(value))
+        Value::String(value)
     }
 }
 
@@ -143,13 +166,13 @@ impl From<native::value::UnboundRelationship> for Value {
 impl Marker for Value {
     fn get_marker(&self) -> Result<u8, Error> {
         match self {
-            Value::Boolean(boolean) => boolean.get_marker(),
+            Value::Boolean(boolean) => Boolean::from(*boolean).get_marker(),
             Value::Integer(integer) => integer.get_marker(),
-            Value::Float(float) => float.get_marker(),
+            Value::Float(float) => Float::from(*float).get_marker(),
             Value::List(list) => list.get_marker(),
             Value::Map(map) => map.get_marker(),
-            Value::Null(null) => null.get_marker(),
-            Value::String(string) => string.get_marker(),
+            Value::Null => Null.get_marker(),
+            Value::String(string) => String::from(string.as_str()).get_marker(),
             Value::Node(node) => node.get_marker(),
             Value::Relationship(rel) => rel.get_marker(),
             Value::Path(path) => path.get_marker(),
@@ -165,13 +188,13 @@ impl TryInto<Bytes> for Value {
 
     fn try_into(self) -> Result<Bytes, Self::Error> {
         match self {
-            Value::Boolean(boolean) => boolean.try_into(),
+            Value::Boolean(boolean) => Boolean::from(boolean).try_into(),
             Value::Integer(integer) => integer.try_into(),
-            Value::Float(float) => float.try_into(),
+            Value::Float(float) => Float::from(float).try_into(),
             Value::List(list) => list.try_into(),
             Value::Map(map) => map.try_into(),
-            Value::Null(null) => null.try_into(),
-            Value::String(string) => string.try_into(),
+            Value::Null => Null.try_into(),
+            Value::String(string) => String::from(string).try_into(),
             Value::Node(node) => node.try_into(),
             Value::Relationship(rel) => rel.try_into(),
             Value::Path(path) => path.try_into(),
@@ -192,15 +215,15 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
             match marker {
                 null::MARKER => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Null(Null))
+                    Ok(Value::Null)
                 }
                 boolean::MARKER_FALSE => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Boolean(Boolean::from(false)))
+                    Ok(Value::Boolean(false))
                 }
                 boolean::MARKER_TRUE => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Boolean(Boolean::from(true)))
+                    Ok(Value::Boolean(true))
                 }
                 // Tiny int
                 marker if (-16..=127).contains(&(marker as i8)) => {
@@ -212,15 +235,15 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 | integer::MARKER_INT_16
                 | integer::MARKER_INT_32
                 | integer::MARKER_INT_64 => Ok(Value::Integer(Integer::try_from(input_arc)?)),
-                float::MARKER => Ok(Value::Float(Float::try_from(input_arc)?)),
+                float::MARKER => Ok(Value::Float(Float::try_from(input_arc)?.value)),
                 // Tiny string
                 marker
                     if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
                 {
-                    Ok(Value::String(String::try_from(input_arc)?))
+                    Ok(Value::String(String::try_from(input_arc)?.value))
                 }
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
-                    Ok(Value::String(String::try_from(input_arc)?))
+                    Ok(Value::String(String::try_from(input_arc)?.value))
                 }
                 // Tiny list
                 marker if (list::MARKER_TINY..=(list::MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -293,7 +316,7 @@ mod tests {
         let null_bytes = null.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(null_bytes))).unwrap(),
-            Value::Null(null)
+            Value::Null
         );
     }
 
@@ -305,11 +328,11 @@ mod tests {
         let false_bytes = f.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(true_bytes))).unwrap(),
-            Value::Boolean(t)
+            Value::Boolean(true)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(false_bytes))).unwrap(),
-            Value::Boolean(f)
+            Value::Boolean(false)
         );
     }
 
@@ -359,19 +382,19 @@ mod tests {
         let pi_bytes = pi.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(min_bytes))).unwrap(),
-            Value::Float(min)
+            Value::Float(min.value)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(max_bytes))).unwrap(),
-            Value::Float(max)
+            Value::Float(max.value)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(e_bytes))).unwrap(),
-            Value::Float(e)
+            Value::Float(e.value)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(pi_bytes))).unwrap(),
-            Value::Float(pi)
+            Value::Float(pi.value)
         );
     }
 
@@ -387,19 +410,19 @@ mod tests {
         let large_bytes = large.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
-            Value::String(tiny)
+            Value::String(tiny.value)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
-            Value::String(small)
+            Value::String(small.value)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
-            Value::String(medium)
+            Value::String(medium.value)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
-            Value::String(large)
+            Value::String(large.value)
         );
     }
 

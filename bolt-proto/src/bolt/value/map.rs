@@ -1,7 +1,6 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use std::hash::{Hash, Hasher};
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
@@ -21,12 +20,6 @@ pub(crate) const MARKER_LARGE: u8 = 0xDA;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Map {
     pub(crate) value: HashMap<Value, Value>,
-}
-
-impl Hash for Map {
-    fn hash<H: Hasher>(&self, _state: &mut H) {
-        panic!("Cannot hash a Map")
-    }
 }
 
 impl<K, V> From<HashMap<K, V>> for Map
