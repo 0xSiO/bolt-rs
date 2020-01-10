@@ -73,14 +73,16 @@ impl TryInto<Bytes> for Integer {
     fn try_into(self) -> Result<Bytes, Self::Error> {
         let mut bytes = BytesMut::with_capacity(mem::size_of::<u8>() + self.bytes.len());
         bytes.put_u8(self.get_marker()?);
-        let first_byte = *self.bytes.get(0).ok_or_else(|| {
+        let last_byte = *self.bytes.last().ok_or_else(|| {
             SerializeError(format!(
                 "Unable to get first element of bytes: {:?}",
                 self.bytes
             ))
         })?;
         // Anything other than tiny integers need the rest of their bytes added
-        if self.get_marker()? != first_byte {
+        // FIXME: Integer serialization is broken. Maybe match on the marker, and only put a certain
+        //        number of bytes into the returned BytesMut
+        if self.get_marker()? != last_byte {
             bytes.put(self.bytes);
         }
         Ok(bytes.freeze())
@@ -140,9 +142,19 @@ mod tests {
     fn try_into_bytes() {
         let tiny = Integer::from(-16_i8);
         assert_eq!(tiny.try_into_bytes().unwrap(), Bytes::from_static(&[0xF0]));
+        let tiny_64 = Integer::from(5_i64);
+        assert_eq!(
+            tiny_64.try_into_bytes().unwrap(),
+            Bytes::from_static(&[0x05])
+        );
         let small = Integer::from(-50_i8);
         assert_eq!(
             small.try_into_bytes().unwrap(),
+            Bytes::from_static(&[MARKER_INT_8, 0xCE])
+        );
+        let small_64 = Integer::from(-50_i64);
+        assert_eq!(
+            small_64.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER_INT_8, 0xCE])
         );
         let medium = Integer::from(-8000_i16);
