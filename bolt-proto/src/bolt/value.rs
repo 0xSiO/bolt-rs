@@ -260,7 +260,8 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 }
                 // Tiny structure
                 marker
-                    if (structure::MARKER_TINY..=(list::MARKER_TINY | 0x0F)).contains(&marker) =>
+                    if (structure::MARKER_TINY..=(structure::MARKER_TINY | 0x0F))
+                        .contains(&marker) =>
                 {
                     deserialize_structure(input_arc)
                 }
@@ -498,7 +499,14 @@ mod tests {
 
     #[test]
     fn node_from_bytes() {
-        todo!()
+        let node = crate::value::Node::new(
+            24_i64,
+            vec!["TestNode".to_string()],
+            HashMap::from_iter(vec![("key1".to_string(), -1), ("key2".to_string(), 1)]),
+        );
+        let node_bytes = Node::from(node.clone()).try_into_bytes().unwrap();
+        println!("{:?}", node_bytes.to_vec());
+        println!("{:?}", Value::try_from(Arc::new(Mutex::new(node_bytes))));
     }
 
     #[test]
