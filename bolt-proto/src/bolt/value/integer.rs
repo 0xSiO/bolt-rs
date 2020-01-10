@@ -7,7 +7,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use failure::Error;
 
 use crate::bolt::value::Marker;
-use crate::error::{DeserializeError, SerializeError, ValueError};
+use crate::error::{DeserializeError, ValueError};
 use crate::{Deserialize, Serialize, Value};
 
 pub(crate) const MARKER_INT_8: u8 = 0xC8;
@@ -60,7 +60,7 @@ impl Marker for Integer {
             -2_147_483_648..=-32_769 | 32_768..=2_147_483_647 => Ok(MARKER_INT_32),
             -32_768..=-129 | 128..=32_767 => Ok(MARKER_INT_16),
             -128..=-17 => Ok(MARKER_INT_8),
-            -16..=127 => Ok((value as i8).to_be_bytes()[0]),
+            -16..=127 => Ok(value as u8),
         }
     }
 }
@@ -70,20 +70,19 @@ impl Serialize for Integer {}
 impl TryInto<Bytes> for Integer {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(mut self) -> Result<Bytes, Self::Error> {
         let mut bytes = BytesMut::with_capacity(mem::size_of::<u8>() + self.bytes.len());
-        bytes.put_u8(self.get_marker()?);
-        let last_byte = *self.bytes.last().ok_or_else(|| {
-            SerializeError(format!(
-                "Unable to get first element of bytes: {:?}",
-                self.bytes
-            ))
-        })?;
-        // Anything other than tiny integers need the rest of their bytes added
-        // FIXME: Integer serialization is broken. Maybe match on the marker, and only put a certain
-        //        number of bytes into the returned BytesMut
-        if self.get_marker()? != last_byte {
-            bytes.put(self.bytes);
+        let marker = self.get_marker()?;
+        bytes.put_u8(marker);
+        // We first put our bytes in little-endian order so we only store as many bytes as we
+        // actually need
+        self.bytes.reverse();
+        match marker {
+            MARKER_INT_8 => bytes.put_i8(self.bytes.get_i8()),
+            MARKER_INT_16 => bytes.put_i16(self.bytes.get_i16_le()),
+            MARKER_INT_32 => bytes.put_i32(self.bytes.get_i32_le()),
+            MARKER_INT_64 => bytes.put_i64(self.bytes.get_i64_le()),
+            _ => {} // tiny int, value is already in the marker
         }
         Ok(bytes.freeze())
     }
