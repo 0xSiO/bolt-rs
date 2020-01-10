@@ -497,18 +497,21 @@ mod tests {
         );
     }
 
-    #[test]
-    fn node_from_bytes() {
-        let node = crate::value::Node::new(
+    fn get_node() -> crate::value::Node {
+        crate::value::Node::new(
             24_i64,
             vec!["TestNode".to_string()],
             HashMap::from_iter(vec![
                 ("key1".to_string(), -1_i8),
                 ("key2".to_string(), 1_i8),
             ]),
-        );
-        let node_bytes: Bytes = Node::from(node.clone()).try_into_bytes().unwrap();
-        let mut expected_node = Node::from(node.clone());
+        )
+    }
+
+    #[test]
+    fn node_from_bytes() {
+        let node_bytes: Bytes = Node::from(get_node()).try_into_bytes().unwrap();
+        let mut expected_node = Node::from(get_node());
 
         // This is important - 24 doesn't need to fit in 64 bits, so we expect it to be serialized
         // as a tiny int instead.
@@ -520,18 +523,81 @@ mod tests {
         );
     }
 
+    fn get_rel() -> crate::value::Relationship {
+        crate::value::Relationship::new(
+            24_i64,
+            32_i64,
+            128_i64,
+            "TestRel".to_string(),
+            HashMap::from_iter(vec![
+                ("key1".to_string(), -2_i8),
+                ("key2".to_string(), 2_i8),
+            ]),
+        )
+    }
+
     #[test]
     fn relationship_from_bytes() {
-        todo!()
+        let rel_bytes: Bytes = Relationship::from(get_rel()).try_into_bytes().unwrap();
+        let mut expected_rel = Relationship::from(get_rel());
+
+        // We expect integers to shrink to proper sizes
+        expected_rel.rel_identity = Box::new(Value::from(24_i8));
+        expected_rel.start_node_identity = Box::new(Value::from(32_i8));
+        expected_rel.end_node_identity = Box::new(Value::from(128_i16));
+
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(rel_bytes))).unwrap(),
+            Value::Relationship(expected_rel)
+        );
     }
 
     #[test]
     fn path_from_bytes() {
-        todo!()
+        let mut node = Node::from(get_node());
+        let mut rel = Relationship::from(get_rel());
+        // We expect integers to shrink to proper sizes
+        node.node_identity = Box::new(Value::from(24_i8));
+        rel.rel_identity = Box::new(Value::from(24_i8));
+        rel.start_node_identity = Box::new(Value::from(32_i8));
+        rel.end_node_identity = Box::new(Value::from(128_i16));
+
+        let path = crate::value::Path::new(
+            vec![Value::Node(node)],
+            vec![Value::Relationship(rel)],
+            100_i64,
+        );
+        let path_bytes: Bytes = Path::from(path.clone()).try_into_bytes().unwrap();
+        let mut expected_path = Path::from(path);
+
+        expected_path.sequence = Box::new(Value::from(100_i8));
+
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(path_bytes))).unwrap(),
+            Value::Path(expected_path)
+        );
     }
 
     #[test]
     fn unbound_relationship_from_bytes() {
-        todo!()
+        let unbound_rel = crate::value::UnboundRelationship::new(
+            128_i64,
+            "TestRel".to_string(),
+            HashMap::from_iter(vec![
+                ("key1".to_string(), -2_i8),
+                ("key2".to_string(), 2_i8),
+            ]),
+        );
+        let unbound_rel_bytes: Bytes = UnboundRelationship::from(unbound_rel.clone())
+            .try_into_bytes()
+            .unwrap();
+        let mut expected_unbound_rel = UnboundRelationship::from(unbound_rel);
+
+        expected_unbound_rel.rel_identity = Box::new(Value::from(128_i16));
+
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(unbound_rel_bytes))).unwrap(),
+            Value::UnboundRelationship(expected_unbound_rel)
+        );
     }
 }
