@@ -502,11 +502,22 @@ mod tests {
         let node = crate::value::Node::new(
             24_i64,
             vec!["TestNode".to_string()],
-            HashMap::from_iter(vec![("key1".to_string(), -1), ("key2".to_string(), 1)]),
+            HashMap::from_iter(vec![
+                ("key1".to_string(), -1_i8),
+                ("key2".to_string(), 1_i8),
+            ]),
         );
-        let node_bytes = Node::from(node.clone()).try_into_bytes().unwrap();
-        println!("{:?}", node_bytes.to_vec());
-        println!("{:?}", Value::try_from(Arc::new(Mutex::new(node_bytes))));
+        let node_bytes: Bytes = Node::from(node.clone()).try_into_bytes().unwrap();
+        let mut expected_node = Node::from(node.clone());
+
+        // This is important - 24 doesn't need to fit in 64 bits, so we expect it to be serialized
+        // as a tiny int instead.
+        expected_node.node_identity = Box::new(Value::from(24_i8));
+
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(node_bytes))).unwrap(),
+            Value::Node(expected_node)
+        );
     }
 
     #[test]
