@@ -555,16 +555,14 @@ mod tests {
     #[test]
     fn path_from_bytes() {
         let mut node = Node::from(get_node());
-        let mut rel = Relationship::from(get_rel());
+        let mut unbound_rel = UnboundRelationship::from(get_unbound_rel());
         // We expect integers to shrink to proper sizes
         node.node_identity = Box::new(Value::from(24_i8));
-        rel.rel_identity = Box::new(Value::from(24_i8));
-        rel.start_node_identity = Box::new(Value::from(32_i8));
-        rel.end_node_identity = Box::new(Value::from(128_i16));
+        unbound_rel.rel_identity = Box::new(Value::from(24_i8));
 
         let path = crate::value::Path::new(
             vec![Value::Node(node)],
-            vec![Value::Relationship(rel)],
+            vec![Value::UnboundRelationship(unbound_rel)],
             100_i64,
         );
         let path_bytes: Bytes = Path::from(path.clone()).try_into_bytes().unwrap();
@@ -578,20 +576,23 @@ mod tests {
         );
     }
 
-    #[test]
-    fn unbound_relationship_from_bytes() {
-        let unbound_rel = crate::value::UnboundRelationship::new(
+    fn get_unbound_rel() -> crate::value::UnboundRelationship {
+        crate::value::UnboundRelationship::new(
             128_i64,
             "TestRel".to_string(),
             HashMap::from_iter(vec![
                 ("key1".to_string(), -2_i8),
                 ("key2".to_string(), 2_i8),
             ]),
-        );
-        let unbound_rel_bytes: Bytes = UnboundRelationship::from(unbound_rel.clone())
+        )
+    }
+
+    #[test]
+    fn unbound_relationship_from_bytes() {
+        let unbound_rel_bytes: Bytes = UnboundRelationship::from(get_unbound_rel())
             .try_into_bytes()
             .unwrap();
-        let mut expected_unbound_rel = UnboundRelationship::from(unbound_rel);
+        let mut expected_unbound_rel = UnboundRelationship::from(get_unbound_rel());
 
         expected_unbound_rel.rel_identity = Box::new(Value::from(128_i16));
 
