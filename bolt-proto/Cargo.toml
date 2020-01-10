@@ -1,6 +1,6 @@
 [package]
 name = "bolt-proto"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "Bolt protocol primitives: values, messages, and serialization / deserialization.\n"
 homepage = "https://github.com/lucis-fluxum/bolt-rs"
