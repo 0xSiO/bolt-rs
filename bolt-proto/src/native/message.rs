@@ -1,3 +1,5 @@
+// TODO: Should we re-export these types or create new ones?
+pub use crate::bolt::message::{AckFailure, DiscardAll, Ignored, PullAll, Reset};
 pub use failure_::Failure;
 pub use init::Init;
 pub use record::Record;

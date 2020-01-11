@@ -58,7 +58,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::iter::FromIterator;
 
-    use bolt_proto::message::{Failure, Init, Success};
+    use bolt_proto::message::*;
     use bolt_proto::Value;
 
     use super::*;
@@ -83,6 +83,13 @@ mod tests {
         Ok(client)
     }
 
+    async fn get_initialized_client() -> Result<Client, Error> {
+        let mut client = init_client("test").await?;
+        let success = client.read_message().await?;
+        assert!(Success::try_from(success).is_ok());
+        Ok(client)
+    }
+
     #[tokio::test]
     async fn handshake() {
         let client = new_client().await.unwrap();
@@ -93,7 +100,6 @@ mod tests {
     async fn init_success() {
         let mut client = init_client("test").await.unwrap();
         let response = client.read_message().await.unwrap();
-        // println!("{:?}", response);
         assert!(Success::try_from(response).is_ok());
     }
 
@@ -101,7 +107,6 @@ mod tests {
     async fn init_failure() {
         let mut client = init_client("invalid!").await.unwrap();
         let response = client.read_message().await.unwrap();
-        // println!("{:?}", response);
         assert!(Failure::try_from(response).is_ok());
     }
 
@@ -137,6 +142,15 @@ mod tests {
 
     #[tokio::test]
     async fn ignored() {
-        todo!();
+        let mut client = get_initialized_client().await.unwrap();
+        let invalid_msg = Message::from(Run::new("".to_string(), HashMap::new()));
+        assert!(client.send_message(invalid_msg).await.is_ok());
+        let failure = Failure::try_from(client.read_message().await.unwrap());
+        assert!(failure.is_ok());
+        let valid_msg = Message::from(Run::new("RETURN 1 as n;".to_string(), HashMap::new()));
+        assert!(client.send_message(valid_msg).await.is_ok());
+
+        // let ignored = Ignored::try_from(client.read_message().await.unwrap());
+        // assert!(ignored.is_ok());
     }
 }
