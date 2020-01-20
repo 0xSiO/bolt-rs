@@ -17,6 +17,10 @@ impl Failure {
     pub fn new(metadata: HashMap<String, Value>) -> Self {
         Self { metadata }
     }
+
+    pub fn metadata(&self) -> &HashMap<String, Value> {
+        &self.metadata
+    }
 }
 
 impl TryFrom<bolt::message::Failure> for Failure {
