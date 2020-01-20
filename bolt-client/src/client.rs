@@ -174,8 +174,11 @@ mod tests {
         assert!(client.send_message(Message::PullAll).await.is_ok());
         let response = client.read_message().await.unwrap();
         let record = Record::try_from(response).unwrap();
-        println!("{:?}", record);
-        // TODO: Check that the fields match the returned value
+        assert_eq!(record.fields(), &vec![Value::from(3458376)]);
+
+        // After PullAll is finished, the server sends a Success message
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
@@ -188,22 +191,56 @@ mod tests {
 
     #[tokio::test]
     async fn discard_all() {
-        todo!();
+        let mut client = get_initialized_client().await.unwrap();
+        let run_msg = Message::from(Run::new("RETURN 3 as n;".to_string(), HashMap::new()));
+        assert!(client.send_message(run_msg).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+
+        assert!(client.send_message(Message::DiscardAll).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
-    async fn pull_all() {
-        todo!();
+    async fn discard_all_and_pull() {
+        let mut client = get_initialized_client().await.unwrap();
+        let run_msg = Message::from(Run::new("RETURN 3 as n;".to_string(), HashMap::new()));
+        assert!(client.send_message(run_msg).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+
+        assert!(client.send_message(Message::DiscardAll).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+
+        assert!(client.send_message(Message::PullAll).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn reset() {
-        todo!();
-    }
+        let mut client = get_initialized_client().await.unwrap();
+        let run_msg = Message::from(Run::new("Syntax error!;".to_string(), HashMap::new()));
+        assert!(client.send_message(run_msg).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
 
-    #[tokio::test]
-    async fn record() {
-        todo!();
+        send_valid_message(&mut client).await;
+        let response = client.read_message().await.unwrap();
+        assert!(match response {
+            Message::Ignored => true,
+            _ => false,
+        });
+
+        assert!(client.send_message(Message::Reset).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+
+        send_valid_message(&mut client).await;
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
