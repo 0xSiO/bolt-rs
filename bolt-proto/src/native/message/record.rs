@@ -16,6 +16,10 @@ impl Record {
     pub fn new(fields: Vec<Value>) -> Self {
         Self { fields }
     }
+
+    pub fn fields(&self) -> &Vec<Value> {
+        &self.fields
+    }
 }
 
 impl TryFrom<bolt::message::Record> for Record {

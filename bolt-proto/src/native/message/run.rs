@@ -21,6 +21,14 @@ impl Run {
             parameters,
         }
     }
+
+    pub fn statement(&self) -> &str {
+        &self.statement
+    }
+
+    pub fn parameters(&self) -> &HashMap<String, Value> {
+        &self.parameters
+    }
 }
 
 impl TryFrom<bolt::message::Run> for Run {
