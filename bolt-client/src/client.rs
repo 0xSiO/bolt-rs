@@ -156,7 +156,34 @@ mod tests {
 
     #[tokio::test]
     async fn run() {
-        todo!();
+        let mut client = get_initialized_client().await.unwrap();
+        let run_msg = Message::from(Run::new("RETURN -1 as n;".to_string(), HashMap::new()));
+        assert!(client.send_message(run_msg).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+    }
+
+    #[tokio::test]
+    async fn run_and_pull() {
+        let mut client = get_initialized_client().await.unwrap();
+        let run_msg = Message::from(Run::new("RETURN 3458376 as n;".to_string(), HashMap::new()));
+        assert!(client.send_message(run_msg).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+
+        assert!(client.send_message(Message::PullAll).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        let record = Record::try_from(response).unwrap();
+        println!("{:?}", record);
+        // TODO: Check that the fields match the returned value
+    }
+
+    #[tokio::test]
+    async fn discard_all_failure() {
+        let mut client = get_initialized_client().await.unwrap();
+        assert!(client.send_message(Message::DiscardAll).await.is_ok());
+        let response = client.read_message().await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
     }
 
     #[tokio::test]
