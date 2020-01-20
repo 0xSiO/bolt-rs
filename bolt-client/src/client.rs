@@ -150,7 +150,10 @@ mod tests {
         let valid_msg = Message::from(Run::new("RETURN 1 as n;".to_string(), HashMap::new()));
         assert!(client.send_message(valid_msg).await.is_ok());
 
-        // let ignored = Ignored::try_from(client.read_message().await.unwrap());
-        // assert!(ignored.is_ok());
+        let ignored = client.read_message().await.unwrap();
+        assert!(match ignored {
+            Message::Ignored => true,
+            _ => false,
+        });
     }
 }
