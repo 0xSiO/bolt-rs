@@ -90,6 +90,16 @@ mod tests {
         Ok(client)
     }
 
+    async fn send_invalid_message(client: &mut Client) {
+        let invalid_msg = Message::from(Run::new("".to_string(), HashMap::new()));
+        assert!(client.send_message(invalid_msg).await.is_ok());
+    }
+
+    async fn send_valid_message(client: &mut Client) {
+        let valid_msg = Message::from(Run::new("RETURN 1 as n;".to_string(), HashMap::new()));
+        assert!(client.send_message(valid_msg).await.is_ok());
+    }
+
     #[tokio::test]
     async fn handshake() {
         let client = new_client().await.unwrap();
@@ -112,7 +122,36 @@ mod tests {
 
     #[tokio::test]
     async fn ack_failure() {
-        todo!();
+        let mut client = get_initialized_client().await.unwrap();
+
+        send_invalid_message(&mut client).await;
+        let failure = Failure::try_from(client.read_message().await.unwrap());
+        assert!(failure.is_ok());
+        client.send_message(Message::AckFailure).await.unwrap();
+        send_valid_message(&mut client).await;
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+    }
+
+    #[tokio::test]
+    async fn ack_failure_after_ignored() {
+        let mut client = get_initialized_client().await.unwrap();
+
+        send_invalid_message(&mut client).await;
+        let failure = Failure::try_from(client.read_message().await.unwrap());
+        assert!(failure.is_ok());
+
+        send_valid_message(&mut client).await;
+        let response = client.read_message().await.unwrap();
+        assert!(match response {
+            Message::Ignored => true,
+            _ => false,
+        });
+
+        client.send_message(Message::AckFailure).await.unwrap();
+        send_valid_message(&mut client).await;
+        let response = client.read_message().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
@@ -143,12 +182,10 @@ mod tests {
     #[tokio::test]
     async fn ignored() {
         let mut client = get_initialized_client().await.unwrap();
-        let invalid_msg = Message::from(Run::new("".to_string(), HashMap::new()));
-        assert!(client.send_message(invalid_msg).await.is_ok());
+        send_invalid_message(&mut client).await;
         let failure = Failure::try_from(client.read_message().await.unwrap());
         assert!(failure.is_ok());
-        let valid_msg = Message::from(Run::new("RETURN 1 as n;".to_string(), HashMap::new()));
-        assert!(client.send_message(valid_msg).await.is_ok());
+        send_valid_message(&mut client).await;
 
         let ignored = client.read_message().await.unwrap();
         assert!(match ignored {
