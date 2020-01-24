@@ -80,7 +80,7 @@ impl Client {
     ) -> Result<Message, Error> {
         let init_msg = Init::new(client_name, auth_token);
         self.send_message(Message::from(init_msg)).await?;
-        Ok(self.read_message().await?)
+        self.read_message().await
     }
 
     /// Send a `RUN` message to the server.
@@ -116,7 +116,7 @@ impl Client {
     ) -> Result<Message, Error> {
         let run_msg = Run::new(statement, parameters.unwrap_or_default());
         self.send_message(Message::from(run_msg)).await?;
-        Ok(self.read_message().await?)
+        self.read_message().await
     }
 
     // TODO: Pipelined runs for multiple statements
@@ -138,7 +138,7 @@ impl Client {
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
     pub async fn discard_all(&mut self) -> Result<Message, Error> {
         self.send_message(Message::DiscardAll).await?;
-        Ok(self.read_message().await?)
+        self.read_message().await
     }
 
     /// Send a `PULL_ALL` message to the server. Returns a tuple containing a `Vec` of the records returned from the
@@ -184,7 +184,7 @@ impl Client {
     /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting to be cleared
     pub async fn ack_failure(&mut self) -> Result<Message, Error> {
         self.send_message(Message::AckFailure).await?;
-        Ok(self.read_message().await?)
+        self.read_message().await
     }
 
     /// Send a `RESET` message to the server.
@@ -210,7 +210,7 @@ impl Client {
     /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently possible
     pub async fn reset(&mut self) -> Result<Message, Error> {
         self.send_message(Message::Reset).await?;
-        Ok(self.read_message().await?)
+        self.read_message().await
     }
 }
 
@@ -231,186 +231,149 @@ mod tests {
         Ok(client)
     }
 
-    async fn init_client(credentials: &str) -> Result<Client, Error> {
-        let mut client = new_client().await?;
-        assert!(client
-            .send_message(Message::from(Init::new(
+    async fn initialize_client(client: &mut Client, credentials: &str) -> Result<Message, Error> {
+        client
+            .init(
                 "bolt-client/X.Y.Z".to_string(),
                 HashMap::from_iter(vec![
                     (String::from("scheme"), Value::from("basic")),
                     (String::from("principal"), Value::from("neo4j")),
                     (String::from("credentials"), Value::from(credentials)),
                 ]),
-            )))
+            )
             .await
-            .is_ok());
-        Ok(client)
     }
 
     async fn get_initialized_client() -> Result<Client, Error> {
-        let mut client = init_client("test").await?;
-        let success = client.read_message().await?;
-        assert!(Success::try_from(success).is_ok());
+        let mut client = new_client().await?;
+        initialize_client(&mut client, "test").await?;
         Ok(client)
     }
 
-    async fn send_invalid_message(client: &mut Client) {
-        let invalid_msg = Message::from(Run::new("".to_string(), HashMap::new()));
-        assert!(client.send_message(invalid_msg).await.is_ok());
+    async fn run_invalid_query(client: &mut Client) -> Result<Message, Error> {
+        client.run("".to_string(), None).await
     }
 
-    async fn send_valid_message(client: &mut Client) {
-        let valid_msg = Message::from(Run::new("RETURN 1 as n;".to_string(), HashMap::new()));
-        assert!(client.send_message(valid_msg).await.is_ok());
+    async fn run_valid_query(client: &mut Client) -> Result<Message, Error> {
+        client.run("RETURN 1 as n;".to_string(), None).await
     }
 
     #[tokio::test]
-    async fn init_success() {
-        let mut client = init_client("test").await.unwrap();
-        let response = client.read_message().await.unwrap();
+    async fn init() {
+        let mut client = new_client().await.unwrap();
+        let response = initialize_client(&mut client, "test").await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
-    async fn init_failure() {
-        let mut client = init_client("invalid!").await.unwrap();
-        let response = client.read_message().await.unwrap();
+    async fn init_fail() {
+        let mut client = new_client().await.unwrap();
+        let response = initialize_client(&mut client, "invalid!").await.unwrap();
         assert!(Failure::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn ack_failure() {
         let mut client = get_initialized_client().await.unwrap();
-
-        send_invalid_message(&mut client).await;
-        let failure = Failure::try_from(client.read_message().await.unwrap());
-        assert!(failure.is_ok());
-        client.send_message(Message::AckFailure).await.unwrap();
-        send_valid_message(&mut client).await;
-        let response = client.read_message().await.unwrap();
+        let response = run_invalid_query(&mut client).await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
+        let response = client.ack_failure().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+        let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn ack_failure_after_ignored() {
         let mut client = get_initialized_client().await.unwrap();
-
-        send_invalid_message(&mut client).await;
-        let failure = Failure::try_from(client.read_message().await.unwrap());
-        assert!(failure.is_ok());
-
-        send_valid_message(&mut client).await;
-        let response = client.read_message().await.unwrap();
+        let response = run_invalid_query(&mut client).await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
+        let response = run_valid_query(&mut client).await.unwrap();
         assert!(match response {
             Message::Ignored => true,
             _ => false,
         });
-
-        client.send_message(Message::AckFailure).await.unwrap();
-        send_valid_message(&mut client).await;
-        let response = client.read_message().await.unwrap();
+        let response = client.ack_failure().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+        let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn run() {
         let mut client = get_initialized_client().await.unwrap();
-        let run_msg = Message::from(Run::new("RETURN -1 as n;".to_string(), HashMap::new()));
-        assert!(client.send_message(run_msg).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn run_and_pull() {
         let mut client = get_initialized_client().await.unwrap();
-        let run_msg = Message::from(Run::new("RETURN 3458376 as n;".to_string(), HashMap::new()));
-        assert!(client.send_message(run_msg).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = client
+            .run("RETURN 3458376 as n;".to_string(), None)
+            .await
+            .unwrap();
         assert!(Success::try_from(response).is_ok());
 
-        assert!(client.send_message(Message::PullAll).await.is_ok());
-        let response = client.read_message().await.unwrap();
-        let record = Record::try_from(response).unwrap();
-        assert_eq!(record.fields(), &vec![Value::from(3458376)]);
-
-        // After PullAll is finished, the server sends a Success message
-        let response = client.read_message().await.unwrap();
+        let (response, records) = client.pull_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert!(!records.is_empty());
+        assert_eq!(records[0].fields(), &vec![Value::from(3458376)]);
     }
 
+    // TODO: Node/Relationship creation tests
+
     #[tokio::test]
-    async fn discard_all_failure() {
+    async fn discard_all_fail() {
         let mut client = get_initialized_client().await.unwrap();
-        assert!(client.send_message(Message::DiscardAll).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = client.discard_all().await.unwrap();
         assert!(Failure::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn discard_all() {
         let mut client = get_initialized_client().await.unwrap();
-        let run_msg = Message::from(Run::new("RETURN 3 as n;".to_string(), HashMap::new()));
-        assert!(client.send_message(run_msg).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
-
-        assert!(client.send_message(Message::DiscardAll).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = client.discard_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn discard_all_and_pull() {
         let mut client = get_initialized_client().await.unwrap();
-        let run_msg = Message::from(Run::new("RETURN 3 as n;".to_string(), HashMap::new()));
-        assert!(client.send_message(run_msg).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
-
-        assert!(client.send_message(Message::DiscardAll).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = client.discard_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
-
-        assert!(client.send_message(Message::PullAll).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let (response, records) = client.pull_all().await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert!(records.is_empty());
     }
 
     #[tokio::test]
     async fn reset() {
         let mut client = get_initialized_client().await.unwrap();
-        let run_msg = Message::from(Run::new("Syntax error!;".to_string(), HashMap::new()));
-        assert!(client.send_message(run_msg).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
-
-        send_valid_message(&mut client).await;
-        let response = client.read_message().await.unwrap();
+        let response = run_valid_query(&mut client).await.unwrap();
         assert!(match response {
             Message::Ignored => true,
             _ => false,
         });
-
-        assert!(client.send_message(Message::Reset).await.is_ok());
-        let response = client.read_message().await.unwrap();
+        let response = client.reset().await.unwrap();
         assert!(Success::try_from(response).is_ok());
-
-        send_valid_message(&mut client).await;
-        let response = client.read_message().await.unwrap();
+        let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn ignored() {
         let mut client = get_initialized_client().await.unwrap();
-        send_invalid_message(&mut client).await;
-        let failure = Failure::try_from(client.read_message().await.unwrap());
-        assert!(failure.is_ok());
-        send_valid_message(&mut client).await;
-
-        let ignored = client.read_message().await.unwrap();
-        assert!(match ignored {
+        let response = run_invalid_query(&mut client).await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
+        let response = run_valid_query(&mut client).await.unwrap();
+        assert!(match response {
             Message::Ignored => true,
             _ => false,
         });
