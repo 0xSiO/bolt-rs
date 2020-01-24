@@ -22,6 +22,18 @@ impl Path {
             sequence,
         }
     }
+
+    pub fn nodes(&self) -> &[Node] {
+        &self.nodes
+    }
+
+    pub fn relationships(&self) -> &[UnboundRelationship] {
+        &self.relationships
+    }
+
+    pub fn sequence(&self) -> i64 {
+        self.sequence
+    }
 }
 
 impl TryFrom<bolt::value::Path> for Path {

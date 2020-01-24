@@ -26,6 +26,18 @@ impl UnboundRelationship {
             properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
         }
     }
+
+    pub fn rel_identity(&self) -> i64 {
+        self.rel_identity
+    }
+
+    pub fn rel_type(&self) -> &str {
+        &self.rel_type
+    }
+
+    pub fn properties(&self) -> &HashMap<String, Value> {
+        &self.properties
+    }
 }
 
 impl TryFrom<bolt::value::UnboundRelationship> for UnboundRelationship {
