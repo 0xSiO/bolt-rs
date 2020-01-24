@@ -10,7 +10,6 @@ use tokio::prelude::*;
 
 use bolt_proto::message::*;
 use bolt_proto::{Message, Value};
-use std::net::Shutdown::Read;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
@@ -152,13 +151,13 @@ impl Client {
     /// Response:
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available or if retrieval fails
-    pub async fn pull_all(&mut self) -> Result<(Vec<Record>, Message), Error> {
+    pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>), Error> {
         self.send_message(Message::PullAll).await?;
         let mut records = vec![];
         loop {
             match self.read_message().await? {
                 Message::Record(record) => records.push(Record::try_from(record)?),
-                other => return Ok((records, other)),
+                other => return Ok((other, records)),
             }
         }
     }
