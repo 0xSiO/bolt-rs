@@ -139,19 +139,19 @@ impl Client {
         Ok(self.read_message().await?)
     }
 
-    /// Send a PULL_ALL message to the server. Returns a tuple containing a Vec of the records returned from the server
-    /// as well as the summary message (SUCCESS or FAILURE).
+    /// Send a `PULL_ALL` message to the server. Returns a tuple containing a `Vec` of the records returned from the
+    /// server as well as the summary message (`SUCCESS` or `FAILURE`).
     ///
     /// # Description
-    /// The PULL_ALL message is a client message used to retrieve all remaining items from the active result stream.
+    /// The `PULL_ALL` message is a client message used to retrieve all remaining items from the active result stream.
     ///
-    /// On receipt of a PULL_ALL message, the server will send all remaining result data items to the client, each in a
-    /// single RECORD message. The server will then close the stream and send a single SUCCESS message optionally
+    /// On receipt of a `PULL_ALL` message, the server will send all remaining result data items to the client, each in
+    /// a single `RECORD` message. The server will then close the stream and send a single `SUCCESS` message optionally
     /// containing summary information on the data items sent. If an error is encountered, the server must instead send
-    /// a FAILURE message, discard all remaining data items and close the stream.
+    /// a `FAILURE` message, discard all remaining data items and close the stream.
     ///
     /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
-    /// single IGNORED message and take no further action.
+    /// single `IGNORED` message and take no further action.
     ///
     /// # Response
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
