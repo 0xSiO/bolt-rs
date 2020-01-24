@@ -29,4 +29,6 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/lucis-
 
 ## License
 
-This crate is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+This crate is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT), with
+portions of the documentation licensed under the 
+[Creative Commons Attribution-ShareAlike 3.0 License](https://creativecommons.org/licenses/by-sa/3.0/).
