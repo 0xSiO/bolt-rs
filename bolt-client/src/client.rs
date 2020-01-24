@@ -162,6 +162,23 @@ impl Client {
             }
         }
     }
+
+    /// Send an `ACK_FAILURE` message to the server.
+    ///
+    /// The `ACK_FAILURE` message is a client message used to acknowledge a failure the server has sent.
+    ///
+    /// The following actions are performed by `ACK_FAILURE`:
+    /// - clear any outstanding `FAILURE` state
+    ///
+    /// In some cases, it may be preferable to use `RESET` after a failure, to clear the entire state of the connection.
+    ///
+    /// Response:
+    /// - `SUCCESS {}` if the session was successfully reset
+    /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting to be cleared
+    pub async fn ack_failure(&mut self) -> Result<Message, Error> {
+        self.send_message(Message::AckFailure).await?;
+        Ok(self.read_message().await?)
+    }
 }
 
 #[cfg(test)]
