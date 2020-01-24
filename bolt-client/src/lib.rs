@@ -1,6 +1,7 @@
 //! An asynchronous client for Bolt-compatible servers.
 //!
 //! # Example
+//! The below example demonstrates how to connect to a Neo4j server and send it Bolt messages.
 //! ```
 //! use std::collections::HashMap;
 //! use std::convert::TryFrom;
@@ -32,15 +33,22 @@
 //!
 //!     // Run a query on the server and retrieve the results
 //!     let response_msg = client.run("RETURN 1 as num;".to_string(), None).await?;
+//!     // Successful RUN messages will return a SUCCESS message with related metadata
+//!     // Consuming these messages is optional and will be skipped for the rest of the example
 //!     assert!(Success::try_from(response_msg).is_ok());
+//!     // Use PULL_ALL to retrieve results of the query
 //!     let (response_msg, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     assert!(Success::try_from(response_msg).is_ok());
 //!     // Note that integers are automatically packed into the smallest possible byte
 //!     // representation.
 //!     assert_eq!(records[0].fields(), &vec![Value::from(1 as i8)]);
 //!
+//!     // Clear the database
+//!     client.run("MATCH (n) DETACH DELETE n;".to_string(), None).await?;
+//!     client.pull_all().await?;
+//!
 //!     // Run a more complex query with parameters
-//!     client.run("CREATE (:Language {name: $name});".to_string(),
+//!     client.run("CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});".to_string(),
 //!                Some(HashMap::from_iter(
 //!                    vec![("name".to_string(), Value::from("Rust"))]
 //!                ))).await?;
@@ -48,8 +56,12 @@
 //!     client.run("MATCH (rust:Language) RETURN rust;".to_string(), None).await?;
 //!     let (response_msg, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     assert!(Success::try_from(response_msg).is_ok());
+//!
+//!     // Access properties from returned values
 //!     let node = Node::try_from(records[0].fields()[0].clone())?;
-//!     // TODO: Check node properties    
+//!     assert_eq!(node.labels(), &["Language".to_string()]);
+//!     assert_eq!(node.properties(),
+//!                &HashMap::from_iter(vec![("name".to_string(), Value::from("Rust"))]));
 //!
 //!     Ok(())
 //! }
