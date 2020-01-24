@@ -1,6 +1,6 @@
 [package]
 name = "bolt-client"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "A client that sends messages using the Bolt protocol.\n"
 homepage = "https://github.com/lucis-fluxum/bolt-rs"
