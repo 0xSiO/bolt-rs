@@ -10,21 +10,33 @@ use crate::error::ValueError;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Node {
     pub(crate) node_identity: i64,
-    pub(crate) labels: Vec<Value>,
+    pub(crate) labels: Vec<String>,
     pub(crate) properties: HashMap<String, Value>,
 }
 
 impl Node {
     pub fn new(
         node_identity: i64,
-        labels: Vec<impl Into<Value>>,
+        labels: Vec<String>,
         properties: HashMap<String, impl Into<Value>>,
     ) -> Self {
         Self {
             node_identity,
-            labels: labels.into_iter().map(|v| v.into()).collect(),
+            labels,
             properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
         }
+    }
+
+    pub fn node_identity(&self) -> i64 {
+        self.node_identity
+    }
+
+    pub fn labels(&self) -> &[String] {
+        &self.labels
+    }
+
+    pub fn properties(&self) -> &HashMap<String, Value> {
+        &self.properties
     }
 }
 
@@ -45,7 +57,7 @@ impl TryFrom<Value> for Node {
 
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
-            Value::Node(node) => Ok(Node::try_from(node)?),
+            Value::Node(node) => Node::try_from(node),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
