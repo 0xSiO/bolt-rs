@@ -17,7 +17,7 @@ impl Record {
         Self { fields }
     }
 
-    pub fn fields(&self) -> &Vec<Value> {
+    pub fn fields(&self) -> &[Value] {
         &self.fields
     }
 }

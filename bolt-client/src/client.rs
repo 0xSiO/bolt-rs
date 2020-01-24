@@ -315,7 +315,7 @@ mod tests {
         let (response, records) = client.pull_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
         assert!(!records.is_empty());
-        assert_eq!(records[0].fields(), &vec![Value::from(3458376)]);
+        assert_eq!(records[0].fields(), &[Value::from(3458376)]);
     }
 
     // TODO: Node/Relationship creation tests
