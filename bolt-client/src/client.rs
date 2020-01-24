@@ -179,6 +179,31 @@ impl Client {
         self.send_message(Message::AckFailure).await?;
         Ok(self.read_message().await?)
     }
+
+    /// Send a `RESET` message to the server.
+    ///
+    /// The `RESET` message is a client message used to return the current session to a "clean" state. It will cause the
+    /// session to `IGNORE` any message it is currently processing, as well as any message before `RESET` that had not
+    /// yet begun processing. This allows `RESET` to abort long-running operations. It also means clients must be
+    /// careful about pipelining `RESET`. Only send this if you are not currently waiting for a result from a prior
+    /// message, or if you want to explicitly abort any prior message.
+    ///
+    /// The following actions are performed by `RESET`:
+    /// - force any currently processing message to abort with `IGNORED`
+    /// - force any pending messages that have not yet started processing to be `IGNORED`
+    /// - clear any outstanding `FAILURE` state
+    /// - dispose of any outstanding result records
+    /// - rollback the current transaction (if any)
+    ///
+    /// See [`ack_failure`](Client::ack_failure) for sending a message that only clears `FAILURE` state.
+    ///
+    /// Response:
+    /// - `SUCCESS {}` if the session was successfully reset
+    /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently possible
+    pub async fn reset(&mut self) -> Result<Message, Error> {
+        self.send_message(Message::Reset).await?;
+        Ok(self.read_message().await?)
+    }
 }
 
 #[cfg(test)]
