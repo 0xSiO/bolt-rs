@@ -47,8 +47,6 @@ mod tests {
     #[test]
     fn try_from_bytes() {
         let bytes = Bytes::from_static(&[0x93, 0x01, 0x02, 0x03]);
-        let record = Record::try_from(Arc::new(Mutex::new(bytes)));
-        println!("{:?}", record);
-        assert!(record.is_ok());
+        assert!(Record::try_from(Arc::new(Mutex::new(bytes))).is_ok());
     }
 }
