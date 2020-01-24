@@ -20,6 +20,7 @@ pub struct Client {
 }
 
 impl Client {
+    /// Create a new connection to the server at the given host and port.
     pub async fn new(host: IpAddr, port: usize) -> Result<Self, Error> {
         let mut client = Client {
             stream: BufStream::new(TcpStream::connect(format!("{}:{}", host, port)).await?),
@@ -40,11 +41,11 @@ impl Client {
         Ok(self.stream.read_u32().await?)
     }
 
-    pub async fn read_message(&mut self) -> Result<Message, Error> {
+    pub(crate) async fn read_message(&mut self) -> Result<Message, Error> {
         Message::from_stream(&mut self.stream).await
     }
 
-    pub async fn send_message(&mut self, message: Message) -> Result<(), Error> {
+    pub(crate) async fn send_message(&mut self, message: Message) -> Result<(), Error> {
         let chunks: Vec<Bytes> = message.try_into()?;
         for mut chunk in chunks {
             self.stream.write_buf(&mut chunk).await?;
@@ -62,12 +63,13 @@ impl Client {
 
     /// Send an `INIT` message to the server.
     ///
+    /// # Description
     /// The `INIT` message is a client message used once to initialize the session. This message is always the first
     /// message the client sends after negotiating protocol version via the initial handshake. Sending any message
     /// other than `INIT` as the first message to the server will result in a `FAILURE`. The client must acknowledge
     /// failures using `ACK_FAILURE`, after which `INIT` may be reattempted.
     ///
-    /// Response:
+    /// # Response
     /// - `SUCCESS {}` if initialization has completed successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if initialization
     ///     cannot be performed at this time, or if the authorization failed.
@@ -83,6 +85,7 @@ impl Client {
 
     /// Send a `RUN` message to the server.
     ///
+    /// # Description
     /// The `RUN` message is a client message used to pass a statement for execution on the server.
     /// On receipt of a `RUN` message, the server will start a new job by executing the statement with the parameters
     /// (optionally) supplied. If successful, the subsequent response will consist of a single `SUCCESS` message; if
@@ -102,7 +105,7 @@ impl Client {
     /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
     /// single `IGNORED` message and take no further action.
     ///
-    /// Response:
+    /// # Response
     /// - `SUCCESS {"fields": …​, "result_available_after"}` if the statement has been accepted for execution
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or if a statement may not be executed at this
     ///     time
@@ -118,6 +121,7 @@ impl Client {
 
     /// Send a `DISCARD_ALL` message to the server.
     ///
+    /// # Description
     /// The `DISCARD_ALL` message is a client message used to discard all remaining items from the active result stream.
     ///
     /// On receipt of a `DISCARD_ALL` message, the server will dispose of all remaining items from the active result
@@ -127,7 +131,7 @@ impl Client {
     /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
     /// single `IGNORED` message and take no further action.
     ///
-    /// Response:
+    /// # Response
     /// - `SUCCESS {}` if the result stream has been successfully discarded
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
     pub async fn discard_all(&mut self) -> Result<Message, Error> {
@@ -138,6 +142,7 @@ impl Client {
     /// Send a PULL_ALL message to the server. Returns a tuple containing a Vec of the records returned from the server
     /// as well as the summary message (SUCCESS or FAILURE).
     ///
+    /// # Description
     /// The PULL_ALL message is a client message used to retrieve all remaining items from the active result stream.
     ///
     /// On receipt of a PULL_ALL message, the server will send all remaining result data items to the client, each in a
@@ -148,7 +153,7 @@ impl Client {
     /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
     /// single IGNORED message and take no further action.
     ///
-    /// Response:
+    /// # Response
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available or if retrieval fails
     pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>), Error> {
@@ -164,6 +169,7 @@ impl Client {
 
     /// Send an `ACK_FAILURE` message to the server.
     ///
+    /// # Description
     /// The `ACK_FAILURE` message is a client message used to acknowledge a failure the server has sent.
     ///
     /// The following actions are performed by `ACK_FAILURE`:
@@ -171,7 +177,7 @@ impl Client {
     ///
     /// In some cases, it may be preferable to use `RESET` after a failure, to clear the entire state of the connection.
     ///
-    /// Response:
+    /// # Response
     /// - `SUCCESS {}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting to be cleared
     pub async fn ack_failure(&mut self) -> Result<Message, Error> {
@@ -181,6 +187,7 @@ impl Client {
 
     /// Send a `RESET` message to the server.
     ///
+    /// # Description
     /// The `RESET` message is a client message used to return the current session to a "clean" state. It will cause the
     /// session to `IGNORE` any message it is currently processing, as well as any message before `RESET` that had not
     /// yet begun processing. This allows `RESET` to abort long-running operations. It also means clients must be
@@ -196,7 +203,7 @@ impl Client {
     ///
     /// See [`ack_failure`](Client::ack_failure) for sending a message that only clears `FAILURE` state.
     ///
-    /// Response:
+    /// # Response
     /// - `SUCCESS {}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently possible
     pub async fn reset(&mut self) -> Result<Message, Error> {
@@ -217,7 +224,9 @@ mod tests {
     use super::*;
 
     async fn new_client() -> Result<Client, Error> {
-        Client::new("127.0.0.1".parse().unwrap(), 7687).await
+        let client = Client::new("127.0.0.1".parse().unwrap(), 7687).await?;
+        assert_eq!(client.version, 1);
+        Ok(client)
     }
 
     async fn init_client(credentials: &str) -> Result<Client, Error> {
@@ -251,12 +260,6 @@ mod tests {
     async fn send_valid_message(client: &mut Client) {
         let valid_msg = Message::from(Run::new("RETURN 1 as n;".to_string(), HashMap::new()));
         assert!(client.send_message(valid_msg).await.is_ok());
-    }
-
-    #[tokio::test]
-    async fn handshake() {
-        let client = new_client().await.unwrap();
-        assert_eq!(client.version, 1);
     }
 
     #[tokio::test]
