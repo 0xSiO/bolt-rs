@@ -41,7 +41,7 @@
 //!     assert!(Success::try_from(response_msg).is_ok());
 //!     // Note that integers are automatically packed into the smallest possible byte
 //!     // representation.
-//!     assert_eq!(records[0].fields(), &vec![Value::from(1 as i8)]);
+//!     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //!
 //!     // Clear the database
 //!     client.run("MATCH (n) DETACH DELETE n;".to_string(), None).await?;
