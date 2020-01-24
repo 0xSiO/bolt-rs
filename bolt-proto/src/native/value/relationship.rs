@@ -32,6 +32,26 @@ impl Relationship {
             properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
         }
     }
+
+    pub fn rel_identity(&self) -> i64 {
+        self.rel_identity
+    }
+
+    pub fn start_node_identity(&self) -> i64 {
+        self.start_node_identity
+    }
+
+    pub fn end_node_identity(&self) -> i64 {
+        self.end_node_identity
+    }
+
+    pub fn rel_type(&self) -> &str {
+        &self.rel_type
+    }
+
+    pub fn properties(&self) -> &HashMap<String, Value> {
+        &self.properties
+    }
 }
 
 impl TryFrom<bolt::value::Relationship> for Relationship {
