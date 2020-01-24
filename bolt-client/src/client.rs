@@ -1,4 +1,5 @@
-use std::convert::TryInto;
+use std::collections::HashMap;
+use std::convert::{TryFrom, TryInto};
 use std::net::IpAddr;
 
 use bytes::*;
@@ -7,7 +8,8 @@ use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use bolt_proto::Message;
+use bolt_proto::message::*;
+use bolt_proto::{Message, Value};
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
@@ -27,7 +29,7 @@ impl Client {
         Ok(client)
     }
 
-    pub async fn handshake(&mut self) -> Result<u32, Error> {
+    async fn handshake(&mut self) -> Result<u32, Error> {
         let mut allowed_versions = BytesMut::with_capacity(16);
         SUPPORTED_VERSIONS
             .iter()
@@ -49,6 +51,69 @@ impl Client {
         }
         self.stream.flush().await?;
         Ok(())
+    }
+
+    // Documentation for message-related instance methods below is copied from the descriptions given by
+    // Neo Technology, Inc. on https://boltprotocol.org/v1/, with minor modifications.
+    //
+    // The below documentation comments are licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported
+    // License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to
+    // Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+
+    /// Send an `INIT` message to the server.
+    ///
+    /// The `INIT` message is a client message used once to initialize the session. This message is always the first
+    /// message the client sends after negotiating protocol version via the initial handshake. Sending any message
+    /// other than `INIT` as the first message to the server will result in a `FAILURE`. The client must acknowledge
+    /// failures using `ACK_FAILURE`, after which `INIT` may be reattempted.
+    ///
+    /// Response:
+    /// - `SUCCESS {}` if initialization has completed successfully
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if initialization
+    ///     cannot be performed at this time, or if the authorization failed.
+    pub async fn init(
+        &mut self,
+        client_name: String,
+        auth_token: HashMap<String, Value>,
+    ) -> Result<Message, Error> {
+        let init_msg = Init::new(client_name, auth_token);
+        self.send_message(Message::from(init_msg)).await?;
+        Ok(self.read_message().await?)
+    }
+
+    /// Send a `RUN` message to the server.
+    ///
+    /// The `RUN` message is a client message used to pass a statement for execution on the server.
+    /// On receipt of a `RUN` message, the server will start a new job by executing the statement with the parameters
+    /// (optionally) supplied. If successful, the subsequent response will consist of a single `SUCCESS` message; if
+    /// not, a `FAILURE` response will be sent instead. A successful job will always produce a result stream which must
+    /// then be explicitly consumed (via `PULL_ALL` or `DISCARD_ALL`), even if empty.
+    ///
+    /// Depending on the statement you are executing, additional metadata may be returned in both the `SUCCESS` message
+    /// from the `RUN`, as well as in the final `SUCCESS` after the stream has been consumed. It is up to the statement
+    /// you are running to determine what meta data to return. Notably, most queries will contain a `fields` metadata
+    /// section in the `SUCCESS` message for the RUN statement, which lists the result record field names, and a
+    /// `result_available_after` section measuring the number of milliseconds it took for the results to be available
+    /// for consumption.
+    ///
+    /// In the case where a previous result stream has not yet been fully consumed, an attempt to `RUN` a new job will
+    /// trigger a `FAILURE` response.
+    ///
+    /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
+    /// single `IGNORED` message and take no further action.
+    ///
+    /// Response:
+    /// - `SUCCESS` {"fields": …​, "result_available_after"} if the statement has been accepted for execution
+    /// - `FAILURE` {"code": …​, "message": …​} if the request was malformed or if a statement may not be executed at this
+    ///     time
+    pub async fn run(
+        &mut self,
+        statement: String,
+        parameters: Option<HashMap<String, Value>>,
+    ) -> Result<Message, Error> {
+        let run_msg = Run::new(statement, parameters.unwrap_or_default());
+        self.send_message(Message::from(run_msg)).await?;
+        Ok(self.read_message().await?)
     }
 }
 
