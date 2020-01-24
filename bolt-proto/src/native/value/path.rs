@@ -5,23 +5,20 @@ use failure::Error;
 use crate::bolt;
 use crate::bolt::Value;
 use crate::error::ValueError;
+use crate::value::{Node, UnboundRelationship};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Path {
-    pub(crate) nodes: Vec<Value>,
-    pub(crate) relationships: Vec<Value>,
+    pub(crate) nodes: Vec<Node>,
+    pub(crate) relationships: Vec<UnboundRelationship>,
     pub(crate) sequence: i64,
 }
 
 impl Path {
-    pub fn new(
-        nodes: Vec<impl Into<Value>>,
-        relationships: Vec<impl Into<Value>>,
-        sequence: i64,
-    ) -> Self {
+    pub fn new(nodes: Vec<Node>, relationships: Vec<UnboundRelationship>, sequence: i64) -> Self {
         Self {
-            nodes: nodes.into_iter().map(|v| v.into()).collect(),
-            relationships: relationships.into_iter().map(|v| v.into()).collect(),
+            nodes,
+            relationships,
             sequence,
         }
     }
