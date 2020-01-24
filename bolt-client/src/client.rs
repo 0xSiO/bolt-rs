@@ -10,6 +10,7 @@ use tokio::prelude::*;
 
 use bolt_proto::message::*;
 use bolt_proto::{Message, Value};
+use std::net::Shutdown::Read;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
@@ -103,8 +104,8 @@ impl Client {
     /// single `IGNORED` message and take no further action.
     ///
     /// Response:
-    /// - `SUCCESS` {"fields": …​, "result_available_after"} if the statement has been accepted for execution
-    /// - `FAILURE` {"code": …​, "message": …​} if the request was malformed or if a statement may not be executed at this
+    /// - `SUCCESS {"fields": …​, "result_available_after"}` if the statement has been accepted for execution
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or if a statement may not be executed at this
     ///     time
     pub async fn run(
         &mut self,
@@ -114,6 +115,52 @@ impl Client {
         let run_msg = Run::new(statement, parameters.unwrap_or_default());
         self.send_message(Message::from(run_msg)).await?;
         Ok(self.read_message().await?)
+    }
+
+    /// Send a `DISCARD_ALL` message to the server.
+    ///
+    /// The `DISCARD_ALL` message is a client message used to discard all remaining items from the active result stream.
+    ///
+    /// On receipt of a `DISCARD_ALL` message, the server will dispose of all remaining items from the active result
+    /// stream, close the stream and send a single `SUCCESS` message to the client. If no result stream is currently
+    /// active, the server will respond with a single `FAILURE` message.
+    ///
+    /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
+    /// single `IGNORED` message and take no further action.
+    ///
+    /// Response:
+    /// - `SUCCESS {}` if the result stream has been successfully discarded
+    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
+    pub async fn discard_all(&mut self) -> Result<Message, Error> {
+        self.send_message(Message::DiscardAll).await?;
+        Ok(self.read_message().await?)
+    }
+
+    /// Send a PULL_ALL message to the server. Returns a tuple containing a Vec of the records returned from the server
+    /// as well as the summary message (SUCCESS or FAILURE).
+    ///
+    /// The PULL_ALL message is a client message used to retrieve all remaining items from the active result stream.
+    ///
+    /// On receipt of a PULL_ALL message, the server will send all remaining result data items to the client, each in a
+    /// single RECORD message. The server will then close the stream and send a single SUCCESS message optionally
+    /// containing summary information on the data items sent. If an error is encountered, the server must instead send
+    /// a FAILURE message, discard all remaining data items and close the stream.
+    ///
+    /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
+    /// single IGNORED message and take no further action.
+    ///
+    /// Response:
+    /// - `SUCCESS {…​}` if the result stream has been successfully transferred
+    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available or if retrieval fails
+    pub async fn pull_all(&mut self) -> Result<(Vec<Record>, Message), Error> {
+        self.send_message(Message::PullAll).await?;
+        let mut records = vec![];
+        loop {
+            match self.read_message().await? {
+                Message::Record(record) => records.push(Record::try_from(record)?),
+                other => return Ok((records, other)),
+            }
+        }
     }
 }
 
