@@ -119,6 +119,8 @@ impl Client {
         Ok(self.read_message().await?)
     }
 
+    // TODO: Pipelined runs for multiple statements
+
     /// Send a `DISCARD_ALL` message to the server.
     ///
     /// # Description
