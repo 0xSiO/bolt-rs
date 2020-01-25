@@ -10,9 +10,16 @@ keywords    = ["bolt", "client", "neo4j"]
 license = "MIT"
 edition = "2018"
 
+[dev-dependencies]
+criterion = "0.3.0"
+
 [dependencies]
 bolt-proto = { path = "../bolt-proto", version = "0.5.0" }
 
 bytes = "0.5.3"
 failure = "0.1.6"
 tokio = { version = "0.2", features = ["full"] }
+
+[[bench]]
+name = "basic"
+harness = false
