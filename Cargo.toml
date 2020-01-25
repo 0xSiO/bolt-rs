@@ -3,5 +3,6 @@
 members = [
     "bolt-client",
     "bolt-proto",
-    "bolt-proto-derive"
+    "bolt-proto-derive",
+    "r2d2-bolt",
 ]

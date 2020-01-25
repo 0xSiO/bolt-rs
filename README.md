@@ -22,6 +22,10 @@ and are the primary units of information sent and consumed by Bolt clients/serve
 
 Ugly procedural macros used in bolt-proto to derive serialization-related traits.
 
+### r2d2-bolt
+
+An bolt-client adaptor crate for the [r2d2](https://crates.io/crates/r2d2) connection pool.
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/lucis-fluxum/bolt-rs.

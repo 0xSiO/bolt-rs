@@ -1,0 +1,15 @@
+[package]
+name = "r2d2-bolt"
+version = "0.0.0"
+authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
+description = "A bolt-client adaptor for the r2d2 connection pool.\n"
+homepage = "https://github.com/lucis-fluxum/bolt-rs"
+repository = "https://github.com/lucis-fluxum/bolt-rs"
+keywords    = ["bolt", "database", "pool", "neo4j", "r2d2"]
+license = "MIT"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+r2d2 = "0.8.8"
