@@ -4,9 +4,9 @@ use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use failure::Error;
 
 use crate::bolt::value::Marker;
+use crate::error::Error;
 use crate::error::{DeserializeError, ValueError};
 use crate::{Deserialize, Serialize, Value};
 

@@ -1,9 +1,8 @@
 use std::convert::TryFrom;
 
-use failure::Error;
-
 use crate::bolt;
 use crate::bolt::Value;
+use crate::error::Error;
 use crate::error::ValueError;
 
 impl From<bolt::value::String> for String {

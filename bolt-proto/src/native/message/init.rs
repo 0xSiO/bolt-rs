@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use failure::Error;
-
 use crate::bolt;
 use crate::bolt::Message;
 use crate::bolt::Value;
+use crate::error::Error;
 use crate::error::MessageError;
 
 #[derive(Debug)]

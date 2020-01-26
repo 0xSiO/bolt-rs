@@ -1,16 +1,16 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::mem;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use failure::Error;
 
 use crate::bolt::value::Marker;
+use crate::error::Error;
 use crate::error::{DeserializeError, ValueError};
 use crate::{Deserialize, Serialize, Value};
-use std::mem;
 
 pub(crate) const MARKER_TINY: u8 = 0xA0;
 pub(crate) const MARKER_SMALL: u8 = 0xD8;

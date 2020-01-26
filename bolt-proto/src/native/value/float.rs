@@ -1,8 +1,7 @@
 use std::convert::TryFrom;
 
-use failure::Error;
-
 use crate::bolt::value::Float;
+use crate::error::Error;
 use crate::error::ValueError;
 use crate::Value;
 

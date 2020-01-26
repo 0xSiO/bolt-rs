@@ -3,10 +3,11 @@ use std::convert::{TryFrom, TryInto};
 use std::net::IpAddr;
 
 use bytes::*;
-use failure::Error;
 use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
+
+use bolt_proto::error::Error;
 
 use crate::message::*;
 use crate::{Message, Value};

@@ -3,10 +3,10 @@ use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, Bytes};
-use failure::Error;
 
 use crate::bolt::value::Marker;
 use crate::error::DeserializeError;
+use crate::error::Error;
 use crate::{Deserialize, Serialize};
 
 pub(crate) const MARKER: u8 = 0xC0;

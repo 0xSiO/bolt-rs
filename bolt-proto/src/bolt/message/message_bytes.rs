@@ -1,15 +1,14 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::mem;
+use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use failure::Error;
 use tokio::io::BufStream;
 use tokio::prelude::*;
 
 use crate::bolt::message::Chunk;
+use crate::error::Error;
 use crate::{Deserialize, Serialize};
-use failure::_core::convert::TryInto;
-use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub(crate) struct MessageBytes {
@@ -100,11 +99,11 @@ impl TryFrom<Arc<Mutex<Bytes>>> for MessageBytes {
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use std::io::Cursor;
 
     use tokio::io::BufStream;
 
     use super::*;
-    use std::io::Cursor;
 
     fn new_chunk() -> Chunk {
         Chunk::try_from(Bytes::from_static(&[

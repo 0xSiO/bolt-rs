@@ -6,13 +6,6 @@ use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, Bytes};
-use failure::Error;
-
-use crate::bolt::structure;
-use crate::bolt::structure::get_signature_from_bytes;
-use crate::error::DeserializeError;
-use crate::native;
-use crate::{Deserialize, Serialize};
 
 pub(crate) use boolean::Boolean;
 pub(crate) use float::Float;
@@ -25,6 +18,13 @@ pub(crate) use path::Path;
 pub(crate) use relationship::Relationship;
 pub(crate) use string::String;
 pub(crate) use unbound_relationship::UnboundRelationship;
+
+use crate::bolt::structure;
+use crate::bolt::structure::get_signature_from_bytes;
+use crate::error::DeserializeError;
+use crate::error::Error;
+use crate::native;
+use crate::{Deserialize, Serialize};
 
 mod boolean;
 mod float;
