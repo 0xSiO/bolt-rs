@@ -23,9 +23,9 @@ and are the primary units of information sent and consumed by Bolt clients/serve
 
 Ugly procedural macros used in bolt-proto to derive serialization-related traits.
 
-### r2d2-bolt
+### bb8-bolt
 
-A bolt-client adapter crate for the [r2d2](https://crates.io/crates/r2d2) connection pool.
+A bolt-client adapter crate for the [bb8](https://crates.io/crates/bb8) connection pool.
 
 ## Contributing
 

@@ -4,5 +4,5 @@ members = [
     "bolt-client",
     "bolt-proto",
     "bolt-proto-derive",
-    "r2d2-bolt",
+    "bb8-bolt",
 ]
