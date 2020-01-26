@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use std::net::IpAddr;
 
 use bytes::*;
 use tokio::io::BufStream;
-use tokio::net::TcpStream;
+use tokio::net::{TcpStream, ToSocketAddrs};
 use tokio::prelude::*;
 
 use crate::message::*;
@@ -22,9 +21,9 @@ pub struct Client {
 
 impl Client {
     /// Create a new connection to the server at the given host and port.
-    pub async fn new(host: IpAddr, port: usize) -> Result<Self> {
+    pub async fn new(addr: impl ToSocketAddrs) -> Result<Self> {
         let mut client = Client {
-            stream: BufStream::new(TcpStream::connect(format!("{}:{}", host, port)).await?),
+            stream: BufStream::new(TcpStream::connect(addr).await?),
             version: 0,
         };
         client.version = client.handshake().await? as u8;
@@ -224,7 +223,7 @@ mod tests {
     use super::*;
 
     async fn new_client() -> Result<Client> {
-        let client = Client::new("127.0.0.1".parse().unwrap(), 7687).await?;
+        let client = Client::new("127.0.0.1:7687").await?;
         assert_eq!(client.version, 1);
         Ok(client)
     }
