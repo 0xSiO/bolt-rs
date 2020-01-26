@@ -18,7 +18,7 @@
 //! async fn main() -> Result<(), Error> {
 //!     // Create a new connection to the server and perform a handshake to establish a
 //!     // protocol version.
-//!     let mut client = Client::new("127.0.0.1".parse().unwrap(), 7687).await?;
+//!     let mut client = Client::new("127.0.0.1:7687").await?;
 //!     
 //!     // Send an INIT message with authorization details to the server to initialize
 //!     // the session.

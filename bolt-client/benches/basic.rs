@@ -8,7 +8,7 @@ use tokio::runtime::Runtime;
 use bolt_client::*;
 
 async fn get_initialized_client() -> Fallible<Client> {
-    let mut client: Client = Client::new("127.0.0.1".parse().unwrap(), 7687).await?;
+    let mut client: Client = Client::new("127.0.0.1:7687").await?;
     client
         .init(
             "bolt-client/X.Y.Z".to_string(),
