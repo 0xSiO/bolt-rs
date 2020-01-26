@@ -2,7 +2,8 @@
 
 ## Overview
 
-This is an implementation of the [Bolt v1](https://boltprotocol.org/v1/) protocol, as well as an asynchronous client.
+This project provides a comprehensive set of libraries that allow for interaction with graph database servers that
+support the [Bolt v1](https://boltprotocol.org/v1/) protocol, namely, [Neo4j](https://neo4j.com).
 
 ### bolt-client
 ([API docs](https://docs.rs/bolt-client))
@@ -24,7 +25,7 @@ Ugly procedural macros used in bolt-proto to derive serialization-related traits
 
 ### r2d2-bolt
 
-An bolt-client adaptor crate for the [r2d2](https://crates.io/crates/r2d2) connection pool.
+A bolt-client adapter crate for the [r2d2](https://crates.io/crates/r2d2) connection pool.
 
 ## Contributing
 
