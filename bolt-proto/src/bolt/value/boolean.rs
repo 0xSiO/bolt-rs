@@ -5,8 +5,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, Bytes};
 
 use crate::bolt::value::Marker;
-use crate::error::Error;
-use crate::error::{DeserializeError, ValueError};
+use crate::error::*;
 use crate::{Deserialize, Serialize, Value};
 
 pub(crate) const MARKER_FALSE: u8 = 0xC2;
@@ -26,7 +25,7 @@ impl From<bool> for Boolean {
 impl TryFrom<Value> for Boolean {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Boolean(boolean) => Ok(Boolean::from(boolean)),
             _ => Err(ValueError::InvalidConversion(value).into()),
@@ -35,7 +34,7 @@ impl TryFrom<Value> for Boolean {
 }
 
 impl Marker for Boolean {
-    fn get_marker(&self) -> Result<u8, Error> {
+    fn get_marker(&self) -> Result<u8> {
         if self.value {
             Ok(MARKER_TRUE)
         } else {
@@ -49,7 +48,7 @@ impl Serialize for Boolean {}
 impl TryInto<Bytes> for Boolean {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(self) -> Result<Bytes> {
         Ok(Bytes::copy_from_slice(&[self.get_marker()?]))
     }
 }
@@ -59,8 +58,8 @@ impl Deserialize for Boolean {}
 impl TryFrom<Arc<Mutex<Bytes>>> for Boolean {
     type Error = Error;
 
-    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<Boolean, Error> = catch_unwind(move || {
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
+        let result: Result<Boolean> = catch_unwind(move || {
             let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
             debug_assert!(!input_bytes.has_remaining());

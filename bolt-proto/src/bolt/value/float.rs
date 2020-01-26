@@ -6,8 +6,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use crate::bolt::value::Marker;
-use crate::error::Error;
-use crate::error::{DeserializeError, ValueError};
+use crate::error::*;
 use crate::{Deserialize, Serialize, Value};
 
 pub(crate) const MARKER: u8 = 0xC1;
@@ -26,7 +25,7 @@ impl From<f64> for Float {
 impl TryFrom<Value> for Float {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Float(float) => Ok(Float::from(float)),
             _ => Err(ValueError::InvalidConversion(value).into()),
@@ -35,7 +34,7 @@ impl TryFrom<Value> for Float {
 }
 
 impl Marker for Float {
-    fn get_marker(&self) -> Result<u8, Error> {
+    fn get_marker(&self) -> Result<u8> {
         Ok(MARKER)
     }
 }
@@ -45,7 +44,7 @@ impl Serialize for Float {}
 impl TryInto<Bytes> for Float {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(self) -> Result<Bytes> {
         let mut bytes = BytesMut::with_capacity(mem::size_of::<u8>() * 9);
         bytes.put_u8(MARKER);
         bytes.put_f64(self.value);
@@ -58,8 +57,8 @@ impl Deserialize for Float {}
 impl TryFrom<Arc<Mutex<Bytes>>> for Float {
     type Error = Error;
 
-    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<Float, Error> = catch_unwind(move || {
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
+        let result: Result<Float> = catch_unwind(move || {
             let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
 

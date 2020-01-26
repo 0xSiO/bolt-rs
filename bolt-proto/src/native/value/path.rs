@@ -2,8 +2,7 @@ use std::convert::{TryFrom, TryInto};
 
 use crate::bolt;
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::ValueError;
+use crate::error::*;
 use crate::value::{Node, UnboundRelationship};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -38,7 +37,7 @@ impl Path {
 impl TryFrom<bolt::value::Path> for Path {
     type Error = Error;
 
-    fn try_from(bolt_path: bolt::value::Path) -> Result<Self, Self::Error> {
+    fn try_from(bolt_path: bolt::value::Path) -> Result<Self> {
         Ok(Path {
             nodes: (*bolt_path.nodes).try_into()?,
             relationships: (*bolt_path.relationships).try_into()?,
@@ -50,7 +49,7 @@ impl TryFrom<bolt::value::Path> for Path {
 impl TryFrom<Value> for Path {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Path(path) => Ok(Path::try_from(path)?),
             _ => Err(ValueError::InvalidConversion(value).into()),

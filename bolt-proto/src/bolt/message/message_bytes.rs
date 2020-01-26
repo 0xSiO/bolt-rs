@@ -7,7 +7,7 @@ use tokio::io::BufStream;
 use tokio::prelude::*;
 
 use crate::bolt::message::Chunk;
-use crate::error::Error;
+use crate::error::*;
 use crate::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -36,7 +36,7 @@ impl MessageBytes {
 
     pub(crate) async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
         buf_stream: &mut BufStream<T>,
-    ) -> Result<MessageBytes, Error> {
+    ) -> Result<MessageBytes> {
         let mut message = MessageBytes::new();
         loop {
             let size = buf_stream.read_u16().await? as usize;
@@ -73,7 +73,7 @@ impl Serialize for MessageBytes {}
 impl TryInto<Bytes> for MessageBytes {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(self) -> Result<Bytes> {
         let mut bytes = BytesMut::with_capacity(
             mem::size_of::<u8>() * 2 + self.len() + mem::size_of::<u8>() * 2,
         );
@@ -89,7 +89,7 @@ impl Deserialize for MessageBytes {}
 impl TryFrom<Arc<Mutex<Bytes>>> for MessageBytes {
     type Error = Error;
 
-    fn try_from(value: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
+    fn try_from(value: Arc<Mutex<Bytes>>) -> Result<Self> {
         let bytes: &[u8] = &*value.lock().unwrap().clone();
         let bytes = BytesMut::from(bytes);
         Ok(Self { bytes })

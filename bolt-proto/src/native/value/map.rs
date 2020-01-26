@@ -3,8 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use std::hash::Hash;
 
 use crate::bolt::value::Map;
-use crate::error::Error;
-use crate::error::ValueError;
+use crate::error::*;
 use crate::Value;
 
 // Have to use Value for the HashMap values since Value does not impl TryFrom<Value, Error = failure::Error>
@@ -15,7 +14,7 @@ where
 {
     type Error = Error;
 
-    fn try_into(self) -> Result<HashMap<K, Value>, Self::Error> {
+    fn try_into(self) -> Result<HashMap<K, Value>> {
         let mut map = HashMap::with_capacity(self.value.len());
         for (k, v) in self.value {
             map.insert(K::try_from(k)?, v);
@@ -30,7 +29,7 @@ where
 {
     type Error = Error;
 
-    fn try_into(self) -> Result<HashMap<K, Value>, Self::Error> {
+    fn try_into(self) -> Result<HashMap<K, Value>> {
         match self {
             Value::Map(map) => Ok(map.try_into()?),
             _ => Err(ValueError::InvalidConversion(self).into()),

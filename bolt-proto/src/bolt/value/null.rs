@@ -5,8 +5,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, Bytes};
 
 use crate::bolt::value::Marker;
-use crate::error::DeserializeError;
-use crate::error::Error;
+use crate::error::*;
 use crate::{Deserialize, Serialize};
 
 pub(crate) const MARKER: u8 = 0xC0;
@@ -15,7 +14,7 @@ pub(crate) const MARKER: u8 = 0xC0;
 pub struct Null;
 
 impl Marker for Null {
-    fn get_marker(&self) -> Result<u8, Error> {
+    fn get_marker(&self) -> Result<u8> {
         Ok(MARKER)
     }
 }
@@ -25,7 +24,7 @@ impl Serialize for Null {}
 impl TryInto<Bytes> for Null {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(self) -> Result<Bytes> {
         Ok(Bytes::copy_from_slice(&[self.get_marker()?]))
     }
 }
@@ -35,8 +34,8 @@ impl Deserialize for Null {}
 impl TryFrom<Arc<Mutex<Bytes>>> for Null {
     type Error = Error;
 
-    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<Null, Error> = catch_unwind(move || {
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
+        let result: Result<Null> = catch_unwind(move || {
             let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
             debug_assert!(!input_bytes.has_remaining());

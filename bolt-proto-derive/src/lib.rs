@@ -102,7 +102,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         impl#type_args crate::bolt::value::Marker for #name#type_args
         #where_clause
         {
-            fn get_marker(&self) -> Result<u8, ::failure::Error> {
+            fn get_marker(&self) -> crate::error::Result<u8> {
                 Ok(#marker)
             }
         }
@@ -116,7 +116,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         {
             type Error = ::failure::Error;
 
-            fn try_into(self) -> Result<::bytes::Bytes, Self::Error> {
+            fn try_into(self) -> crate::error::Result<::bytes::Bytes> {
                 let marker = self.get_marker()?;
                 let signature = self.get_signature();
                 #(#byte_vars)*
@@ -141,7 +141,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         {
             type Error = ::failure::Error;
 
-            fn try_from(remaining_bytes_arc: ::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>) -> Result<Self, Self::Error> {
+            fn try_from(remaining_bytes_arc: ::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>) -> crate::error::Result<Self> {
                 Ok(#name {
                     #(#deserialize_fields)*
                 })

@@ -3,8 +3,7 @@ use std::convert::{TryFrom, TryInto};
 
 use crate::bolt;
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::ValueError;
+use crate::error::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Node {
@@ -42,7 +41,7 @@ impl Node {
 impl TryFrom<bolt::value::Node> for Node {
     type Error = Error;
 
-    fn try_from(bolt_node: bolt::value::Node) -> Result<Self, Self::Error> {
+    fn try_from(bolt_node: bolt::value::Node) -> Result<Self> {
         Ok(Node {
             node_identity: i64::try_from(*bolt_node.node_identity)?,
             labels: (*bolt_node.labels).try_into()?,
@@ -54,7 +53,7 @@ impl TryFrom<bolt::value::Node> for Node {
 impl TryFrom<Value> for Node {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Node(node) => Node::try_from(node),
             _ => Err(ValueError::InvalidConversion(value).into()),

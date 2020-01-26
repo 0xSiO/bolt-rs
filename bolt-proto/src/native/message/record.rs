@@ -3,8 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use crate::bolt;
 use crate::bolt::Message;
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::MessageError;
+use crate::error::*;
 
 #[derive(Debug)]
 pub struct Record {
@@ -24,7 +23,7 @@ impl Record {
 impl TryFrom<bolt::message::Record> for Record {
     type Error = Error;
 
-    fn try_from(bolt_record: bolt::message::Record) -> Result<Self, Self::Error> {
+    fn try_from(bolt_record: bolt::message::Record) -> Result<Self> {
         Ok(Record {
             fields: bolt_record.fields.try_into()?,
         })
@@ -34,7 +33,7 @@ impl TryFrom<bolt::message::Record> for Record {
 impl TryFrom<Message> for Record {
     type Error = Error;
 
-    fn try_from(message: Message) -> Result<Self, Self::Error> {
+    fn try_from(message: Message) -> Result<Self> {
         match message {
             Message::Record(record) => Ok(Record::try_from(record)?),
             _ => Err(MessageError::InvalidConversion(message).into()),

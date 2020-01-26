@@ -4,8 +4,7 @@ use std::convert::{TryFrom, TryInto};
 use crate::bolt;
 use crate::bolt::Message;
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::MessageError;
+use crate::error::*;
 
 #[derive(Debug)]
 pub struct Success {
@@ -25,7 +24,7 @@ impl Success {
 impl TryFrom<bolt::message::Success> for Success {
     type Error = Error;
 
-    fn try_from(bolt_success: bolt::message::Success) -> Result<Self, Self::Error> {
+    fn try_from(bolt_success: bolt::message::Success) -> Result<Self> {
         Ok(Success {
             metadata: bolt_success.metadata.try_into()?,
         })
@@ -35,7 +34,7 @@ impl TryFrom<bolt::message::Success> for Success {
 impl TryFrom<Message> for Success {
     type Error = Error;
 
-    fn try_from(message: Message) -> Result<Self, Self::Error> {
+    fn try_from(message: Message) -> Result<Self> {
         match message {
             Message::Success(success) => Ok(Success::try_from(success)?),
             _ => Err(MessageError::InvalidConversion(message).into()),

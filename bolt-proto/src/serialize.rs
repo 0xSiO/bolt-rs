@@ -3,10 +3,10 @@ use std::sync::{Arc, Mutex};
 
 use bytes::Bytes;
 
-use crate::error::Error;
+use crate::error::*;
 
 pub trait Serialize: TryInto<Bytes, Error = Error> {
-    fn try_into_bytes(self) -> Result<Bytes, Error> {
+    fn try_into_bytes(self) -> Result<Bytes> {
         self.try_into()
     }
 }

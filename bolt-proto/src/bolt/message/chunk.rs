@@ -3,8 +3,7 @@ use std::mem;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
-use crate::error::DeserializeError;
-use crate::error::Error;
+use crate::error::*;
 
 pub(crate) struct Chunk {
     size: u16,
@@ -14,7 +13,7 @@ pub(crate) struct Chunk {
 impl TryFrom<Bytes> for Chunk {
     type Error = Error;
 
-    fn try_from(bytes: Bytes) -> Result<Chunk, Error> {
+    fn try_from(bytes: Bytes) -> Result<Chunk> {
         if bytes.len() > std::u16::MAX as usize {
             Err(DeserializeError(format!("Bytes length too long: {}", bytes.len())).into())
         } else {

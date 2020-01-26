@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use criterion::*;
-use failure::Error;
+use failure::Fallible;
 use tokio::runtime::Runtime;
 
 use bolt_client::*;
 
-async fn get_initialized_client() -> Result<Client, Error> {
+async fn get_initialized_client() -> Fallible<Client> {
     let mut client: Client = Client::new("127.0.0.1".parse().unwrap(), 7687).await?;
     client
         .init(

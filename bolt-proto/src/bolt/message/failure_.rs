@@ -4,8 +4,7 @@ use bolt_proto_derive::*;
 
 use crate::bolt::Message;
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::MessageError;
+use crate::error::*;
 use crate::native;
 
 pub(crate) const SIGNATURE: u8 = 0x7F;
@@ -26,7 +25,7 @@ impl From<native::message::Failure> for Failure {
 impl TryFrom<Message> for Failure {
     type Error = Error;
 
-    fn try_from(message: Message) -> Result<Self, Self::Error> {
+    fn try_from(message: Message) -> Result<Self> {
         match message {
             Message::Failure(failure) => Ok(failure),
             _ => Err(MessageError::InvalidConversion(message).into()),

@@ -7,8 +7,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use crate::bolt::value::Marker;
-use crate::error::Error;
-use crate::error::{DeserializeError, ValueError};
+use crate::error::*;
 use crate::{Deserialize, Serialize, Value};
 
 pub(crate) const MARKER_TINY: u8 = 0x80;
@@ -38,7 +37,7 @@ impl From<std::string::String> for String {
 impl TryFrom<Value> for String {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::String(string) => Ok(String::from(string)),
             _ => Err(ValueError::InvalidConversion(value).into()),
@@ -47,7 +46,7 @@ impl TryFrom<Value> for String {
 }
 
 impl Marker for String {
-    fn get_marker(&self) -> Result<u8, Error> {
+    fn get_marker(&self) -> Result<u8> {
         match self.value.len() {
             0..=15 => Ok(MARKER_TINY | self.value.len() as u8),
             16..=255 => Ok(MARKER_SMALL),
@@ -63,7 +62,7 @@ impl Serialize for String {}
 impl TryInto<Bytes> for String {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(self) -> Result<Bytes> {
         let marker = self.get_marker()?;
         // Worst case is a large string, with marker byte, 32-bit size value, and length
         let mut bytes = BytesMut::with_capacity(
@@ -87,8 +86,8 @@ impl Deserialize for String {}
 impl TryFrom<Arc<Mutex<Bytes>>> for String {
     type Error = Error;
 
-    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<String, Error> = catch_unwind(move || {
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
+        let result: Result<String> = catch_unwind(move || {
             let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
             let size = match marker {

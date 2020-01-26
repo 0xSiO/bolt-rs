@@ -3,8 +3,7 @@ use std::convert::{TryFrom, TryInto};
 
 use crate::bolt;
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::ValueError;
+use crate::error::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UnboundRelationship {
@@ -42,7 +41,7 @@ impl UnboundRelationship {
 impl TryFrom<bolt::value::UnboundRelationship> for UnboundRelationship {
     type Error = Error;
 
-    fn try_from(bolt_ub_rel: bolt::value::UnboundRelationship) -> Result<Self, Self::Error> {
+    fn try_from(bolt_ub_rel: bolt::value::UnboundRelationship) -> Result<Self> {
         Ok(UnboundRelationship {
             rel_identity: i64::try_from(*bolt_ub_rel.rel_identity)?,
             rel_type: String::try_from(*bolt_ub_rel.rel_type)?,
@@ -54,7 +53,7 @@ impl TryFrom<bolt::value::UnboundRelationship> for UnboundRelationship {
 impl TryFrom<Value> for UnboundRelationship {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::UnboundRelationship(ub_rel) => Ok(UnboundRelationship::try_from(ub_rel)?),
             _ => Err(ValueError::InvalidConversion(value).into()),
