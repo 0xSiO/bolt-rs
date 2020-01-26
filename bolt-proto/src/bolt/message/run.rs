@@ -1,11 +1,10 @@
 use std::convert::TryFrom;
 
-use failure::Error;
-
 use bolt_proto_derive::*;
 
 use crate::bolt::Message;
 use crate::bolt::Value;
+use crate::error::Error;
 use crate::error::MessageError;
 use crate::native;
 

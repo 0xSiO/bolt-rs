@@ -2,9 +2,9 @@ use std::convert::TryFrom;
 use std::mem;
 
 use bytes::{BufMut, Bytes, BytesMut};
-use failure::Error;
 
 use crate::error::DeserializeError;
+use crate::error::Error;
 
 pub(crate) struct Chunk {
     size: u16,

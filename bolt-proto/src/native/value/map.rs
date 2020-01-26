@@ -2,9 +2,8 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::hash::Hash;
 
-use failure::Error;
-
 use crate::bolt::value::Map;
+use crate::error::Error;
 use crate::error::ValueError;
 use crate::Value;
 

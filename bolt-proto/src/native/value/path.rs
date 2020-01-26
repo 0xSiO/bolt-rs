@@ -1,9 +1,8 @@
 use std::convert::{TryFrom, TryInto};
 
-use failure::Error;
-
 use crate::bolt;
 use crate::bolt::Value;
+use crate::error::Error;
 use crate::error::ValueError;
 use crate::value::{Node, UnboundRelationship};
 

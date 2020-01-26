@@ -22,7 +22,7 @@ macro_rules! impl_from_value {
     ($($T:ty),+) => {
         $(
             impl TryFrom<crate::Value> for $T {
-                type Error = ::failure::Error;
+                type Error = crate::error::Error;
 
                 fn try_from(value: crate::Value) -> Result<Self, Self::Error> {
                     match value {

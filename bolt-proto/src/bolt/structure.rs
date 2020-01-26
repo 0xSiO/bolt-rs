@@ -1,8 +1,8 @@
 use bytes::Buf;
-use failure::Error;
 
 use crate::bolt::value::Marker;
 use crate::error::DeserializeError;
+use crate::error::Error;
 
 pub(crate) const MARKER_TINY: u8 = 0xB0;
 pub(crate) const MARKER_SMALL: u8 = 0xDC;

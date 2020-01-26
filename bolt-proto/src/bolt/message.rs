@@ -3,7 +3,6 @@ use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
 use bytes::Bytes;
-use failure::Error;
 use tokio::io::BufStream;
 use tokio::prelude::*;
 
@@ -22,6 +21,7 @@ pub use success::Success;
 
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::DeserializeError;
+use crate::error::Error;
 use crate::{native, Deserialize, Marker, Serialize, Signature};
 
 mod ack_failure;
