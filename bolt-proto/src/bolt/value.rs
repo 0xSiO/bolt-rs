@@ -21,8 +21,7 @@ pub(crate) use unbound_relationship::UnboundRelationship;
 
 use crate::bolt::structure;
 use crate::bolt::structure::get_signature_from_bytes;
-use crate::error::DeserializeError;
-use crate::error::Error;
+use crate::error::*;
 use crate::native;
 use crate::{Deserialize, Serialize};
 
@@ -39,7 +38,7 @@ mod string;
 mod unbound_relationship;
 
 pub trait Marker: Serialize + Deserialize {
-    fn get_marker(&self) -> Result<u8, Error>;
+    fn get_marker(&self) -> Result<u8>;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -163,7 +162,7 @@ impl From<native::value::UnboundRelationship> for Value {
 }
 
 impl Marker for Value {
-    fn get_marker(&self) -> Result<u8, Error> {
+    fn get_marker(&self) -> Result<u8> {
         match self {
             Value::Boolean(boolean) => Boolean::from(*boolean).get_marker(),
             Value::Integer(integer) => integer.get_marker(),
@@ -185,7 +184,7 @@ impl Serialize for Value {}
 impl TryInto<Bytes> for Value {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(self) -> Result<Bytes> {
         match self {
             Value::Boolean(boolean) => Boolean::from(boolean).try_into(),
             Value::Integer(integer) => integer.try_into(),
@@ -207,8 +206,8 @@ impl Deserialize for Value {}
 impl TryFrom<Arc<Mutex<Bytes>>> for Value {
     type Error = Error;
 
-    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<Value, Error> = catch_unwind(move || {
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
+        let result: Result<Value> = catch_unwind(move || {
             let marker = input_arc.lock().unwrap().clone().get_u8();
 
             match marker {
@@ -280,7 +279,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
 }
 
 // Might panic. Use this inside a catch_unwind block
-fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value, Error> {
+fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
     let signature = get_signature_from_bytes(&mut *input_arc.lock().unwrap())?;
     match signature {
         node::SIGNATURE => Ok(Value::Node(Node::try_from(input_arc)?)),

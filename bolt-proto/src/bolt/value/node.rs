@@ -3,8 +3,7 @@ use std::convert::TryFrom;
 use bolt_proto_derive::*;
 
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::ValueError;
+use crate::error::*;
 use crate::native;
 
 pub(crate) const SIGNATURE: u8 = 0x4E;
@@ -29,7 +28,7 @@ impl From<native::value::Node> for Node {
 impl TryFrom<Value> for Node {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Node(node) => Ok(node),
             _ => Err(ValueError::InvalidConversion(value).into()),

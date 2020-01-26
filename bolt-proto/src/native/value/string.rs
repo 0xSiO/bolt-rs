@@ -2,8 +2,7 @@ use std::convert::TryFrom;
 
 use crate::bolt;
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::ValueError;
+use crate::error::*;
 
 impl From<bolt::value::String> for String {
     fn from(string: bolt::value::String) -> Self {
@@ -14,7 +13,7 @@ impl From<bolt::value::String> for String {
 impl TryFrom<Value> for String {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::String(string) => Ok(string),
             _ => Err(ValueError::InvalidConversion(value).into()),

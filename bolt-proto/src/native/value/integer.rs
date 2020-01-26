@@ -24,7 +24,7 @@ macro_rules! impl_from_value {
             impl TryFrom<crate::Value> for $T {
                 type Error = crate::error::Error;
 
-                fn try_from(value: crate::Value) -> Result<Self, Self::Error> {
+                fn try_from(value: crate::Value) -> crate::error::Result<Self> {
                     match value {
                         crate::Value::Integer(integer) => Ok(<$T>::from(integer)),
                         _ => Err(crate::error::ValueError::InvalidConversion(value).into()),

@@ -3,8 +3,7 @@ use std::convert::{TryFrom, TryInto};
 
 use crate::bolt;
 use crate::bolt::Value;
-use crate::error::Error;
-use crate::error::ValueError;
+use crate::error::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Relationship {
@@ -56,7 +55,7 @@ impl Relationship {
 impl TryFrom<bolt::value::Relationship> for Relationship {
     type Error = Error;
 
-    fn try_from(bolt_rel: bolt::value::Relationship) -> Result<Self, Self::Error> {
+    fn try_from(bolt_rel: bolt::value::Relationship) -> Result<Self> {
         Ok(Relationship {
             rel_identity: i64::try_from(*bolt_rel.rel_identity)?,
             start_node_identity: i64::try_from(*bolt_rel.start_node_identity)?,
@@ -70,7 +69,7 @@ impl TryFrom<bolt::value::Relationship> for Relationship {
 impl TryFrom<Value> for Relationship {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Relationship(rel) => Ok(Relationship::try_from(rel)?),
             _ => Err(ValueError::InvalidConversion(value).into()),

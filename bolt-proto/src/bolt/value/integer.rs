@@ -6,8 +6,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use crate::bolt::value::Marker;
-use crate::error::Error;
-use crate::error::{DeserializeError, ValueError};
+use crate::error::*;
 use crate::{Deserialize, Serialize, Value};
 
 pub(crate) const MARKER_INT_8: u8 = 0xC8;
@@ -37,7 +36,7 @@ impl_from_int!(i8, i16, i32, i64);
 impl TryFrom<Value> for Integer {
     type Error = Error;
 
-    fn try_from(value: Value) -> Result<Self, Self::Error> {
+    fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Integer(integer) => Ok(integer),
             _ => Err(ValueError::InvalidConversion(value).into()),
@@ -46,7 +45,7 @@ impl TryFrom<Value> for Integer {
 }
 
 impl Marker for Integer {
-    fn get_marker(&self) -> Result<u8, Error> {
+    fn get_marker(&self) -> Result<u8> {
         let value = match self.bytes.len() {
             1 => self.bytes.clone().get_i8() as i64,
             2 => self.bytes.clone().get_i16() as i64,
@@ -70,7 +69,7 @@ impl Serialize for Integer {}
 impl TryInto<Bytes> for Integer {
     type Error = Error;
 
-    fn try_into(mut self) -> Result<Bytes, Self::Error> {
+    fn try_into(mut self) -> Result<Bytes> {
         let mut bytes = BytesMut::with_capacity(mem::size_of::<u8>() + self.bytes.len());
         let marker = self.get_marker()?;
         bytes.put_u8(marker);
@@ -93,8 +92,8 @@ impl Deserialize for Integer {}
 impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
     type Error = Error;
 
-    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
-        let result: Result<Integer, Error> = catch_unwind(move || {
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
+        let result: Result<Integer> = catch_unwind(move || {
             let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
 

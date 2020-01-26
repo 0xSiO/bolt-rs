@@ -7,10 +7,10 @@ use tokio::io::BufStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
-use bolt_proto::error::Error;
-
 use crate::message::*;
 use crate::{Message, Value};
+
+pub(crate) type Result<T> = failure::Fallible<T>;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
@@ -22,7 +22,7 @@ pub struct Client {
 
 impl Client {
     /// Create a new connection to the server at the given host and port.
-    pub async fn new(host: IpAddr, port: usize) -> Result<Self, Error> {
+    pub async fn new(host: IpAddr, port: usize) -> Result<Self> {
         let mut client = Client {
             stream: BufStream::new(TcpStream::connect(format!("{}:{}", host, port)).await?),
             version: 0,
@@ -31,7 +31,7 @@ impl Client {
         Ok(client)
     }
 
-    async fn handshake(&mut self) -> Result<u32, Error> {
+    async fn handshake(&mut self) -> Result<u32> {
         let mut allowed_versions = BytesMut::with_capacity(16);
         SUPPORTED_VERSIONS
             .iter()
@@ -42,11 +42,11 @@ impl Client {
         Ok(self.stream.read_u32().await?)
     }
 
-    pub(crate) async fn read_message(&mut self) -> Result<Message, Error> {
+    pub(crate) async fn read_message(&mut self) -> Result<Message> {
         Message::from_stream(&mut self.stream).await
     }
 
-    pub(crate) async fn send_message(&mut self, message: Message) -> Result<(), Error> {
+    pub(crate) async fn send_message(&mut self, message: Message) -> Result<()> {
         let chunks: Vec<Bytes> = message.try_into()?;
         for mut chunk in chunks {
             self.stream.write_buf(&mut chunk).await?;
@@ -78,7 +78,7 @@ impl Client {
         &mut self,
         client_name: String,
         auth_token: HashMap<String, Value>,
-    ) -> Result<Message, Error> {
+    ) -> Result<Message> {
         let init_msg = Init::new(client_name, auth_token);
         self.send_message(Message::from(init_msg)).await?;
         self.read_message().await
@@ -114,7 +114,7 @@ impl Client {
         &mut self,
         statement: String,
         parameters: Option<HashMap<String, Value>>,
-    ) -> Result<Message, Error> {
+    ) -> Result<Message> {
         let run_msg = Run::new(statement, parameters.unwrap_or_default());
         self.send_message(Message::from(run_msg)).await?;
         self.read_message().await
@@ -137,7 +137,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {}` if the result stream has been successfully discarded
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
-    pub async fn discard_all(&mut self) -> Result<Message, Error> {
+    pub async fn discard_all(&mut self) -> Result<Message> {
         self.send_message(Message::DiscardAll).await?;
         self.read_message().await
     }
@@ -159,7 +159,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available or if retrieval fails
-    pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>), Error> {
+    pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>)> {
         self.send_message(Message::PullAll).await?;
         let mut records = vec![];
         loop {
@@ -183,7 +183,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting to be cleared
-    pub async fn ack_failure(&mut self) -> Result<Message, Error> {
+    pub async fn ack_failure(&mut self) -> Result<Message> {
         self.send_message(Message::AckFailure).await?;
         self.read_message().await
     }
@@ -209,7 +209,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently possible
-    pub async fn reset(&mut self) -> Result<Message, Error> {
+    pub async fn reset(&mut self) -> Result<Message> {
         self.send_message(Message::Reset).await?;
         self.read_message().await
     }
@@ -223,13 +223,13 @@ mod tests {
 
     use super::*;
 
-    async fn new_client() -> Result<Client, Error> {
+    async fn new_client() -> Result<Client> {
         let client = Client::new("127.0.0.1".parse().unwrap(), 7687).await?;
         assert_eq!(client.version, 1);
         Ok(client)
     }
 
-    async fn initialize_client(client: &mut Client, credentials: &str) -> Result<Message, Error> {
+    async fn initialize_client(client: &mut Client, credentials: &str) -> Result<Message> {
         client
             .init(
                 "bolt-client/X.Y.Z".to_string(),
@@ -242,17 +242,17 @@ mod tests {
             .await
     }
 
-    async fn get_initialized_client() -> Result<Client, Error> {
+    async fn get_initialized_client() -> Result<Client> {
         let mut client = new_client().await?;
         initialize_client(&mut client, "test").await?;
         Ok(client)
     }
 
-    async fn run_invalid_query(client: &mut Client) -> Result<Message, Error> {
+    async fn run_invalid_query(client: &mut Client) -> Result<Message> {
         client.run("".to_string(), None).await
     }
 
-    async fn run_valid_query(client: &mut Client) -> Result<Message, Error> {
+    async fn run_valid_query(client: &mut Client) -> Result<Message> {
         client.run("RETURN 1 as n;".to_string(), None).await
     }
 

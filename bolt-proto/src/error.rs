@@ -2,7 +2,8 @@ use failure::Fail;
 
 use crate::{Message, Value};
 
-pub type Error = failure::Error;
+pub(crate) type Error = failure::Error;
+pub(crate) type Result<T> = failure::Fallible<T>;
 
 #[derive(Debug, Fail)]
 pub enum ValueError {

@@ -20,8 +20,7 @@ pub use run::Run;
 pub use success::Success;
 
 use crate::bolt::structure::get_signature_from_bytes;
-use crate::error::DeserializeError;
-use crate::error::Error;
+use crate::error::*;
 use crate::{native, Deserialize, Marker, Serialize, Signature};
 
 mod ack_failure;
@@ -57,7 +56,7 @@ pub enum Message {
 impl Message {
     pub async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
         buf_stream: &mut BufStream<T>,
-    ) -> Result<Message, Error> {
+    ) -> Result<Message> {
         Message::try_from(MessageBytes::from_stream(buf_stream).await?)
     }
 }
@@ -93,7 +92,7 @@ impl From<native::message::Failure> for Message {
 }
 
 impl Marker for Message {
-    fn get_marker(&self) -> Result<u8, Error> {
+    fn get_marker(&self) -> Result<u8> {
         match self {
             Message::Init(init) => init.get_marker(),
             Message::Run(run) => run.get_marker(),
@@ -131,7 +130,7 @@ impl Serialize for Message {}
 impl TryInto<Bytes> for Message {
     type Error = Error;
 
-    fn try_into(self) -> Result<Bytes, Self::Error> {
+    fn try_into(self) -> Result<Bytes> {
         match self {
             Message::Init(init) => init.try_into(),
             Message::Run(run) => run.try_into(),
@@ -152,7 +151,7 @@ impl Deserialize for Message {}
 impl TryFrom<Arc<Mutex<Bytes>>> for Message {
     type Error = Error;
 
-    fn try_from(value: Arc<Mutex<Bytes>>) -> Result<Self, Self::Error> {
+    fn try_from(value: Arc<Mutex<Bytes>>) -> Result<Self> {
         let message_bytes = MessageBytes::try_from(value)?;
         Message::try_from(message_bytes)
     }
@@ -161,8 +160,8 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Message {
 impl TryFrom<MessageBytes> for Message {
     type Error = Error;
 
-    fn try_from(mut message_bytes: MessageBytes) -> Result<Self, Self::Error> {
-        let result: Result<Message, Error> = catch_unwind(move || {
+    fn try_from(mut message_bytes: MessageBytes) -> Result<Self> {
+        let result: Result<Message> = catch_unwind(move || {
             let signature = get_signature_from_bytes(&mut message_bytes)?;
             let remaining_bytes_arc =
                 Arc::new(Mutex::new(message_bytes.split_to(message_bytes.len())));
@@ -196,7 +195,7 @@ impl TryFrom<MessageBytes> for Message {
 impl TryInto<Vec<Bytes>> for Message {
     type Error = Error;
 
-    fn try_into(self) -> Result<Vec<Bytes>, Self::Error> {
+    fn try_into(self) -> Result<Vec<Bytes>> {
         let bytes: Bytes = self.try_into_bytes()?;
 
         // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
