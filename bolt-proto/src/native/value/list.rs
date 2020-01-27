@@ -11,10 +11,7 @@ where
     type Error = Error;
 
     fn try_into(self) -> Result<Vec<T>> {
-        self.value
-            .into_iter()
-            .map(|value| T::try_from(value))
-            .collect()
+        self.value.into_iter().map(T::try_from).collect()
     }
 }
 

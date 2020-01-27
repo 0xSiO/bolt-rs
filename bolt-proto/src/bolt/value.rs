@@ -56,6 +56,8 @@ pub enum Value {
     UnboundRelationship(UnboundRelationship),
 }
 
+#[allow(clippy::derive_hash_xor_eq)]
+// We implement Hash here despite deriving PartialEq because f64 and HashMap cannot be hashed and must panic
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
