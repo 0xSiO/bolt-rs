@@ -13,9 +13,9 @@ async fn get_initialized_client() -> Fallible<Client> {
         .init(
             "bolt-client/X.Y.Z".to_string(),
             HashMap::from_iter(vec![
-                (String::from("scheme"), Value::from("basic")),
-                (String::from("principal"), Value::from("neo4j")),
-                (String::from("credentials"), Value::from("test")),
+                (String::from("scheme"), String::from("basic")),
+                (String::from("principal"), String::from("neo4j")),
+                (String::from("credentials"), String::from("test")),
             ]),
         )
         .await?;

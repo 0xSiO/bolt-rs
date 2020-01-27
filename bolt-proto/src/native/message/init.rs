@@ -3,17 +3,16 @@ use std::convert::{TryFrom, TryInto};
 
 use crate::bolt;
 use crate::bolt::Message;
-use crate::bolt::Value;
 use crate::error::*;
 
 #[derive(Debug)]
 pub struct Init {
     pub(crate) client_name: String,
-    pub(crate) auth_token: HashMap<String, Value>,
+    pub(crate) auth_token: HashMap<String, String>,
 }
 
 impl Init {
-    pub fn new(client_name: String, auth_token: HashMap<String, Value>) -> Self {
+    pub fn new(client_name: String, auth_token: HashMap<String, String>) -> Self {
         Self {
             client_name,
             auth_token,
@@ -24,7 +23,7 @@ impl Init {
         &self.client_name
     }
 
-    pub fn auth_token(&self) -> &HashMap<String, Value> {
+    pub fn auth_token(&self) -> &HashMap<String, String> {
         &self.auth_token
     }
 }
