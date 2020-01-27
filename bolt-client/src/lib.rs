@@ -20,6 +20,9 @@
 //!     // protocol version.
 //!     let mut client = Client::new_tcp("127.0.0.1:7687").await?;
 //!     
+//!     // You can also create a TCP connection that is secured with TLS:
+//!     // let mut client = Client::new_secure_tcp("mydomain.com", "mydomain.com:1234").await?;
+//!
 //!     // Send an INIT message with authorization details to the server to initialize
 //!     // the session.
 //!     let response_msg: Message = client.init(
