@@ -3,13 +3,15 @@ use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use async_native_tls::TlsStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
 
 #[derive(Debug)]
 pub(crate) enum Stream {
     Tcp(TcpStream),
-    // TODO: WebSocket? Encrypted Tcp?
+    SecureTcp(TlsStream<TcpStream>),
+    // TODO: WebSocket?
 }
 
 impl AsyncRead for Stream {
@@ -20,6 +22,7 @@ impl AsyncRead for Stream {
     ) -> Poll<std::result::Result<usize, io::Error>> {
         match self.get_mut() {
             Stream::Tcp(tcp_stream) => Pin::new(tcp_stream).poll_read(cx, buf),
+            Stream::SecureTcp(tls_stream) => Pin::new(tls_stream).poll_read(cx, buf),
         }
     }
 }
@@ -32,18 +35,21 @@ impl AsyncWrite for Stream {
     ) -> Poll<Result<usize, io::Error>> {
         match self.get_mut() {
             Stream::Tcp(tcp_stream) => Pin::new(tcp_stream).poll_write(cx, buf),
+            Stream::SecureTcp(tls_stream) => Pin::new(tls_stream).poll_write(cx, buf),
         }
     }
 
     fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {
         match self.get_mut() {
             Stream::Tcp(tcp_stream) => Pin::new(tcp_stream).poll_flush(cx),
+            Stream::SecureTcp(tls_stream) => Pin::new(tls_stream).poll_flush(cx),
         }
     }
 
     fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {
         match self.get_mut() {
             Stream::Tcp(tcp_stream) => Pin::new(tcp_stream).poll_shutdown(cx),
+            Stream::SecureTcp(tls_stream) => Pin::new(tls_stream).poll_shutdown(cx),
         }
     }
 }
