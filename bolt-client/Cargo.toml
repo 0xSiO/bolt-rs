@@ -1,6 +1,6 @@
 [package]
 name = "bolt-client"
-version = "0.3.2"
+version = "0.4.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "A client that sends messages using the Bolt protocol.\n"
 readme = "README.md"
@@ -14,7 +14,7 @@ edition = "2018"
 criterion = "0.3.0"
 
 [dependencies]
-bolt-proto = { path = "../bolt-proto", version = "0.5.0" }
+bolt-proto = { path = "../bolt-proto", version = "0.6.0" }
 
 async-native-tls = { version = "0.3.2", default-features = false, features = [ "runtime-tokio" ] }
 bytes = "0.5.3"
