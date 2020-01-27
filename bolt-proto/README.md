@@ -38,8 +38,9 @@ pub enum Value {
     UnboundRelationship(UnboundRelationship),
 }
 ```
-You should rarely ever have to construct variants directly. Instead, you should use `Value::from` for the type you wish
-to convert. See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/enum.Value.html) for more details.
+You should rarely ever have to construct variants directly (with the exception of `Value::Null`). Instead, you should
+typically use `Value::from` for the type you wish to convert.
+See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/enum.Value.html) for more details.
 
 The `Serialize` and `Deserialize` traits provide interfaces for converting `Message` and `Value` types to and from 
 streams of bytes, to be consumed by a compatible Bolt server.
