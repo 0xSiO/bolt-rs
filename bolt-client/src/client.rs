@@ -7,6 +7,7 @@ use tokio::net::{TcpStream, ToSocketAddrs};
 use tokio::prelude::*;
 
 use crate::message::*;
+use crate::stream::Stream;
 use crate::{Message, Value};
 
 pub(crate) type Result<T> = failure::Fallible<T>;
@@ -16,7 +17,7 @@ const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
 
 #[derive(Debug)]
 pub struct Client {
-    pub(crate) stream: BufStream<TcpStream>,
+    pub(crate) stream: BufStream<Stream>,
     pub(crate) version: u8,
 }
 
@@ -24,7 +25,7 @@ impl Client {
     /// Create a new connection to the server at the given host and port.
     pub async fn new(addr: impl ToSocketAddrs) -> Result<Self> {
         let mut client = Client {
-            stream: BufStream::new(TcpStream::connect(addr).await?),
+            stream: BufStream::new(Stream::Tcp(TcpStream::connect(addr).await?)),
             version: 0,
         };
         client.version = client.handshake().await? as u8;
@@ -342,11 +343,11 @@ mod tests {
             Message::from(Run::new("CREATE (:Database {name: 'neo4j', born: 2007});".to_string(), Default::default())),
             Message::PullAll,
             Message::from(Run::new(
-                "MATCH (neo4j:Database {name: 'neo4j'}) CREATE (:Library {name: 'bolt-client', born: 2019})-[:CLIENT_FOR]->(neo4j);".to_string(), 
+                "MATCH (neo4j:Database {name: 'neo4j'}) CREATE (:Library {name: 'bolt-client', born: 2019})-[:CLIENT_FOR]->(neo4j);".to_string(),
                 Default::default())),
             Message::PullAll,
             Message::from(Run::new(
-                "MATCH (neo4j:Database {name: 'neo4j'}), (bolt_client:Library {name: 'bolt-client'}) RETURN bolt_client.born - neo4j.born;".to_string(), 
+                "MATCH (neo4j:Database {name: 'neo4j'}), (bolt_client:Library {name: 'bolt-client'}) RETURN bolt_client.born - neo4j.born;".to_string(),
                 Default::default())),
             Message::PullAll,
         ];

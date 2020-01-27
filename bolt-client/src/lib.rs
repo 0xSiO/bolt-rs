@@ -74,3 +74,4 @@ pub use bolt_proto::{Message, Value};
 pub use self::client::Client;
 
 pub mod client;
+mod stream;
