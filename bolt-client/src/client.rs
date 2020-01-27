@@ -14,6 +14,7 @@ pub(crate) type Result<T> = failure::Fallible<T>;
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
 
+#[derive(Debug)]
 pub struct Client {
     pub(crate) stream: BufStream<TcpStream>,
     pub(crate) version: u8,
@@ -76,7 +77,7 @@ impl Client {
     pub async fn init(
         &mut self,
         client_name: String,
-        auth_token: HashMap<String, Value>,
+        auth_token: HashMap<String, String>,
     ) -> Result<Message> {
         let init_msg = Init::new(client_name, auth_token);
         self.send_message(Message::from(init_msg)).await?;
@@ -233,9 +234,9 @@ mod tests {
             .init(
                 "bolt-client/X.Y.Z".to_string(),
                 HashMap::from_iter(vec![
-                    (String::from("scheme"), Value::from("basic")),
-                    (String::from("principal"), Value::from("neo4j")),
-                    (String::from("credentials"), Value::from(credentials)),
+                    (String::from("scheme"), String::from("basic")),
+                    (String::from("principal"), String::from("neo4j")),
+                    (String::from("credentials"), String::from(credentials)),
                 ]),
             )
             .await

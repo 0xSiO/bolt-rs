@@ -25,9 +25,9 @@
 //!     let response_msg: Message = client.init(
 //!         "my-client-name/1.0".to_string(),
 //!         HashMap::from_iter(vec![
-//!             ("scheme".to_string(), Value::from("basic")),
-//!             ("principal".to_string(), Value::from("neo4j")),
-//!             ("credentials".to_string(), Value::from("test")),
+//!             ("scheme".to_string(), "basic".to_string()),
+//!             ("principal".to_string(), "neo4j".to_string()),
+//!             ("credentials".to_string(), "test".to_string()),
 //!         ])).await?;
 //!     assert!(Success::try_from(response_msg).is_ok());
 //!
