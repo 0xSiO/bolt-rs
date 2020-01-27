@@ -10,7 +10,7 @@ support the [Bolt v1](https://boltprotocol.org/v1/) protocol, namely, [Neo4j](ht
 
 Contains an asynchronous client for Bolt-compatible servers, using a [tokio](https://crates.io/crates/tokio) 
 [`BufStream`](https://docs.rs/tokio/0.2.10/tokio/io/struct.BufStream.html) wrapping a 
-[`TcpStream`](https://docs.rs/tokio/0.2.10/tokio/net/struct.TcpStream.html).
+[`TcpStream`](https://docs.rs/tokio/0.2.10/tokio/net/struct.TcpStream.html), optionally secured using TLS.
 
 ### bolt-proto
 [README](bolt-proto/README.md) | [API docs](https://docs.rs/bolt-proto)
