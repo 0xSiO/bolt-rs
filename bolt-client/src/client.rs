@@ -120,7 +120,38 @@ impl Client {
         self.read_message().await
     }
 
-    // TODO: Pipelined runs for multiple statements
+    /// Send multiple messages to the server without waiting for a response. Returns a Vec containing the server's
+    /// response messages for each of the sent messages, in the order they were provided.
+    ///
+    /// # Description
+    /// The client is not required to wait for a response before sending more messages. Sending multiple messages
+    /// together like this is called pipelining. For performance reasons, it is recommended that clients use pipelining
+    /// as much as possible. Through pipelining, multiple messages can be transmitted together in the same network
+    /// package, significantly reducing latency and increasing throughput.
+    ///
+    /// A common technique is to buffer outgoing messages on the client until the last possible moment, such as when a
+    /// commit is issued or a result is read by the application, and then sending all messages in the buffer together.
+    ///
+    /// # Failure Handling
+    /// Because the protocol leverages pipelining, the client and the server need to agree on what happens when a
+    /// failure occurs, otherwise messages that were sent assuming no failure would occur might have unintended effects.
+    ///
+    /// When requests fail on the server, the server will send the client a `FAILURE` message. The client must
+    /// acknowledge the `FAILURE` message by sending an `ACK_FAILURE` message to the server. Until the server receives
+    /// the `ACK_FAILURE` message, it will send an `IGNORED` message in response to any other message from the client,
+    /// including messages that were sent in a pipeline.
+    pub async fn run_pipelined(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
+        let mut responses = Vec::with_capacity(messages.len());
+
+        for message in messages {
+            self.send_message(message).await?;
+        }
+
+        for _ in 0..responses.capacity() {
+            responses.push(self.read_message().await?);
+        }
+        Ok(responses)
+    }
 
     /// Send a `DISCARD_ALL` message to the server.
     ///
@@ -302,6 +333,36 @@ mod tests {
         let mut client = get_initialized_client().await.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+    }
+
+    #[tokio::test]
+    async fn run_pipelined() {
+        let mut client = get_initialized_client().await.unwrap();
+        let messages = vec![
+            Message::from(Run::new("CREATE (:Database {name: 'neo4j', born: 2007});".to_string(), Default::default())),
+            Message::PullAll,
+            Message::from(Run::new(
+                "MATCH (neo4j:Database {name: 'neo4j'}) CREATE (:Library {name: 'bolt-client', born: 2019})-[:CLIENT_FOR]->(neo4j);".to_string(), 
+                Default::default())),
+            Message::PullAll,
+            Message::from(Run::new(
+                "MATCH (neo4j:Database {name: 'neo4j'}), (bolt_client:Library {name: 'bolt-client'}) RETURN bolt_client.born - neo4j.born;".to_string(), 
+                Default::default())),
+            Message::PullAll,
+        ];
+        for response in client.run_pipelined(messages).await.unwrap() {
+            assert!(match response {
+                Message::Success(_) => true,
+                Message::Record(record) => {
+                    assert_eq!(
+                        Record::try_from(record).unwrap().fields()[0],
+                        Value::from(12_i8)
+                    );
+                    true
+                }
+                _ => false,
+            });
+        }
     }
 
     #[tokio::test]
