@@ -22,10 +22,21 @@ pub struct Client {
 }
 
 impl Client {
-    /// Create a new connection to the server at the given host and port.
-    pub async fn new(addr: impl ToSocketAddrs) -> Result<Self> {
+    /// Create a new TCP connection to the server at the given address.
+    pub async fn new_tcp(addr: impl ToSocketAddrs) -> Result<Self> {
         let mut client = Client {
             stream: BufStream::new(Stream::Tcp(TcpStream::connect(addr).await?)),
+            version: 0,
+        };
+        client.version = client.handshake().await? as u8;
+        Ok(client)
+    }
+
+    /// Create a new TCP connection to the server at the given address, secured using TLS.
+    pub async fn new_secure_tcp(domain: &str, addr: impl ToSocketAddrs) -> Result<Self> {
+        let tls_stream = async_native_tls::connect(domain, TcpStream::connect(addr).await?).await?;
+        let mut client = Client {
+            stream: BufStream::new(Stream::SecureTcp(tls_stream)),
             version: 0,
         };
         client.version = client.handshake().await? as u8;
@@ -251,24 +262,42 @@ impl Client {
 mod tests {
     use std::collections::HashMap;
     use std::convert::TryFrom;
+    use std::env;
     use std::iter::FromIterator;
 
     use super::*;
 
     async fn new_client() -> Result<Client> {
-        let client = Client::new("127.0.0.1:7687").await?;
+        let client = if let Ok(domain) = env::var("BOLT_CLIENT_TEST_REMOTE") {
+            Client::new_secure_tcp(
+                &domain.clone(),
+                &(domain + ":" + &env::var("BOLT_CLIENT_TEST_PORT").unwrap()),
+            )
+            .await?
+        } else {
+            Client::new_tcp("127.0.0.1:7687").await?
+        };
         assert_eq!(client.version, 1);
         Ok(client)
     }
 
-    async fn initialize_client(client: &mut Client, credentials: &str) -> Result<Message> {
+    async fn initialize_client(client: &mut Client, succeed: bool) -> Result<Message> {
+        let (db_user, db_password) = match env::var("BOLT_CLIENT_TEST_LOGIN") {
+            Ok(login) if succeed => {
+                let items: Vec<&str> = login.split(",").collect();
+                (items[0].to_string(), items[1].to_string())
+            }
+            Err(_) if succeed => ("neo4j".to_string(), "test".to_string()),
+            _ => ("neo4j".to_string(), "invalid".to_string()),
+        };
+
         client
             .init(
                 "bolt-client/X.Y.Z".to_string(),
                 HashMap::from_iter(vec![
                     (String::from("scheme"), String::from("basic")),
-                    (String::from("principal"), String::from("neo4j")),
-                    (String::from("credentials"), String::from(credentials)),
+                    (String::from("principal"), db_user),
+                    (String::from("credentials"), db_password),
                 ]),
             )
             .await
@@ -276,7 +305,7 @@ mod tests {
 
     async fn get_initialized_client() -> Result<Client> {
         let mut client = new_client().await?;
-        initialize_client(&mut client, "test").await?;
+        initialize_client(&mut client, true).await?;
         Ok(client)
     }
 
@@ -291,14 +320,14 @@ mod tests {
     #[tokio::test]
     async fn init() {
         let mut client = new_client().await.unwrap();
-        let response = initialize_client(&mut client, "test").await.unwrap();
+        let response = initialize_client(&mut client, true).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn init_fail() {
         let mut client = new_client().await.unwrap();
-        let response = initialize_client(&mut client, "invalid!").await.unwrap();
+        let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
     }
 
@@ -340,6 +369,8 @@ mod tests {
     async fn run_pipelined() {
         let mut client = get_initialized_client().await.unwrap();
         let messages = vec![
+            Message::from(Run::new("MATCH (n) DETACH DELETE n;".to_string(), Default::default())),
+            Message::PullAll,
             Message::from(Run::new("CREATE (:Database {name: 'neo4j', born: 2007});".to_string(), Default::default())),
             Message::PullAll,
             Message::from(Run::new(

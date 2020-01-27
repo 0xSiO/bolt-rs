@@ -44,7 +44,8 @@ impl ManageConnection for BoltConnectionManager {
     type Error = Error;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        let mut client = Client::new((self.host, self.port)).await?;
+        // TODO: Support secure TCP client
+        let mut client = Client::new_tcp((self.host, self.port)).await?;
         let response = client
             .init(self.client_name.clone(), self.auth_token.clone())
             .await?;
