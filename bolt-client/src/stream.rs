@@ -11,7 +11,7 @@ use tokio::prelude::*;
 pub(crate) enum Stream {
     Tcp(TcpStream),
     SecureTcp(TlsStream<TcpStream>),
-    // TODO: WebSocket?
+    // TODO: WebSocket? Check out tokio-tungstenite
 }
 
 impl AsyncRead for Stream {
