@@ -21,6 +21,7 @@ pub struct Client {
     pub(crate) version: u8,
 }
 
+// TODO: Update docs for new_XXX: we're creating Clients, not just connections.
 impl Client {
     /// Create a new TCP connection to the server at the given address.
     pub async fn new_tcp(addr: impl ToSocketAddrs) -> Result<Self> {
