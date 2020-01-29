@@ -261,6 +261,8 @@ mod tests {
     use std::env;
     use std::iter::FromIterator;
 
+    use crate::value::*;
+
     use super::*;
 
     async fn new_client() -> Result<Client> {
@@ -402,7 +404,40 @@ mod tests {
         assert_eq!(records[0].fields(), &[Value::from(3458376)]);
     }
 
-    // TODO: Node/Relationship creation tests
+    #[tokio::test]
+    async fn node_and_rel_creation() {
+        let mut client = get_initialized_client().await.unwrap();
+        let statement = "MATCH (n) DETACH DELETE n;".to_string();
+        client.run(statement, None).await.unwrap();
+        client.pull_all().await.unwrap();
+
+        let statement =
+            "CREATE (:Client {name: 'bolt-client'})-[:WRITTEN_IN]->(:Language {name: 'Rust'});"
+                .to_string();
+        client.run(statement, None).await.unwrap();
+        client.pull_all().await.unwrap();
+        let statement = "MATCH (c)-[r:WRITTEN_IN]->(l) RETURN c, r, l;".to_string();
+        client.run(statement, None).await.unwrap();
+        let (_response, records) = client.pull_all().await.unwrap();
+
+        let c = Node::try_from(records[0].fields()[0].clone()).unwrap();
+        let r = Relationship::try_from(records[0].fields()[1].clone()).unwrap();
+        let l = Node::try_from(records[0].fields()[2].clone()).unwrap();
+
+        assert_eq!(c.labels(), &["Client".to_string()]);
+        assert_eq!(
+            c.properties().get("name"),
+            Some(&Value::from("bolt-client"))
+        );
+        assert_eq!(l.labels(), &["Language".to_string()]);
+        assert_eq!(l.properties().get("name"), Some(&Value::from("Rust")));
+        assert_eq!(r.rel_type(), "WRITTEN_IN");
+        assert!(r.properties().is_empty());
+        assert_eq!(
+            (r.start_node_identity(), r.end_node_identity()),
+            (c.node_identity(), l.node_identity())
+        );
+    }
 
     #[tokio::test]
     async fn discard_all_fail() {
