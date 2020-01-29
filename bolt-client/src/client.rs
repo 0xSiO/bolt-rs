@@ -21,9 +21,8 @@ pub struct Client {
     pub(crate) version: u8,
 }
 
-// TODO: Update docs for new_XXX: we're creating Clients, not just connections.
 impl Client {
-    /// Create a new TCP connection to the server at the given address.
+    /// Create a Client from a new TCP connection to the server at the given address.
     pub async fn new_tcp(addr: impl ToSocketAddrs) -> Result<Self> {
         let mut client = Client {
             stream: BufStream::new(Stream::Tcp(TcpStream::connect(addr).await?)),
@@ -33,7 +32,7 @@ impl Client {
         Ok(client)
     }
 
-    /// Create a new TCP connection to the server at the given address, secured using TLS.
+    /// Create a Client from a new TCP connection to the server at the given address, secured using TLS.
     pub async fn new_secure_tcp(domain: &str, addr: impl ToSocketAddrs) -> Result<Self> {
         let tls_stream = async_native_tls::connect(domain, TcpStream::connect(addr).await?).await?;
         let mut client = Client {
