@@ -5,6 +5,7 @@
 //! ```
 //! use std::collections::HashMap;
 //! use std::convert::TryFrom;
+//! use std::env;
 //! use std::iter::FromIterator;
 //!
 //! use failure::Error;
@@ -17,20 +18,20 @@
 //! #[tokio::main]
 //! async fn main() -> Result<(), Error> {
 //!     // Create a new connection to the server and perform a handshake to establish a
-//!     // protocol version.
-//!     let mut client = Client::new_tcp("127.0.0.1:7687").await?;
+//!     // protocol version. In this example, all connection/authentication details are
+//!     // stored in environment variables. A domain is optional - including it will
+//!     // create a client that uses a TLS-secured connection.
+//!     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
+//!                                  env::var("BOLT_TEST_DOMAIN").ok().as_deref()).await?;
 //!     
-//!     // You can also create a TCP connection that is secured with TLS:
-//!     // let mut client = Client::new_secure_tcp("mydomain.com", "mydomain.com:1234").await?;
-//!
 //!     // Send an INIT message with authorization details to the server to initialize
 //!     // the session.
 //!     let response_msg: Message = client.init(
 //!         "my-client-name/1.0".to_string(),
 //!         HashMap::from_iter(vec![
 //!             ("scheme".to_string(), "basic".to_string()),
-//!             ("principal".to_string(), "neo4j".to_string()),
-//!             ("credentials".to_string(), "test".to_string()),
+//!             ("principal".to_string(), env::var("BOLT_TEST_USERNAME")?),
+//!             ("credentials".to_string(), env::var("BOLT_TEST_PASSWORD")?),
 //!         ])).await?;
 //!     assert!(Success::try_from(response_msg).is_ok());
 //!

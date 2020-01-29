@@ -22,21 +22,17 @@ pub struct Client {
 }
 
 impl Client {
-    /// Create a Client from a new TCP connection to the server at the given address.
-    pub async fn new_tcp(addr: impl ToSocketAddrs) -> Result<Self> {
-        let mut client = Client {
-            stream: BufStream::new(Stream::Tcp(TcpStream::connect(addr).await?)),
-            version: 0,
+    /// Create a new client pointing to the provided server address. If a server domain is provided, the Client will
+    /// attempt to connect to the server over a connection secured with TLS.
+    pub async fn new(addr: impl ToSocketAddrs, domain: Option<&str>) -> Result<Self> {
+        let stream = match domain {
+            Some(domain) => Stream::SecureTcp(
+                async_native_tls::connect(&domain, TcpStream::connect(addr).await?).await?,
+            ),
+            None => Stream::Tcp(TcpStream::connect(addr).await?),
         };
-        client.version = client.handshake().await? as u8;
-        Ok(client)
-    }
-
-    /// Create a Client from a new TCP connection to the server at the given address, secured using TLS.
-    pub async fn new_secure_tcp(domain: &str, addr: impl ToSocketAddrs) -> Result<Self> {
-        let tls_stream = async_native_tls::connect(domain, TcpStream::connect(addr).await?).await?;
         let mut client = Client {
-            stream: BufStream::new(Stream::SecureTcp(tls_stream)),
+            stream: BufStream::new(stream),
             version: 0,
         };
         client.version = client.handshake().await? as u8;
@@ -268,27 +264,21 @@ mod tests {
     use super::*;
 
     async fn new_client() -> Result<Client> {
-        let client = if let Ok(domain) = env::var("BOLT_CLIENT_TEST_REMOTE") {
-            Client::new_secure_tcp(
-                &domain.clone(),
-                &(domain + ":" + &env::var("BOLT_CLIENT_TEST_PORT").unwrap()),
-            )
-            .await?
-        } else {
-            Client::new_tcp("127.0.0.1:7687").await?
-        };
+        let client = Client::new(
+            env::var("BOLT_TEST_ADDR").unwrap(),
+            env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
+        )
+        .await?;
         assert_eq!(client.version, 1);
         Ok(client)
     }
 
     async fn initialize_client(client: &mut Client, succeed: bool) -> Result<Message> {
-        let (db_user, db_password) = match env::var("BOLT_CLIENT_TEST_LOGIN") {
-            Ok(login) if succeed => {
-                let items: Vec<&str> = login.split(",").collect();
-                (items[0].to_string(), items[1].to_string())
-            }
-            Err(_) if succeed => ("neo4j".to_string(), "test".to_string()),
-            _ => ("neo4j".to_string(), "invalid".to_string()),
+        let username = env::var("BOLT_TEST_USERNAME").unwrap();
+        let password = if succeed {
+            env::var("BOLT_TEST_PASSWORD").unwrap()
+        } else {
+            "invalid".to_string()
         };
 
         client
@@ -296,8 +286,8 @@ mod tests {
                 "bolt-client/X.Y.Z".to_string(),
                 HashMap::from_iter(vec![
                     (String::from("scheme"), String::from("basic")),
-                    (String::from("principal"), db_user),
-                    (String::from("credentials"), db_password),
+                    (String::from("principal"), username),
+                    (String::from("credentials"), password),
                 ]),
             )
             .await

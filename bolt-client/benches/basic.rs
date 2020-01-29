@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::env;
 use std::iter::FromIterator;
 
 use criterion::*;
@@ -8,14 +9,24 @@ use tokio::runtime::Runtime;
 use bolt_client::*;
 
 async fn get_initialized_client() -> Fallible<Client> {
-    let mut client: Client = Client::new_tcp("127.0.0.1:7687").await?;
+    let mut client = Client::new(
+        env::var("BOLT_TEST_ADDR").unwrap(),
+        env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
+    )
+    .await?;
     client
         .init(
             "bolt-client/X.Y.Z".to_string(),
             HashMap::from_iter(vec![
                 (String::from("scheme"), String::from("basic")),
-                (String::from("principal"), String::from("neo4j")),
-                (String::from("credentials"), String::from("test")),
+                (
+                    String::from("principal"),
+                    env::var("BOLT_TEST_USERNAME").unwrap(),
+                ),
+                (
+                    String::from("credentials"),
+                    env::var("BOLT_TEST_PASSWORD").unwrap(),
+                ),
             ]),
         )
         .await?;

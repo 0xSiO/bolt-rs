@@ -49,11 +49,7 @@ impl ManageConnection for BoltConnectionManager {
     type Error = Error;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        let mut client = match &self.domain {
-            Some(domain) => Client::new_secure_tcp(domain, self.addr).await?,
-            None => Client::new_tcp(self.addr).await?,
-        };
-
+        let mut client = Client::new(self.addr, self.domain.as_deref()).await?;
         let response = client
             .init(self.client_name.clone(), self.auth_token.clone())
             .await?;
@@ -89,33 +85,20 @@ mod tests {
     use super::*;
 
     fn get_connection_manager() -> BoltConnectionManager {
-        let (addr, domain, username, password) = match env::var("BOLT_CLIENT_TEST_REMOTE") {
-            Ok(domain) => {
-                let login_info = env::var("BOLT_CLIENT_TEST_LOGIN").unwrap();
-                let login_info: Vec<&str> = login_info.split(",").collect();
-                (
-                    domain.clone() + ":" + &env::var("BOLT_CLIENT_TEST_PORT").unwrap(),
-                    Some(domain),
-                    login_info[0].to_string(),
-                    login_info[1].to_string(),
-                )
-            }
-            Err(_) => (
-                "127.0.0.1:7687".to_string(),
-                None,
-                "neo4j".to_string(),
-                "test".to_string(),
-            ),
-        };
-
         BoltConnectionManager::new(
-            addr,
-            domain,
+            env::var("BOLT_TEST_ADDR").unwrap(),
+            env::var("BOLT_TEST_DOMAIN").ok(),
             "bolt-client/X.Y.Z".to_string(),
             HashMap::from_iter(vec![
                 (String::from("scheme"), String::from("basic")),
-                (String::from("principal"), username),
-                (String::from("credentials"), password),
+                (
+                    String::from("principal"),
+                    env::var("BOLT_TEST_USERNAME").unwrap(),
+                ),
+                (
+                    String::from("credentials"),
+                    env::var("BOLT_TEST_PASSWORD").unwrap(),
+                ),
             ]),
         )
         .unwrap()
