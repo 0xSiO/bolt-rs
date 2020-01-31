@@ -9,7 +9,7 @@ use crate::native;
 
 pub(crate) const SIGNATURE: u8 = 0x71;
 
-#[derive(Debug, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Signature, Marker, Serialize, Deserialize)]
 pub struct Record {
     pub(crate) fields: Value,
 }
