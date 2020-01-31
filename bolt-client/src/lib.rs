@@ -43,8 +43,8 @@
 //!     // Use PULL_ALL to retrieve results of the query
 //!     let (response_msg, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     assert!(Success::try_from(response_msg).is_ok());
-//!     // Note that integers are automatically packed into the smallest possible byte
-//!     // representation.
+//!
+//!     // Integers are automatically packed into the smallest possible byte representation
 //!     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //!
 //!     // Clear the database

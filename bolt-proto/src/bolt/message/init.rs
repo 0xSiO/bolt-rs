@@ -9,7 +9,7 @@ use crate::native;
 
 pub(crate) const SIGNATURE: u8 = 0x01;
 
-#[derive(Debug, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Signature, Marker, Serialize, Deserialize)]
 pub struct Init {
     pub(crate) client_name: Value,
     pub(crate) auth_token: Value,

@@ -51,10 +51,18 @@ impl Client {
     }
 
     pub(crate) async fn read_message(&mut self) -> Result<Message> {
-        Message::from_stream(&mut self.stream).await
+        let message = Message::from_stream(&mut self.stream).await?;
+
+        #[cfg(test)]
+        println!("<<< {:?}\n", message);
+
+        Ok(message)
     }
 
     pub(crate) async fn send_message(&mut self, message: Message) -> Result<()> {
+        #[cfg(test)]
+        println!(">>> {:?}", message);
+
         let chunks: Vec<Bytes> = message.try_into()?;
         for mut chunk in chunks {
             self.stream.write_buf(&mut chunk).await?;
@@ -149,6 +157,7 @@ impl Client {
     /// the `ACK_FAILURE` message, it will send an `IGNORED` message in response to any other message from the client,
     /// including messages that were sent in a pipeline.
     pub async fn run_pipelined(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
+        // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
 
         for message in messages {
@@ -156,7 +165,12 @@ impl Client {
         }
 
         for _ in 0..responses.capacity() {
-            responses.push(self.read_message().await?);
+            let mut response = self.read_message().await?;
+            while let &Message::Record(_) = &response {
+                responses.push(response);
+                response = self.read_message().await?;
+            }
+            responses.push(response);
         }
         Ok(responses)
     }

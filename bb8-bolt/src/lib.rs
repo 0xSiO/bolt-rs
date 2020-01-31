@@ -82,6 +82,8 @@ mod tests {
 
     use bb8::*;
 
+    use bolt_client::Value;
+
     use super::*;
 
     fn get_connection_manager() -> BoltConnectionManager {
@@ -118,10 +120,7 @@ mod tests {
                 conn.run(statement, None).await.unwrap();
                 let (response, records) = conn.pull_all().await.unwrap();
                 assert!(Success::try_from(response).is_ok());
-                assert_eq!(
-                    i32::try_from(records[0].fields()[0].clone()).unwrap(),
-                    i as i32
-                );
+                assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
             }));
         }
         tokio::join!(futures::future::join_all(tasks));

@@ -39,7 +39,7 @@ mod success;
 // This is what's used in the protocol spec, but it could technically be any size.
 const CHUNK_SIZE: usize = 16; // TODO: Make this configurable
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Message {
     Init(Init),
     Run(Run),
