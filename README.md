@@ -4,7 +4,9 @@
 ## Overview
 
 This project provides a comprehensive set of libraries that allow for interaction with graph database servers that
-support the [Bolt v1](https://boltprotocol.org/v1/) protocol, namely, [Neo4j](https://neo4j.com).
+support the [Bolt v1](https://boltprotocol.org/v1/) protocol, namely, [Neo4j](https://neo4j.com). Since there is
+currently no good documentation for Bolt v2, v3, or v4, this set of libraries allows interacting with Neo4j versions up
+to 3.5.14, which is the last version supporting Bolt v1.
 
 ### bolt-client
 [![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)

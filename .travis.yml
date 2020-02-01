@@ -1,0 +1,39 @@
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+cache: cargo
+
+script:
+  - cargo build --verbose --all
+  - cargo test --verbose --all
+  - cargo test --verbose --all -- --ignored
+
+env:
+  global:
+    - BOLT_TEST_ADDR=127.0.0.1:7687
+    - BOLT_TEST_USERNAME=neo4j
+    - BOLT_TEST_PASSWORD=neo4j
+  jobs:
+    - NEO4J_VERSION=3.4
+    - NEO4J_VERSION=3.5
+    # TODO: Support Bolt v2-v4 so we can use Neo4j 4+
+    # - NEO4J_VERSION=4.0
+    - secure: "Neg7aDyRc23kcmMBpbqUzUWpW6dBawZFiDPsSqsMZbGogfHMZorBDNHbHJpxGt1eApmys18+ja0Gl+bUTEVlqSczg8orGef1PFHki52Jp4qxVEndK0luUhGqXIPFDicLhOHIAt9Tfxu2Wfc3HqRZb5AeU/1MAWCdkfVYybKOiit/4RDAddsZU8hSdq5tgN7Y55fYpHPlOEfbMm5RNw6T6GNZ2Hty0FI6Jm633FlVDELcWBRbotDHg6ex23M2VT/8cc+13wmcrUMKkrfcAEhpfR5NTm6Np8KiOqgjIBm6vdVpf1lj6JkogvgQcT4bzwcWtjyoI1G47/IncnXUqtBIVXZsTmT5VgjlmcL9edSewftr6HghCrHQqFbA8sblMIziWtWtaXL5S8tQCeAjI95G12uaflU3JREoLo/fEBub6nUt8Aiv6hW53LAasSdBVe6BKM8cNDzTJvTBzd1TfWXlIC3odcPoi1MGHzTwmJYVwcqDby2TsLirdkCnSKgDcKzv7Lx+rY+lC0uX76gHS3AR80c6ZD0kL8fyistfBN2xB0u01Jcr4Rp+UClf9OXgykMjCSBaxJbd+Hk2FEH8ioqg8UPTCbjdAvxcgTrwcq1fyWDn3byqA8TnrtV1AAUsCBzFDopMdRaD3/HJTqOG8T7sIIYLT8BK/VQ4VcwXnXXHWCo="
+
+jobs:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+
+before_install:
+  - |
+    if [[ $NEO4J_VERSION ]]; then
+      docker pull neo4j:$NEO4J_VERSION
+      docker run -d -p 7474:7474 -p 7687:7687 neo4j:$NEO4J_VERSION bash -c "neo4j-admin set-initial-password neo4j; neo4j console"
+      docker ps -a
+    fi
+
+services:
+  - docker
