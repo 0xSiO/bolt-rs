@@ -12,10 +12,13 @@ script:
 
 env:
   global:
+    # Default local config
     - BOLT_TEST_ADDR=127.0.0.1:7687
     - BOLT_TEST_USERNAME=neo4j
     - BOLT_TEST_PASSWORD=neo4j
   jobs:
+    - NEO4J_VERSION=3.2
+    - NEO4J_VERSION=3.3
     - NEO4J_VERSION=3.4
     - NEO4J_VERSION=3.5
     # TODO: Support Bolt v2-v4 so we can use Neo4j 4+
