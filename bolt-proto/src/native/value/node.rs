@@ -1,3 +1,5 @@
+use bolt_proto_derive::*;
+
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
@@ -5,7 +7,10 @@ use crate::bolt;
 use crate::bolt::Value;
 use crate::error::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) const MARKER: u8 = 0xB3;
+pub(crate) const SIGNATURE: u8 = 0x4E;
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Node {
     pub(crate) node_identity: i64,
     pub(crate) labels: Vec<String>,

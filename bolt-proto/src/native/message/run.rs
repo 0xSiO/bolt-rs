@@ -1,12 +1,15 @@
+use bolt_proto_derive::*;
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
-use crate::bolt;
 use crate::bolt::Message;
 use crate::bolt::Value;
 use crate::error::*;
 
-#[derive(Debug)]
+pub(crate) const MARKER: u8 = 0xB2;
+pub(crate) const SIGNATURE: u8 = 0x10;
+
+#[derive(Debug, Clone, Signature, Marker, Serialize, Deserialize)]
 pub struct Run {
     pub(crate) statement: String,
     pub(crate) parameters: HashMap<String, Value>,
@@ -29,17 +32,6 @@ impl Run {
     }
 }
 
-impl TryFrom<bolt::message::Run> for Run {
-    type Error = Error;
-
-    fn try_from(bolt_run: bolt::message::Run) -> Result<Self> {
-        Ok(Run {
-            statement: bolt_run.statement.try_into()?,
-            parameters: bolt_run.parameters.try_into()?,
-        })
-    }
-}
-
 impl TryFrom<Message> for Run {
     type Error = Error;
 
@@ -48,5 +40,24 @@ impl TryFrom<Message> for Run {
             Message::Run(run) => Ok(Run::try_from(run)?),
             _ => Err(MessageError::InvalidConversion(message).into()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+    use std::sync::{Arc, Mutex};
+
+    use bytes::Bytes;
+
+    use super::*;
+
+    #[test]
+    fn try_from_bytes() {
+        let bytes = Bytes::from_static(&[
+            0x8F, 0x52, 0x45, 0x54, 0x55, 0x52, 0x4E, 0x20, 0x31, 0x20, 0x41, 0x53, 0x20, 0x6E,
+            0x75, 0x6D, 0xA0,
+        ]);
+        assert!(Run::try_from(Arc::new(Mutex::new(bytes))).is_ok());
     }
 }

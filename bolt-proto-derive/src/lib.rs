@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 
-use syn::{Data, DataStruct, GenericArgument, Ident, PathArguments, Type, TypePath};
+use syn::{Data, DataStruct, Ident};
 
 use quote::{format_ident, quote};
 
@@ -39,7 +39,6 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         Data::Struct(DataStruct { fields, .. }) => fields,
         _ => panic!("Macro must be used on a struct."),
     };
-    let marker = get_structure_marker(fields.len());
 
     let byte_var_names: Vec<Ident> = fields
         .iter()
@@ -48,50 +47,21 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
 
     let byte_vars = byte_var_names.iter().zip(fields).map(|(var_name, field)| {
         let field_name = field.ident.clone();
-        quote!(let #var_name = self.#field_name.try_into_bytes()?;)
+        quote!(let #var_name = crate::Value::from(self.#field_name).try_into_bytes()?;)
     });
 
     let deserialize_fields =
         fields
             .iter()
-            .map(|field| match (&field.ident.clone().unwrap(), field.ty.clone()) {
-                (field_name, Type::Path(TypePath { path, .. })) => {
-                    let types: Vec<String> = path.segments.iter().map(|s| {
-                        let type_args = match &s.arguments {
-                            PathArguments::AngleBracketed(args) => {
-                                match &args.args[0] {
-                                    GenericArgument::Type(Type::Path(TypePath { path, .. })) => {
-                                        format!("<{}>", path.segments[0].ident)
-                                    }
-                                    _ => panic!("Can't derive Deserialize for field {} (review your type arguments)", field_name)
-                                }
-                            }
-                            _ => "".to_string(),
-                        };
-                        s.ident.to_string() + &type_args
-                    }).collect();
-                    match types[0].as_str() {
-                        "Box<Value>" => {
-                            quote!(#field_name: Box::new(Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?),)
-                        }
-                        "Value" => {
-                            quote!(#field_name: Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?,)
-                        }
-                        other => panic!("Can't deserialize {} with type {}", field_name, other),
-                    }
-                }
-                _ => unreachable!(),
+            .map(|field| {
+                let field_name = field.ident.as_ref().unwrap();
+                quote!(#field_name: crate::Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?.try_into()?,)
             });
-
-    let size_bytes = get_size_bytes(fields.len());
 
     let gen = quote! {
         use ::bytes::BufMut;
-        use crate::bolt::value::Marker;
-        use crate::bolt::structure::Signature;
-        use crate::serialize::Serialize;
 
-        impl#type_args crate::bolt::structure::Signature for #name#type_args
+        impl#type_args crate::Signature for #name#type_args
         #where_clause
         {
             fn get_signature(&self) -> u8 {
@@ -99,40 +69,42 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
             }
         }
 
-        impl#type_args crate::bolt::value::Marker for #name#type_args
+        impl#type_args crate::Marker for #name#type_args
         #where_clause
         {
             fn get_marker(&self) -> crate::error::Result<u8> {
-                Ok(#marker)
+                Ok(MARKER)
             }
         }
 
-        impl#type_args crate::serialize::Serialize for #name#type_args
+        impl#type_args crate::Serialize for #name#type_args
         #where_clause
         {}
 
         impl#type_args ::std::convert::TryInto<::bytes::Bytes> for #name#type_args
         #where_clause
         {
-            type Error = ::failure::Error;
+            type Error = crate::error::Error;
 
             fn try_into(self) -> crate::error::Result<::bytes::Bytes> {
-                let marker = self.get_marker()?;
-                let signature = self.get_signature();
+                use crate::serialize::Serialize;
+                use ::std::convert::{TryFrom, TryInto};
+
+                let marker = MARKER;
+                let signature = SIGNATURE;
                 #(#byte_vars)*
-                // Marker byte, up to 2 size bytes, signature byte, then the rest of the data
+                // Marker byte, signature byte, then the rest of the data
                 let mut result_bytes_mut = ::bytes::BytesMut::with_capacity(
-                    std::mem::size_of::<u8>() * 4 #(+ #byte_var_names.len())*
+                    std::mem::size_of::<u8>() * 2 #(+ #byte_var_names.len())*
                 );
-                result_bytes_mut.put_u8(marker);
-                #(result_bytes_mut.put_u8(#size_bytes);)*
-                result_bytes_mut.put_u8(signature);
+                result_bytes_mut.put_u8(MARKER);
+                result_bytes_mut.put_u8(SIGNATURE);
                 #(result_bytes_mut.put(#byte_var_names);)*
                 Ok(result_bytes_mut.freeze())
             }
         }
 
-        impl crate::serialize::Deserialize for #name#type_args
+        impl crate::Deserialize for #name#type_args
         #where_clause
         {}
 
@@ -142,6 +114,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
             type Error = ::failure::Error;
 
             fn try_from(remaining_bytes_arc: ::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>) -> crate::error::Result<Self> {
+                use ::std::convert::{TryFrom, TryInto};
                 Ok(#name {
                     #(#deserialize_fields)*
                 })
@@ -149,27 +122,4 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         }
     };
     gen.into()
-}
-
-// Copied from structure module in bolt_proto
-const MARKER_TINY_STRUCTURE: u8 = 0xB0;
-const MARKER_SMALL_STRUCTURE: u8 = 0xDC;
-const MARKER_MEDIUM_STRUCTURE: u8 = 0xDD;
-
-fn get_structure_marker(num_fields: usize) -> u8 {
-    match num_fields {
-        0..=15 => MARKER_TINY_STRUCTURE | num_fields as u8,
-        16..=255 => MARKER_SMALL_STRUCTURE,
-        256..=65_535 => MARKER_MEDIUM_STRUCTURE,
-        _ => panic!("Too many fields in struct"),
-    }
-}
-
-fn get_size_bytes(num_fields: usize) -> Vec<u8> {
-    match num_fields {
-        0..=15 => vec![],
-        16..=255 => (num_fields as u8).to_be_bytes().to_vec(),
-        256..=65_535 => (num_fields as u16).to_be_bytes().to_vec(),
-        _ => panic!("Too many fields in struct"),
-    }
 }

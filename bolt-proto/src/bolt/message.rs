@@ -6,35 +6,16 @@ use bytes::Bytes;
 use tokio::io::BufStream;
 use tokio::prelude::*;
 
-pub use ack_failure::AckFailure;
 pub(crate) use chunk::Chunk;
-pub use discard_all::DiscardAll;
-pub use failure_::Failure;
-pub use ignored::Ignored;
-pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
-pub use pull_all::PullAll;
-pub use record::Record;
-pub use reset::Reset;
-pub use run::Run;
-pub use success::Success;
 
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::*;
-use crate::{native, Deserialize, Marker, Serialize, Signature};
+use crate::message::*;
+use crate::{Deserialize, Marker, Serialize, Signature};
 
-mod ack_failure;
 mod chunk;
-mod discard_all;
-mod failure_;
-mod ignored;
-mod init;
 mod message_bytes;
-mod pull_all;
-mod record;
-mod reset;
-mod run;
-mod success;
 
 // This is what's used in the protocol spec, but it could technically be any size.
 const CHUNK_SIZE: usize = 16; // TODO: Make this configurable
@@ -58,36 +39,6 @@ impl Message {
         buf_stream: &mut BufStream<T>,
     ) -> Result<Message> {
         Message::try_from(MessageBytes::from_stream(buf_stream).await?)
-    }
-}
-
-impl From<native::message::Init> for Message {
-    fn from(message: native::message::Init) -> Self {
-        Message::Init(Init::from(message))
-    }
-}
-
-impl From<native::message::Run> for Message {
-    fn from(message: native::message::Run) -> Self {
-        Message::Run(Run::from(message))
-    }
-}
-
-impl From<native::message::Record> for Message {
-    fn from(message: native::message::Record) -> Self {
-        Message::Record(Record::from(message))
-    }
-}
-
-impl From<native::message::Success> for Message {
-    fn from(message: native::message::Success) -> Self {
-        Message::Success(Success::from(message))
-    }
-}
-
-impl From<native::message::Failure> for Message {
-    fn from(message: native::message::Failure) -> Self {
-        Message::Failure(Failure::from(message))
     }
 }
 

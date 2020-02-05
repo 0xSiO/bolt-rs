@@ -1,9 +1,10 @@
 use bolt_proto_derive::*;
 
-pub(crate) const SIGNATURE: u8 = 0x7E;
+pub(crate) const MARKER: u8 = 0xB0;
+pub(crate) const SIGNATURE: u8 = 0x3F;
 
 #[derive(Debug, Signature, Marker, Serialize, Deserialize)]
-pub struct Ignored;
+pub struct PullAll;
 
 #[cfg(test)]
 mod tests {
@@ -18,7 +19,7 @@ mod tests {
     fn try_from_bytes() {
         // No data needed!
         let bytes = Bytes::from_static(&[]);
-        let ignored = Ignored::try_from(Arc::new(Mutex::new(bytes)));
-        assert!(ignored.is_ok());
+        let pull_all = PullAll::try_from(Arc::new(Mutex::new(bytes)));
+        assert!(pull_all.is_ok());
     }
 }

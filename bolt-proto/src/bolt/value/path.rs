@@ -1,11 +1,11 @@
-use std::convert::TryFrom;
-
 use bolt_proto_derive::*;
 
 use crate::bolt::Value;
 use crate::error::*;
 use crate::native;
+use std::convert::TryFrom;
 
+pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x50;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
