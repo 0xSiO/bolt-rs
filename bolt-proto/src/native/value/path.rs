@@ -1,11 +1,13 @@
-use std::convert::{TryFrom, TryInto};
-
-use crate::bolt;
 use crate::bolt::Value;
 use crate::error::*;
 use crate::value::{Node, UnboundRelationship};
+use bolt_proto_derive::*;
+use std::convert::TryFrom;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) const MARKER: u8 = 0xB3;
+pub(crate) const SIGNATURE: u8 = 0x50;
+
+#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Path {
     pub(crate) nodes: Vec<Node>,
     pub(crate) relationships: Vec<UnboundRelationship>,
@@ -31,18 +33,6 @@ impl Path {
 
     pub fn sequence(&self) -> i64 {
         self.sequence
-    }
-}
-
-impl TryFrom<bolt::value::Path> for Path {
-    type Error = Error;
-
-    fn try_from(bolt_path: bolt::value::Path) -> Result<Self> {
-        Ok(Path {
-            nodes: (*bolt_path.nodes).try_into()?,
-            relationships: (*bolt_path.relationships).try_into()?,
-            sequence: i64::try_from(*bolt_path.sequence)?,
-        })
     }
 }
 

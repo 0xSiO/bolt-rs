@@ -1,11 +1,13 @@
-use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-
-use crate::bolt;
 use crate::bolt::Value;
 use crate::error::*;
+use bolt_proto_derive::*;
+use std::collections::HashMap;
+use std::convert::TryFrom;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) const MARKER: u8 = 0xB3;
+pub(crate) const SIGNATURE: u8 = 0x72;
+
+#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct UnboundRelationship {
     pub(crate) rel_identity: i64,
     pub(crate) rel_type: String,
@@ -35,18 +37,6 @@ impl UnboundRelationship {
 
     pub fn properties(&self) -> &HashMap<String, Value> {
         &self.properties
-    }
-}
-
-impl TryFrom<bolt::value::UnboundRelationship> for UnboundRelationship {
-    type Error = Error;
-
-    fn try_from(bolt_ub_rel: bolt::value::UnboundRelationship) -> Result<Self> {
-        Ok(UnboundRelationship {
-            rel_identity: i64::try_from(*bolt_ub_rel.rel_identity)?,
-            rel_type: String::try_from(*bolt_ub_rel.rel_type)?,
-            properties: (*bolt_ub_rel.properties).try_into()?,
-        })
     }
 }
 

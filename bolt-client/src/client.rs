@@ -96,7 +96,7 @@ impl Client {
         auth_token: HashMap<String, String>,
     ) -> Result<Message> {
         let init_msg = Init::new(client_name, auth_token);
-        self.send_message(Message::from(init_msg)).await?;
+        self.send_message(Message::Init(init_msg)).await?;
         self.read_message().await
     }
 
@@ -132,7 +132,7 @@ impl Client {
         parameters: Option<HashMap<String, Value>>,
     ) -> Result<Message> {
         let run_msg = Run::new(statement, parameters.unwrap_or_default());
-        self.send_message(Message::from(run_msg)).await?;
+        self.send_message(Message::Run(run_msg)).await?;
         self.read_message().await
     }
 
@@ -375,15 +375,15 @@ mod tests {
     async fn run_pipelined() {
         let mut client = get_initialized_client().await.unwrap();
         let messages = vec![
-            Message::from(Run::new("MATCH (n) DETACH DELETE n;".to_string(), Default::default())),
+            Message::Run(Run::new("MATCH (n) DETACH DELETE n;".to_string(), Default::default())),
             Message::PullAll,
-            Message::from(Run::new("CREATE (:Database {name: 'neo4j', born: 2007});".to_string(), Default::default())),
+            Message::Run(Run::new("CREATE (:Database {name: 'neo4j', born: 2007});".to_string(), Default::default())),
             Message::PullAll,
-            Message::from(Run::new(
+            Message::Run(Run::new(
                 "MATCH (neo4j:Database {name: 'neo4j'}) CREATE (:Library {name: 'bolt-client', born: 2019})-[:CLIENT_FOR]->(neo4j);".to_string(),
                 Default::default())),
             Message::PullAll,
-            Message::from(Run::new(
+            Message::Run(Run::new(
                 "MATCH (neo4j:Database {name: 'neo4j'}), (bolt_client:Library {name: 'bolt-client'}) RETURN bolt_client.born - neo4j.born;".to_string(),
                 Default::default())),
             Message::PullAll,

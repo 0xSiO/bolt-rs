@@ -12,17 +12,14 @@ pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
 pub(crate) use map::Map;
-pub(crate) use node::Node;
 pub(crate) use null::Null;
-pub(crate) use path::Path;
-pub(crate) use relationship::Relationship;
 pub(crate) use string::String;
-pub(crate) use unbound_relationship::UnboundRelationship;
 
 use crate::bolt::structure;
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::*;
 use crate::native;
+use crate::value::*;
 use crate::{Deserialize, Serialize};
 
 mod boolean;
@@ -30,12 +27,8 @@ mod float;
 mod integer;
 mod list;
 mod map;
-mod node;
 mod null;
-mod path;
-mod relationship;
 mod string;
-mod unbound_relationship;
 
 pub trait Marker: Serialize + Deserialize {
     fn get_marker(&self) -> Result<u8>;
@@ -61,16 +54,17 @@ pub enum Value {
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            Value::Float(_) | Value::Map(_) => panic!("Cannot hash a {:?}", self),
+            Value::Float(_)
+            | Value::Map(_)
+            | Value::Node(_)
+            | Value::Relationship(_)
+            | Value::UnboundRelationship(_)
+            | Value::Path(_) => panic!("Cannot hash a {:?}", self),
             Value::Boolean(boolean) => boolean.hash(state),
             Value::Integer(integer) => integer.hash(state),
             Value::List(list) => list.hash(state),
             Value::Null => Null.hash(state),
             Value::String(string) => string.hash(state),
-            Value::Node(node) => node.hash(state),
-            Value::Relationship(rel) => rel.hash(state),
-            Value::Path(path) => path.hash(state),
-            Value::UnboundRelationship(unbound_rel) => unbound_rel.hash(state),
         }
     }
 }
@@ -536,58 +530,31 @@ mod tests {
     #[test]
     fn node_from_bytes() {
         let node_bytes: Bytes = Node::from(get_node()).try_into_bytes().unwrap();
-        let mut expected_node = Node::from(get_node());
-
-        // This is important - 24 doesn't need to fit in 64 bits, so we expect it to be serialized
-        // as a tiny int instead.
-        expected_node.node_identity = Box::new(Value::from(24_i8));
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(node_bytes))).unwrap(),
-            Value::Node(expected_node)
+            Value::Node(get_node())
         );
     }
 
     #[test]
     fn relationship_from_bytes() {
         let rel_bytes: Bytes = Relationship::from(get_rel()).try_into_bytes().unwrap();
-        let mut expected_rel = Relationship::from(get_rel());
-
-        // We expect integers to shrink to proper sizes
-        expected_rel.rel_identity = Box::new(Value::from(24_i8));
-        expected_rel.start_node_identity = Box::new(Value::from(32_i8));
-        expected_rel.end_node_identity = Box::new(Value::from(128_i16));
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(rel_bytes))).unwrap(),
-            Value::Relationship(expected_rel)
+            Value::Relationship(get_rel())
         );
     }
 
     #[test]
     fn path_from_bytes() {
-        let mut node = Node::from(get_node());
-        let mut unbound_rel = UnboundRelationship::from(get_unbound_rel());
         let path = crate::value::Path::new(vec![get_node()], vec![get_unbound_rel()], 100_i64);
         let path_bytes: Bytes = Path::from(path.clone()).try_into_bytes().unwrap();
 
-        // We expect integers to shrink to proper sizes
-        node.node_identity = Box::new(Value::from(24_i8));
-        unbound_rel.rel_identity = Box::new(Value::from(128_i16));
-
-        let expected_path = Path {
-            nodes: Box::new(Value::List(List {
-                value: vec![Value::Node(node)],
-            })),
-            relationships: Box::new(Value::List(List {
-                value: vec![Value::UnboundRelationship(unbound_rel)],
-            })),
-            sequence: Box::new(Value::from(100_i8)),
-        };
-
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(path_bytes))).unwrap(),
-            Value::Path(expected_path)
+            Value::Path(path)
         );
     }
 
@@ -596,13 +563,10 @@ mod tests {
         let unbound_rel_bytes: Bytes = UnboundRelationship::from(get_unbound_rel())
             .try_into_bytes()
             .unwrap();
-        let mut expected_unbound_rel = UnboundRelationship::from(get_unbound_rel());
-
-        expected_unbound_rel.rel_identity = Box::new(Value::from(128_i16));
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(unbound_rel_bytes))).unwrap(),
-            Value::UnboundRelationship(expected_unbound_rel)
+            Value::UnboundRelationship(get_unbound_rel())
         );
     }
 }
