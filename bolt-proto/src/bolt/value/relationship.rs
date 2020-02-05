@@ -6,6 +6,7 @@ use crate::bolt::Value;
 use crate::error::*;
 use crate::native;
 
+pub(crate) const MARKER: u8 = 0xB5;
 pub(crate) const SIGNATURE: u8 = 0x52;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
