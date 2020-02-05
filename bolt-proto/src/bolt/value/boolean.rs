@@ -22,12 +22,26 @@ impl From<bool> for Boolean {
     }
 }
 
+impl From<Boolean> for bool {
+    fn from(boolean: Boolean) -> Self {
+        boolean.value
+    }
+}
+
 impl TryFrom<Value> for Boolean {
     type Error = Error;
 
     fn try_from(value: Value) -> Result<Self> {
+        Ok(Boolean::from(bool::try_from(value)?))
+    }
+}
+
+impl TryFrom<Value> for bool {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Boolean(boolean) => Ok(Boolean::from(boolean)),
+            Value::Boolean(boolean) => Ok(boolean),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }

@@ -22,12 +22,26 @@ impl From<f64> for Float {
     }
 }
 
+impl From<Float> for f64 {
+    fn from(float: Float) -> Self {
+        float.value
+    }
+}
+
 impl TryFrom<Value> for Float {
     type Error = Error;
 
     fn try_from(value: Value) -> Result<Self> {
+        Ok(Float::from(f64::try_from(value)?))
+    }
+}
+
+impl TryFrom<Value> for f64 {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Float(float) => Ok(Float::from(float)),
+            Value::Float(float) => Ok(float),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
