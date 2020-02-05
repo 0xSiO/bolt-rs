@@ -1,11 +1,13 @@
-use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-
-use crate::bolt;
 use crate::bolt::Value;
 use crate::error::*;
+use bolt_proto_derive::*;
+use std::collections::HashMap;
+use std::convert::TryFrom;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) const MARKER: u8 = 0xB5;
+pub(crate) const SIGNATURE: u8 = 0x52;
+
+#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Relationship {
     pub(crate) rel_identity: i64,
     pub(crate) start_node_identity: i64,
@@ -49,20 +51,6 @@ impl Relationship {
 
     pub fn properties(&self) -> &HashMap<String, Value> {
         &self.properties
-    }
-}
-
-impl TryFrom<bolt::value::Relationship> for Relationship {
-    type Error = Error;
-
-    fn try_from(bolt_rel: bolt::value::Relationship) -> Result<Self> {
-        Ok(Relationship {
-            rel_identity: i64::try_from(*bolt_rel.rel_identity)?,
-            start_node_identity: i64::try_from(*bolt_rel.start_node_identity)?,
-            end_node_identity: i64::try_from(*bolt_rel.end_node_identity)?,
-            rel_type: String::try_from(*bolt_rel.rel_type)?,
-            properties: (*bolt_rel.properties).try_into()?,
-        })
     }
 }
 

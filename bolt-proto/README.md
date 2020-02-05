@@ -17,9 +17,7 @@ pub enum Message {
     Ignored,
 }
 ```
-For empty variants, it's simple to just use the variant directly. For variants with associated data, you can use
-`Message::from` with one of the provided wrapper structs. See the 
-[documentation](https://docs.rs/bolt-proto/*/bolt_proto/enum.Message.html) for more details.
+See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/enum.Message.html) for more details.
 
 The `Value` enum encapsulates all possible values that can be stored in data from each kind of `Message`. 
 Structures like `List` and `Map` allow `Value`s to be nested with arbitrary complexity.

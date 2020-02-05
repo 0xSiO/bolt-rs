@@ -1,16 +1,15 @@
 use bolt_proto_derive::*;
 
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
-use crate::bolt;
 use crate::bolt::Value;
 use crate::error::*;
 
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x4E;
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Node {
     pub(crate) node_identity: i64,
     pub(crate) labels: Vec<String>,
@@ -43,24 +42,12 @@ impl Node {
     }
 }
 
-impl TryFrom<bolt::value::Node> for Node {
-    type Error = Error;
-
-    fn try_from(bolt_node: bolt::value::Node) -> Result<Self> {
-        Ok(Node {
-            node_identity: i64::try_from(*bolt_node.node_identity)?,
-            labels: (*bolt_node.labels).try_into()?,
-            properties: (*bolt_node.properties).try_into()?,
-        })
-    }
-}
-
 impl TryFrom<Value> for Node {
     type Error = Error;
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Node(node) => Node::try_from(node),
+            Value::Node(node) => Ok(node),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
