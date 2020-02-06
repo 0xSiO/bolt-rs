@@ -12,7 +12,7 @@ pub(crate) const MARKER_FALSE: u8 = 0xC2;
 pub(crate) const MARKER_TRUE: u8 = 0xC3;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct Boolean {
+pub(crate) struct Boolean {
     pub(crate) value: bool,
 }
 
