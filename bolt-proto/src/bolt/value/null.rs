@@ -11,7 +11,7 @@ use crate::{Deserialize, Serialize};
 pub(crate) const MARKER: u8 = 0xC0;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct Null;
+pub(crate) struct Null;
 
 impl Marker for Null {
     fn get_marker(&self) -> Result<u8> {

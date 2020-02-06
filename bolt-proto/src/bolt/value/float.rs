@@ -12,7 +12,7 @@ use crate::{Deserialize, Serialize, Value};
 pub(crate) const MARKER: u8 = 0xC1;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Float {
+pub(crate) struct Float {
     pub(crate) value: f64,
 }
 

@@ -1,5 +1,3 @@
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
 use std::panic::catch_unwind;
@@ -18,11 +16,11 @@ pub(crate) use string::String;
 use crate::bolt::structure;
 use crate::bolt::structure::get_signature_from_bytes;
 use crate::error::*;
-use crate::native;
 use crate::value::*;
 use crate::{Deserialize, Serialize};
 
 mod boolean;
+mod conversions;
 mod float;
 mod integer;
 mod list;
@@ -74,86 +72,6 @@ impl Eq for Value {
         if let Value::Float(_) = self {
             panic!("Floats do not impl Eq")
         }
-    }
-}
-
-impl From<bool> for Value {
-    fn from(value: bool) -> Self {
-        Value::Boolean(value)
-    }
-}
-
-macro_rules! impl_from_int {
-    ($($T:ty),+) => {
-        $(
-            impl From<$T> for $crate::bolt::Value {
-                fn from(value: $T) -> Self {
-                    Value::Integer(Integer::from(value))
-                }
-            }
-        )*
-    };
-}
-impl_from_int!(i8, i16, i32, i64);
-
-impl From<f64> for Value {
-    fn from(value: f64) -> Self {
-        Value::Float(value)
-    }
-}
-
-impl<T> From<Vec<T>> for Value
-where
-    T: Into<Value>,
-{
-    fn from(value: Vec<T>) -> Self {
-        Value::List(List::from(value))
-    }
-}
-
-impl<K, V> From<HashMap<K, V>> for Value
-where
-    K: Into<Value>,
-    V: Into<Value>,
-{
-    fn from(value: HashMap<K, V, RandomState>) -> Self {
-        Value::Map(Map::from(value))
-    }
-}
-
-impl From<&str> for Value {
-    fn from(value: &str) -> Self {
-        Value::String(std::string::String::from(value))
-    }
-}
-
-impl From<std::string::String> for Value {
-    fn from(value: std::string::String) -> Self {
-        Value::String(value)
-    }
-}
-
-impl From<native::value::Node> for Value {
-    fn from(native_node: native::value::Node) -> Self {
-        Value::Node(Node::from(native_node))
-    }
-}
-
-impl From<native::value::Relationship> for Value {
-    fn from(value: native::value::Relationship) -> Self {
-        Value::Relationship(Relationship::from(value))
-    }
-}
-
-impl From<native::value::Path> for Value {
-    fn from(value: native::value::Path) -> Self {
-        Value::Path(Path::from(value))
-    }
-}
-
-impl From<native::value::UnboundRelationship> for Value {
-    fn from(value: native::value::UnboundRelationship) -> Self {
-        Value::UnboundRelationship(UnboundRelationship::from(value))
     }
 }
 
