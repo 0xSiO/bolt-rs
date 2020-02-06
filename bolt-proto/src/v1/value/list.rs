@@ -94,6 +94,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for List {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::v1::value::*;
 
     #[test]
     fn get_marker() {

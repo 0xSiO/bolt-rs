@@ -68,7 +68,7 @@ mod tests {
 
     use bytes::Bytes;
 
-    use super::{Boolean, MARKER_FALSE, MARKER_TRUE};
+    use super::*;
 
     #[test]
     fn get_marker() {

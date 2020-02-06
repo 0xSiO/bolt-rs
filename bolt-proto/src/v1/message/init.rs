@@ -50,6 +50,8 @@ mod tests {
 
     use bytes::Bytes;
 
+    use crate::v1::serialization::*;
+
     use super::*;
 
     fn new_msg() -> Init {
