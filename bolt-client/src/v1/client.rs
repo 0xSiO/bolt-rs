@@ -6,11 +6,11 @@ use tokio::io::BufStream;
 use tokio::net::{TcpStream, ToSocketAddrs};
 use tokio::prelude::*;
 
-use crate::message::*;
-use crate::stream::Stream;
-use crate::{Message, Value};
+use bolt_proto::v1::message::*;
+use bolt_proto::v1::{Message, Value};
 
-pub(crate) type Result<T> = failure::Fallible<T>;
+use crate::error::*;
+use crate::stream::Stream;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
@@ -36,7 +36,12 @@ impl Client {
             version: 0,
         };
         client.version = client.handshake().await? as u8;
-        Ok(client)
+
+        if client.version == 1 {
+            Ok(client)
+        } else {
+            Err(ClientError::IncompatibleServer.into())
+        }
     }
 
     async fn handshake(&mut self) -> Result<u32> {
@@ -275,7 +280,8 @@ mod tests {
     use std::env;
     use std::iter::FromIterator;
 
-    use crate::value::*;
+    use bolt_proto::v1::message::*;
+    use bolt_proto::v1::value::*;
 
     use super::*;
 

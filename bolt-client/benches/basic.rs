@@ -8,8 +8,8 @@ use tokio::runtime::Runtime;
 
 use bolt_client::*;
 
-async fn get_initialized_client() -> Fallible<Client> {
-    let mut client = Client::new(
+async fn get_initialized_client() -> Fallible<v1::Client> {
+    let mut client = v1::Client::new(
         env::var("BOLT_TEST_ADDR").unwrap(),
         env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
     )

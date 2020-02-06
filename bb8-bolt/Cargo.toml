@@ -15,6 +15,7 @@ futures = "0.3.1"
 
 [dependencies]
 bolt-client = { path = "../bolt-client", version = "0.5.0" }
+bolt-proto = { path = "../bolt-proto", version = "0.6.0" }
 
 async-trait = "0.1.22"
 bb8 = "0.4.0"
