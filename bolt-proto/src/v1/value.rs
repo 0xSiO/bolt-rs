@@ -404,8 +404,8 @@ mod tests {
         );
     }
 
-    fn get_node() -> crate::value::Node {
-        crate::value::Node::new(
+    fn get_node() -> Node {
+        Node::new(
             24_i64,
             vec!["TestNode".to_string()],
             HashMap::from_iter(vec![
@@ -415,8 +415,8 @@ mod tests {
         )
     }
 
-    fn get_rel() -> crate::value::Relationship {
-        crate::value::Relationship::new(
+    fn get_rel() -> Relationship {
+        Relationship::new(
             24_i64,
             32_i64,
             128_i64,
@@ -428,8 +428,8 @@ mod tests {
         )
     }
 
-    fn get_unbound_rel() -> crate::value::UnboundRelationship {
-        crate::value::UnboundRelationship::new(
+    fn get_unbound_rel() -> UnboundRelationship {
+        UnboundRelationship::new(
             128_i64,
             "TestRel".to_string(),
             HashMap::from_iter(vec![
@@ -441,7 +441,7 @@ mod tests {
 
     #[test]
     fn node_from_bytes() {
-        let node_bytes: Bytes = Node::from(get_node()).try_into_bytes().unwrap();
+        let node_bytes: Bytes = get_node().try_into_bytes().unwrap();
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(node_bytes))).unwrap(),
@@ -451,7 +451,7 @@ mod tests {
 
     #[test]
     fn relationship_from_bytes() {
-        let rel_bytes: Bytes = Relationship::from(get_rel()).try_into_bytes().unwrap();
+        let rel_bytes: Bytes = get_rel().try_into_bytes().unwrap();
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(rel_bytes))).unwrap(),
@@ -461,8 +461,8 @@ mod tests {
 
     #[test]
     fn path_from_bytes() {
-        let path = crate::value::Path::new(vec![get_node()], vec![get_unbound_rel()], 100_i64);
-        let path_bytes: Bytes = Path::from(path.clone()).try_into_bytes().unwrap();
+        let path = Path::new(vec![get_node()], vec![get_unbound_rel()], 100_i64);
+        let path_bytes: Bytes = path.clone().try_into_bytes().unwrap();
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(path_bytes))).unwrap(),
@@ -472,9 +472,7 @@ mod tests {
 
     #[test]
     fn unbound_relationship_from_bytes() {
-        let unbound_rel_bytes: Bytes = UnboundRelationship::from(get_unbound_rel())
-            .try_into_bytes()
-            .unwrap();
+        let unbound_rel_bytes: Bytes = get_unbound_rel().try_into_bytes().unwrap();
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(unbound_rel_bytes))).unwrap(),

@@ -132,7 +132,7 @@ mod tests {
 
     use bytes::Bytes;
 
-    use super::{Map, MARKER_SMALL, MARKER_TINY};
+    use super::*;
 
     #[test]
     fn get_marker() {
