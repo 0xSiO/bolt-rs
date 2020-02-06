@@ -98,7 +98,7 @@ mod tests {
 
     use bytes::Bytes;
 
-    use super::{String, MARKER_LARGE, MARKER_MEDIUM, MARKER_SMALL, MARKER_TINY};
+    use super::*;
 
     #[test]
     fn get_marker() {

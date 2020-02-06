@@ -11,9 +11,10 @@
 //! use failure::Error;
 //! use tokio::prelude::*;
 //!
-//! use bolt_client::*;
-//! use bolt_client::message::*;
-//! use bolt_client::value::*;
+//! use bolt_client::v1::Client;
+//! use bolt_proto::v1::{Message, Value};
+//! use bolt_proto::v1::message::*;
+//! use bolt_proto::v1::value::*;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Error> {
@@ -70,12 +71,6 @@
 //!     Ok(())
 //! }
 //! ```
-pub use bolt_proto::message;
-pub use bolt_proto::value;
-pub use bolt_proto::{Message, Value};
-
-#[doc(inline)]
-pub use self::client::Client;
-
-pub mod client;
+mod error;
 mod stream;
+pub mod v1;

@@ -6,17 +6,17 @@ use bb8::ManageConnection;
 use failure::{Error, Fail};
 
 use async_trait::async_trait;
-use bolt_client::message::Success;
-use bolt_client::{Client, Message};
+use bolt_client::v1::*;
+use bolt_proto::v1::*;
 
-pub struct BoltConnectionManager {
+pub struct BoltV1ConnectionManager {
     addr: SocketAddr,
     domain: Option<String>,
     client_name: String,
     auth_token: HashMap<String, String>,
 }
 
-impl BoltConnectionManager {
+impl BoltV1ConnectionManager {
     pub fn new(
         addr: impl ToSocketAddrs,
         domain: Option<String>,
@@ -39,12 +39,12 @@ impl BoltConnectionManager {
 pub enum BoltConnectionError {
     #[fail(display = "Failed to connect: invalid host address.")]
     InvalidAddress,
-    #[fail(display = "Initialization of client failed: received {:?}", _0)]
-    ClientInitFailed(Message),
+    #[fail(display = "Initialization of client failed: {}", _0)]
+    ClientInitFailed(String),
 }
 
 #[async_trait]
-impl ManageConnection for BoltConnectionManager {
+impl ManageConnection for BoltV1ConnectionManager {
     type Connection = Client;
     type Error = Error;
 
@@ -56,15 +56,15 @@ impl ManageConnection for BoltConnectionManager {
         if let Message::Success(_) = response {
             Ok(client)
         } else {
-            Err(BoltConnectionError::ClientInitFailed(response).into())
+            Err(BoltConnectionError::ClientInitFailed(format!("{:?}", response)).into())
         }
     }
 
     async fn is_valid(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
         let response = conn.run("RETURN 1;".to_string(), None).await?;
-        Success::try_from(response)?;
+        message::Success::try_from(response)?;
         let (response, _records) = conn.pull_all().await?;
-        Success::try_from(response)?;
+        message::Success::try_from(response)?;
         Ok(conn)
     }
 
@@ -82,12 +82,10 @@ mod tests {
 
     use bb8::*;
 
-    use bolt_client::Value;
-
     use super::*;
 
-    fn get_connection_manager() -> BoltConnectionManager {
-        BoltConnectionManager::new(
+    fn get_connection_manager() -> BoltV1ConnectionManager {
+        BoltV1ConnectionManager::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok(),
             "bolt-client/X.Y.Z".to_string(),
@@ -119,7 +117,7 @@ mod tests {
                 let statement = format!("RETURN {} as num;", i);
                 conn.run(statement, None).await.unwrap();
                 let (response, records) = conn.pull_all().await.unwrap();
-                assert!(Success::try_from(response).is_ok());
+                assert!(message::Success::try_from(response).is_ok());
                 assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
             }));
         }
@@ -128,7 +126,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_init_fails() {
-        let invalid_manager = BoltConnectionManager::new(
+        let invalid_manager = BoltV1ConnectionManager::new(
             "127.0.0.1:7687",
             None,
             "bolt-client/X.Y.Z".to_string(),

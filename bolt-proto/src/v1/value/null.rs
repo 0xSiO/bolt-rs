@@ -59,7 +59,7 @@ mod tests {
 
     use bytes::Bytes;
 
-    use super::{Null, MARKER};
+    use super::*;
 
     #[test]
     fn get_marker() {
