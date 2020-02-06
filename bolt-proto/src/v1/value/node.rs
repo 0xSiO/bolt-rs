@@ -1,7 +1,7 @@
-use bolt_proto_derive::*;
-
 use std::collections::HashMap;
 use std::convert::TryFrom;
+
+use bolt_proto_derive::*;
 
 use crate::v1::error::*;
 use crate::v1::Value;
