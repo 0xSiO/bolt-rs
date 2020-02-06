@@ -9,6 +9,8 @@ use crate::bolt::value::Marker;
 use crate::error::*;
 use crate::{Deserialize, Serialize, Value};
 
+mod conversions;
+
 pub(crate) const MARKER_TINY: u8 = 0x90;
 pub(crate) const MARKER_SMALL: u8 = 0xD4;
 pub(crate) const MARKER_MEDIUM: u8 = 0xD5;
@@ -17,28 +19,6 @@ pub(crate) const MARKER_LARGE: u8 = 0xD6;
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct List {
     pub(crate) value: Vec<Value>,
-}
-
-impl<T> From<Vec<T>> for List
-where
-    T: Into<Value>,
-{
-    fn from(value: Vec<T>) -> Self {
-        Self {
-            value: value.into_iter().map(|v| v.into()).collect(),
-        }
-    }
-}
-
-impl TryFrom<Value> for List {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::List(list) => Ok(list),
-            _ => Err(ValueError::InvalidConversion(value).into()),
-        }
-    }
 }
 
 impl Marker for List {
