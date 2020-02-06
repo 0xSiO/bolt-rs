@@ -47,7 +47,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
 
     let byte_vars = byte_var_names.iter().zip(fields).map(|(var_name, field)| {
         let field_name = field.ident.clone();
-        quote!(let #var_name = crate::Value::from(self.#field_name).try_into_bytes()?;)
+        quote!(let #var_name = crate::v1::Value::from(self.#field_name).try_into_bytes()?;)
     });
 
     let deserialize_fields =
@@ -55,13 +55,13 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
             .iter()
             .map(|field| {
                 let field_name = field.ident.as_ref().unwrap();
-                quote!(#field_name: crate::Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?.try_into()?,)
+                quote!(#field_name: crate::v1::Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?.try_into()?,)
             });
 
     let gen = quote! {
         use ::bytes::BufMut;
 
-        impl#type_args crate::Signature for #name#type_args
+        impl#type_args crate::v1::serialization::Signature for #name#type_args
         #where_clause
         {
             fn get_signature(&self) -> u8 {
@@ -69,25 +69,25 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
             }
         }
 
-        impl#type_args crate::Marker for #name#type_args
+        impl#type_args crate::v1::serialization::Marker for #name#type_args
         #where_clause
         {
-            fn get_marker(&self) -> crate::error::Result<u8> {
+            fn get_marker(&self) -> crate::v1::error::Result<u8> {
                 Ok(MARKER)
             }
         }
 
-        impl#type_args crate::Serialize for #name#type_args
+        impl#type_args crate::v1::serialization::Serialize for #name#type_args
         #where_clause
         {}
 
         impl#type_args ::std::convert::TryInto<::bytes::Bytes> for #name#type_args
         #where_clause
         {
-            type Error = crate::error::Error;
+            type Error = crate::v1::error::Error;
 
-            fn try_into(self) -> crate::error::Result<::bytes::Bytes> {
-                use crate::serialize::Serialize;
+            fn try_into(self) -> crate::v1::error::Result<::bytes::Bytes> {
+                use crate::v1::serialization::Serialize;
                 use ::std::convert::{TryFrom, TryInto};
 
                 let marker = MARKER;
@@ -104,7 +104,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
             }
         }
 
-        impl crate::Deserialize for #name#type_args
+        impl crate::v1::serialization::Deserialize for #name#type_args
         #where_clause
         {}
 
@@ -113,7 +113,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         {
             type Error = ::failure::Error;
 
-            fn try_from(remaining_bytes_arc: ::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>) -> crate::error::Result<Self> {
+            fn try_from(remaining_bytes_arc: ::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>) -> crate::v1::error::Result<Self> {
                 use ::std::convert::{TryFrom, TryInto};
                 Ok(#name {
                     #(#deserialize_fields)*
