@@ -11,6 +11,7 @@ use crate::error::*;
 use crate::stream::Stream;
 
 mod v1;
+mod v3;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];

@@ -21,19 +21,19 @@ pub use unbound_relationship::UnboundRelationship;
 use crate::error::*;
 use crate::serialization::*;
 
-mod boolean;
-mod byte_array;
-mod conversions;
-mod float;
-mod integer;
-mod list;
-mod map;
-mod node;
-mod null;
-mod path;
-mod relationship;
-mod string;
-mod unbound_relationship;
+pub(crate) mod boolean;
+pub(crate) mod byte_array;
+pub(crate) mod conversions;
+pub(crate) mod float;
+pub(crate) mod integer;
+pub(crate) mod list;
+pub(crate) mod map;
+pub(crate) mod node;
+pub(crate) mod null;
+pub(crate) mod path;
+pub(crate) mod relationship;
+pub(crate) mod string;
+pub(crate) mod unbound_relationship;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {

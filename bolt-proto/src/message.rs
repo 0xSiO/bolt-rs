@@ -10,6 +10,7 @@ pub use ack_failure::AckFailure;
 pub(crate) use chunk::Chunk;
 pub use discard_all::DiscardAll;
 pub use failure_::Failure;
+pub use hello::Hello;
 pub use ignored::Ignored;
 pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
@@ -21,10 +22,12 @@ pub use success::Success;
 
 use crate::error::*;
 use crate::serialization::*;
+use crate::value::*;
 
 pub(crate) mod ack_failure;
 pub(crate) mod discard_all;
 pub(crate) mod failure_;
+pub(crate) mod hello;
 pub(crate) mod ignored;
 pub(crate) mod init;
 pub(crate) mod pull_all;
@@ -41,6 +44,7 @@ const CHUNK_SIZE: usize = 16; // TODO: Make this configurable
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    // V1-compatible message types
     Init(Init),
     Run(Run),
     DiscardAll,
@@ -51,6 +55,8 @@ pub enum Message {
     Success(Success),
     Failure(Failure),
     Ignored,
+    // V3+-compatible message types
+    Hello(Hello),
 }
 
 impl Message {
@@ -74,6 +80,7 @@ impl Marker for Message {
             Message::Success(success) => success.get_marker(),
             Message::Failure(failure) => failure.get_marker(),
             Message::Ignored => Ignored.get_marker(),
+            Message::Hello(hello) => hello.get_marker(),
         }
     }
 }
@@ -91,6 +98,7 @@ impl Signature for Message {
             Message::Success(success) => success.get_signature(),
             Message::Failure(failure) => failure.get_signature(),
             Message::Ignored => Ignored.get_signature(),
+            Message::Hello(hello) => hello.get_signature(),
         }
     }
 }
@@ -112,6 +120,7 @@ impl TryInto<Bytes> for Message {
             Message::Success(success) => success.try_into(),
             Message::Failure(failure) => failure.try_into(),
             Message::Ignored => Ignored.try_into(),
+            Message::Hello(hello) => hello.try_into(),
         }
     }
 }
@@ -137,7 +146,29 @@ impl TryFrom<MessageBytes> for Message {
                 Arc::new(Mutex::new(message_bytes.split_to(message_bytes.len())));
 
             match signature {
-                init::SIGNATURE => Ok(Message::Init(Init::try_from(remaining_bytes_arc)?)),
+                init::SIGNATURE => {
+                    // Equal to hello::SIGNATURE, so we have to check for metadata. The way we'll do this is to check
+                    // for the existence of a string (indicating it's an INIT), if not, then it's assumed to be a HELLO
+
+                    // I confirmed that this peeking doesn't advance any buffer cursors
+                    let next_byte = remaining_bytes_arc.lock().unwrap().as_ref()[0];
+
+                    match next_byte {
+                        // Tiny string
+                        marker
+                            if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F))
+                                .contains(&marker) =>
+                        {
+                            Ok(Message::Init(Init::try_from(remaining_bytes_arc)?))
+                        }
+                        // Other string sizes
+                        string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
+                            Ok(Message::Init(Init::try_from(remaining_bytes_arc)?))
+                        }
+                        // Else, must be a metadata map
+                        _ => Ok(Message::Hello(Hello::try_from(remaining_bytes_arc)?)),
+                    }
+                }
                 run::SIGNATURE => Ok(Message::Run(Run::try_from(remaining_bytes_arc)?)),
                 discard_all::SIGNATURE => Ok(Message::DiscardAll),
                 pull_all::SIGNATURE => Ok(Message::PullAll),
