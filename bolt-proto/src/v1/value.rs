@@ -318,6 +318,34 @@ mod tests {
     }
 
     #[test]
+    fn byte_array_from_bytes() {
+        let empty_arr: ByteArray = Vec::<u8>::new().into();
+        let empty_arr_bytes = empty_arr.clone().try_into_bytes().unwrap();
+        let small_arr: ByteArray = vec![1_u8; 100].into();
+        let small_arr_bytes = small_arr.clone().try_into_bytes().unwrap();
+        let medium_arr: ByteArray = vec![99_u8; 1000].into();
+        let medium_arr_bytes = medium_arr.clone().try_into_bytes().unwrap();
+        let large_arr: ByteArray = vec![1_u8; 100_000].into();
+        let large_arr_bytes = large_arr.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(empty_arr_bytes))).unwrap(),
+            Value::Bytes(empty_arr)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(small_arr_bytes))).unwrap(),
+            Value::Bytes(small_arr)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(medium_arr_bytes))).unwrap(),
+            Value::Bytes(medium_arr)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(large_arr_bytes))).unwrap(),
+            Value::Bytes(large_arr)
+        );
+    }
+
+    #[test]
     fn string_from_bytes() {
         let tiny = String::from("string".repeat(1));
         let tiny_bytes = tiny.clone().try_into_bytes().unwrap();

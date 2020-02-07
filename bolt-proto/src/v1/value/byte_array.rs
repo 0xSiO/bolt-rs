@@ -85,4 +85,106 @@ impl TryFrom<Arc<Mutex<Bytes>>> for ByteArray {
     }
 }
 
-// TODO: Tests
+#[cfg(test)]
+mod tests {
+    use crate::v1::value::*;
+
+    use super::*;
+
+    #[test]
+    fn get_marker() {
+        let empty_arr: ByteArray = Vec::<u8>::new().into();
+        let small_arr: ByteArray = vec![0; 100].into();
+        let medium_arr: ByteArray = vec![0; 1000].into();
+        assert_eq!(empty_arr.get_marker().unwrap(), MARKER_SMALL);
+        assert_eq!(small_arr.get_marker().unwrap(), MARKER_SMALL);
+        assert_eq!(medium_arr.get_marker().unwrap(), MARKER_MEDIUM);
+    }
+
+    #[test]
+    #[ignore]
+    fn get_marker_large() {
+        let large_arr: ByteArray = vec![0; 100_000].into();
+        assert_eq!(large_arr.get_marker().unwrap(), MARKER_LARGE);
+    }
+
+    #[test]
+    fn try_into_bytes() {
+        let empty_arr: ByteArray = Vec::<u8>::new().into();
+        let small_arr: ByteArray = vec![1_u8; 100].into();
+        let medium_arr: ByteArray = vec![99_u8; 1000].into();
+        assert_eq!(
+            empty_arr.try_into_bytes().unwrap(),
+            Bytes::from_static(&[MARKER_SMALL, 0_u8])
+        );
+        let small_arr_expected_bytes: Vec<u8> = vec![MARKER_SMALL, 0x64] // marker, size
+            .into_iter()
+            .chain(vec![1_u8; 100])
+            .collect();
+        assert_eq!(
+            small_arr.try_into_bytes().unwrap(),
+            Bytes::from(small_arr_expected_bytes)
+        );
+        let medium_arr_expected_bytes: Vec<u8> = vec![MARKER_MEDIUM, 0x03, 0xE8] // marker, size
+            .into_iter()
+            .chain(vec![99_u8; 1000])
+            .collect();
+        assert_eq!(
+            medium_arr.try_into_bytes().unwrap(),
+            Bytes::from(medium_arr_expected_bytes)
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn try_into_large_bytes() {
+        let large_arr: ByteArray = vec![1_u8; 100_000].into();
+        let large_arr_expected_bytes: Vec<u8> = vec![MARKER_LARGE, 0x00, 0x01, 0x86, 0xA0] // marker, size
+            .into_iter()
+            .chain(vec![1_u8; 100_000])
+            .collect();
+        assert_eq!(
+            large_arr.try_into_bytes().unwrap(),
+            Bytes::from(large_arr_expected_bytes)
+        );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let empty_arr: ByteArray = Vec::<u8>::new().into();
+        let empty_arr_bytes = empty_arr.clone().try_into_bytes().unwrap();
+        let tiny_arr: ByteArray = vec![25_u8; 10].into();
+        let tiny_arr_bytes = tiny_arr.clone().try_into_bytes().unwrap();
+        let small_arr: ByteArray = vec![1_u8; 100].into();
+        let small_arr_bytes = small_arr.clone().try_into_bytes().unwrap();
+        let medium_arr: ByteArray = vec![99_u8; 1000].into();
+        let medium_arr_bytes = medium_arr.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            ByteArray::try_from(Arc::new(Mutex::new(empty_arr_bytes))).unwrap(),
+            empty_arr
+        );
+        assert_eq!(
+            ByteArray::try_from(Arc::new(Mutex::new(tiny_arr_bytes))).unwrap(),
+            tiny_arr
+        );
+        assert_eq!(
+            ByteArray::try_from(Arc::new(Mutex::new(small_arr_bytes))).unwrap(),
+            small_arr
+        );
+        assert_eq!(
+            ByteArray::try_from(Arc::new(Mutex::new(medium_arr_bytes))).unwrap(),
+            medium_arr
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn try_from_large_bytes() {
+        let large_arr: ByteArray = vec![1_u8; 100_000].into();
+        let large_arr_bytes = large_arr.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            ByteArray::try_from(Arc::new(Mutex::new(large_arr_bytes))).unwrap(),
+            large_arr
+        );
+    }
+}
