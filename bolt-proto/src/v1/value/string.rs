@@ -79,6 +79,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for String {
                 }
             };
             let mut string_bytes = BytesMut::with_capacity(size);
+            // We resize here so that the length of string_bytes is nonzero, which allows us to use copy_to_slice
             string_bytes.resize(size, 0);
             input_bytes.copy_to_slice(&mut string_bytes);
             Ok(String::from(str::from_utf8(&string_bytes)?))

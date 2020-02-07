@@ -104,6 +104,17 @@ where
     }
 }
 
+impl TryInto<Vec<u8>> for Value {
+    type Error = Error;
+
+    fn try_into(self) -> Result<Vec<u8>> {
+        match self {
+            Value::Bytes(byte_array) => Ok(byte_array.into()),
+            _ => Err(ValueError::InvalidConversion(self).into()),
+        }
+    }
+}
+
 impl TryInto<Vec<Value>> for Value {
     type Error = Error;
 
