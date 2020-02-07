@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-use bolt_proto::v1::{Message, Value};
-use bolt_proto::v1::message::*;
+use bolt_proto::message::*;
+use bolt_proto::{Message, Value};
 
-use crate::Client;
 use crate::error::*;
+use crate::Client;
 
 impl Client {
     // Documentation for message-related instance methods below is copied from the descriptions given by
@@ -212,8 +212,8 @@ mod tests {
     use std::env;
     use std::iter::FromIterator;
 
-    use bolt_proto::v1::message::*;
-    use bolt_proto::v1::value::*;
+    use bolt_proto::message::*;
+    use bolt_proto::value::*;
 
     use super::*;
 
@@ -222,7 +222,7 @@ mod tests {
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
         )
-            .await?;
+        .await?;
         assert_eq!(client.version, 1);
         Ok(client)
     }
