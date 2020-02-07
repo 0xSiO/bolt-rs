@@ -6,7 +6,7 @@ use bb8::ManageConnection;
 use failure::{Error, Fail};
 
 use async_trait::async_trait;
-use bolt_client::v1::*;
+use bolt_client::*;
 use bolt_proto::v1::*;
 
 pub struct BoltV1ConnectionManager {

@@ -40,7 +40,7 @@ impl Client {
         if client.version == 1 {
             Ok(client)
         } else {
-            Err(ClientError::IncompatibleServer.into())
+            Err(ClientError::UnsupportedClientVersion(client.version).into())
         }
     }
 
