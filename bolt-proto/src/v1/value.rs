@@ -35,6 +35,7 @@ mod unbound_relationship;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
+    // V1-compatible value types
     Boolean(bool),
     Integer(Integer),
     Float(f64),
@@ -46,6 +47,14 @@ pub enum Value {
     Relationship(Relationship),
     Path(Path),
     UnboundRelationship(UnboundRelationship),
+    // TODO: V2-compatible value types
+    // Date,
+    // Time,
+    // DateTime,
+    // LocalTime,
+    // LocalDateTime,
+    // Duration,
+    // Point,
 }
 
 #[allow(clippy::derive_hash_xor_eq)]
@@ -151,10 +160,10 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 float::MARKER => Ok(Value::Float(Float::try_from(input_arc)?.value)),
                 // Tiny string
                 marker
-                    if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
-                {
-                    Ok(Value::String(String::try_from(input_arc)?.value))
-                }
+                if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
+                    {
+                        Ok(Value::String(String::try_from(input_arc)?.value))
+                    }
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
                     Ok(Value::String(String::try_from(input_arc)?.value))
                 }
@@ -180,7 +189,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 _ => Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into()),
             }
         })
-        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+            .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
             DeserializeError(format!("Error creating Value from Bytes: {}", err))
@@ -388,7 +397,7 @@ mod tests {
             ("o", 5_i8),
             ("p", 6_i8),
         ])
-        .into();
+            .into();
         let small_map_bytes = small_map.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),

@@ -14,5 +14,6 @@ edition = "2018"
 bolt-proto-derive = { path = "../bolt-proto-derive", version = "0.3.0" }
 
 bytes = "0.5.3"
+chrono = "0.4.10"
 failure = "0.1.6"
 tokio = { version = "0.2", features = ["full"] }
