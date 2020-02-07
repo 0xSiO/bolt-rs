@@ -1,11 +1,11 @@
-use std::convert::{TryInto};
+use std::convert::TryInto;
 
 use bytes::*;
 use tokio::io::BufStream;
 use tokio::net::{TcpStream, ToSocketAddrs};
 use tokio::prelude::*;
 
-use bolt_proto::v1::Message;
+use bolt_proto::Message;
 
 use crate::error::*;
 use crate::stream::Stream;

@@ -12,9 +12,9 @@
 //! use tokio::prelude::*;
 //!
 //! use bolt_client::Client;
-//! use bolt_proto::v1::{Message, Value};
-//! use bolt_proto::v1::message::*;
-//! use bolt_proto::v1::value::*;
+//! use bolt_proto::{Message, Value};
+//! use bolt_proto::message::*;
+//! use bolt_proto::value::*;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Error> {
