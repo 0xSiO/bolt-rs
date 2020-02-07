@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 use bytes::{Buf, Bytes};
 
 pub(crate) use boolean::Boolean;
+pub(crate) use byte_array::ByteArray;
 pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
@@ -21,6 +22,7 @@ use crate::v1::error::*;
 use crate::v1::serialization::*;
 
 mod boolean;
+mod byte_array;
 mod conversions;
 mod float;
 mod integer;
@@ -39,6 +41,8 @@ pub enum Value {
     Boolean(bool),
     Integer(Integer),
     Float(f64),
+    // Bytes was added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
+    Bytes(ByteArray),
     List(List),
     Map(Map),
     Null,
@@ -63,6 +67,7 @@ impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Value::Float(_)
+            | Value::Bytes(_)
             | Value::Map(_)
             | Value::Node(_)
             | Value::Relationship(_)
@@ -91,9 +96,11 @@ impl Marker for Value {
             Value::Boolean(boolean) => Boolean::from(*boolean).get_marker(),
             Value::Integer(integer) => integer.get_marker(),
             Value::Float(float) => Float::from(*float).get_marker(),
+            Value::Bytes(byte_array) => byte_array.get_marker(),
             Value::List(list) => list.get_marker(),
             Value::Map(map) => map.get_marker(),
             Value::Null => Null.get_marker(),
+            // TODO: This could incur a large runtime cost since we copy the whole thing
             Value::String(string) => String::from(string.as_str()).get_marker(),
             Value::Node(node) => node.get_marker(),
             Value::Relationship(rel) => rel.get_marker(),
@@ -113,6 +120,7 @@ impl TryInto<Bytes> for Value {
             Value::Boolean(boolean) => Boolean::from(boolean).try_into(),
             Value::Integer(integer) => integer.try_into(),
             Value::Float(float) => Float::from(float).try_into(),
+            Value::Bytes(byte_array) => byte_array.try_into(),
             Value::List(list) => list.try_into(),
             Value::Map(map) => map.try_into(),
             Value::Null => Null.try_into(),
@@ -158,12 +166,15 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 | integer::MARKER_INT_32
                 | integer::MARKER_INT_64 => Ok(Value::Integer(Integer::try_from(input_arc)?)),
                 float::MARKER => Ok(Value::Float(Float::try_from(input_arc)?.value)),
+                byte_array::MARKER_SMALL | byte_array::MARKER_MEDIUM | byte_array::MARKER_LARGE => {
+                    Ok(Value::Bytes(ByteArray::try_from(input_arc)?))
+                }
                 // Tiny string
                 marker
-                if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
-                    {
-                        Ok(Value::String(String::try_from(input_arc)?.value))
-                    }
+                    if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
+                {
+                    Ok(Value::String(String::try_from(input_arc)?.value))
+                }
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
                     Ok(Value::String(String::try_from(input_arc)?.value))
                 }
@@ -189,7 +200,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 _ => Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into()),
             }
         })
-            .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
             DeserializeError(format!("Error creating Value from Bytes: {}", err))
@@ -397,7 +408,7 @@ mod tests {
             ("o", 5_i8),
             ("p", 6_i8),
         ])
-            .into();
+        .into();
         let small_map_bytes = small_map.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),
