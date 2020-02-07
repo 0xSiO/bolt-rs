@@ -11,7 +11,7 @@
 //! use failure::Error;
 //! use tokio::prelude::*;
 //!
-//! use bolt_client::v1::Client;
+//! use bolt_client::Client;
 //! use bolt_proto::v1::{Message, Value};
 //! use bolt_proto::v1::message::*;
 //! use bolt_proto::v1::value::*;
@@ -71,6 +71,9 @@
 //!     Ok(())
 //! }
 //! ```
+#[doc(inline)]
+pub use self::client::Client;
+
+pub mod client;
 mod error;
 mod stream;
-pub mod v1;
