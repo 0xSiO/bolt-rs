@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bolt_client_macros::*;
 use bolt_proto::message::*;
 use bolt_proto::{Message, Value};
 
@@ -7,6 +8,7 @@ use crate::error::*;
 use crate::Client;
 
 impl Client {
+    #[bolt_version(3, 4)]
     pub async fn hello(&mut self, metadata: HashMap<String, impl Into<Value>>) -> Result<Message> {
         let hello_msg = Hello::new(metadata.into_iter().map(|(k, v)| (k, v.into())).collect());
         self.send_message(Message::Hello(hello_msg)).await?;

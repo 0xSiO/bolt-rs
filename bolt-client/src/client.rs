@@ -19,7 +19,7 @@ const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
 #[derive(Debug)]
 pub struct Client {
     pub(crate) stream: BufStream<Stream>,
-    pub(crate) version: u8,
+    pub(crate) version: u32,
 }
 
 impl Client {
@@ -36,12 +36,12 @@ impl Client {
             stream: BufStream::new(stream),
             version: 0,
         };
-        client.version = client.handshake().await? as u8;
+        client.version = client.handshake().await?;
 
         if client.version == 1 {
             Ok(client)
         } else {
-            Err(ClientError::UnsupportedClientVersion(client.version).into())
+            Err(ClientError::UnsupportedOperation(client.version).into())
         }
     }
 

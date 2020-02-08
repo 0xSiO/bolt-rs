@@ -4,6 +4,6 @@ pub(crate) type Result<T> = Fallible<T>;
 
 #[derive(Debug, Fail)]
 pub(crate) enum ClientError {
-    #[fail(display = "Server does not support Bolt v{} clients", _0)]
-    UnsupportedClientVersion(u8),
+    #[fail(display = "Unsupported operation for Bolt v{}", _0)]
+    UnsupportedOperation(u32),
 }
