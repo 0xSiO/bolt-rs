@@ -1,0 +1,16 @@
+[package]
+name = "bolt-client-macros"
+version = "0.1.0"
+authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
+description = "Procedural macros for bolt-client.\n"
+repository = "https://github.com/lucis-fluxum/bolt-rs"
+keywords    = ["bolt", "client", "macros"]
+license = "MIT"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0.11"
+quote = "1.0.2"

@@ -2,6 +2,7 @@
 
 members = [
     "bolt-client",
+    "bolt-client-macros",
     "bolt-proto",
     "bolt-proto-derive",
     "bb8-bolt",
