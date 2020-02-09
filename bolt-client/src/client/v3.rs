@@ -33,7 +33,6 @@ mod tests {
             env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
         )
         .await?;
-        assert_eq!(client.version, 4);
         Ok(client)
     }
 

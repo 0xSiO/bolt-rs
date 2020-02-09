@@ -2,19 +2,24 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 
-use syn::{Lit, NestedMeta};
+use syn::*;
 
 use quote::quote;
 
-#[proc_macro_attribute]
-pub fn bolt_version(attr_args: TokenStream, item: TokenStream) -> TokenStream {
-    let mut func = syn::parse_macro_input!(item as syn::ItemFn);
-    let args = syn::parse_macro_input!(attr_args as syn::AttributeArgs);
-    let signature = &mut func.sig;
+fn get_fn_info(
+    func: &ItemFn,
+    args: AttributeArgs,
+) -> (
+    &Vec<Attribute>,
+    &Visibility,
+    &Signature,
+    Vec<u32>,
+    &Box<Block>,
+) {
+    let signature = &func.sig;
     let function_body = &func.block;
     let attributes = &func.attrs;
-    let visibility = func.vis;
-
+    let visibility = &func.vis;
     let versions: Vec<u32> = args
         .into_iter()
         .map(|item| {
@@ -31,11 +36,19 @@ pub fn bolt_version(attr_args: TokenStream, item: TokenStream) -> TokenStream {
             }
         })
         .collect();
+    (attributes, visibility, signature, versions, function_body)
+}
+
+#[proc_macro_attribute]
+pub fn bolt_version(attr_args: TokenStream, item: TokenStream) -> TokenStream {
+    let func = syn::parse_macro_input!(item as syn::ItemFn);
+    let args = syn::parse_macro_input!(attr_args as syn::AttributeArgs);
+    let (attributes, visibility, signature, versions, function_body) = get_fn_info(&func, args);
 
     let gen = quote! {
         #(#attributes)*
         #visibility #signature {
-            if [#(#versions),*].contains(self.version) {
+            if [#(#versions),*].contains(&self.version) {
                 #function_body
             } else {
                 Err(crate::error::ClientError::UnsupportedOperation(self.version).into())
