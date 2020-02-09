@@ -41,7 +41,7 @@ impl Client {
         if client.version == 1 {
             Ok(client)
         } else {
-            Err(ClientError::UnsupportedOperation(client.version).into())
+            Err(ClientError::ConnectionFailed.into())
         }
     }
 
