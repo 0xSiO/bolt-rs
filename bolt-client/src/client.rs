@@ -14,7 +14,7 @@ mod v1;
 mod v3;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
-const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
+const SUPPORTED_VERSIONS: [u32; 4] = [4, 3, 2, 1];
 
 #[derive(Debug)]
 pub struct Client {
@@ -37,12 +37,7 @@ impl Client {
             version: 0,
         };
         client.version = client.handshake().await?;
-
-        if client.version == 1 {
-            Ok(client)
-        } else {
-            Err(ClientError::ConnectionFailed.into())
-        }
+        Ok(client)
     }
 
     async fn handshake(&mut self) -> Result<u32> {
@@ -53,7 +48,13 @@ impl Client {
         self.stream.write(&PREAMBLE).await?;
         self.stream.write_buf(&mut allowed_versions).await?;
         self.stream.flush().await?;
-        Ok(self.stream.read_u32().await?)
+
+        let version = self.stream.read_u32().await?;
+        if SUPPORTED_VERSIONS.contains(&version) {
+            Ok(version)
+        } else {
+            Err(ClientError::HandshakeFailed.into())
+        }
     }
 
     pub(crate) async fn read_message(&mut self) -> Result<Message> {

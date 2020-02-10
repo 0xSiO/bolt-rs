@@ -17,6 +17,7 @@ criterion = "0.3.0"
 bolt-client-macros = { path = "../bolt-client-macros", version = "0.1.0" }
 bolt-proto = { path = "../bolt-proto", version = "0.6.0" }
 
+# TODO: tokio-rustls
 async-native-tls = { version = "0.3.2", default-features = false, features = [ "runtime-tokio" ] }
 bytes = "0.5.3"
 failure = "0.1.6"
