@@ -77,3 +77,18 @@ pub use self::client::Client;
 pub mod client;
 mod error;
 mod stream;
+
+// TODO: This shouldn't really be exposed
+#[doc(hidden)]
+#[macro_export]
+macro_rules! compatible_versions {
+    ($c:ident, $($v:literal),+) => {
+        if ![$($v),*].contains(&$c.version) {
+            println!(
+                "Skipping test: client version is {}, which is not in {:?}",
+                $c.version, [$($v),*]
+            );
+            return;
+        }
+    };
+}

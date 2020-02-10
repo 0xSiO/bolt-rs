@@ -14,50 +14,32 @@ impl Client {
         self.send_message(Message::Hello(hello_msg)).await?;
         self.read_message().await
     }
+
+    // TODO: Implement run_with_metadata, or just modify run if possible
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
     use std::convert::TryFrom;
-    use std::env;
-    use std::iter::FromIterator;
 
-    use bolt_proto::message::*;
+    use crate::client::v1::tests::*;
+    use crate::compatible_versions;
 
     use super::*;
-
-    async fn new_client() -> Result<Client> {
-        let client = Client::new(
-            env::var("BOLT_TEST_ADDR").unwrap(),
-            env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
-        )
-        .await?;
-        Ok(client)
-    }
-
-    async fn initialize_client(client: &mut Client, succeed: bool) -> Result<Message> {
-        let username = env::var("BOLT_TEST_USERNAME").unwrap();
-        let password = if succeed {
-            env::var("BOLT_TEST_PASSWORD").unwrap()
-        } else {
-            "invalid".to_string()
-        };
-
-        client
-            .hello(HashMap::from_iter(vec![
-                (String::from("user_agent"), "bolt-client/X.Y.Z"),
-                (String::from("scheme"), "basic"),
-                (String::from("principal"), &username),
-                (String::from("credentials"), &password),
-            ]))
-            .await
-    }
 
     #[tokio::test]
     async fn hello() {
         let mut client = new_client().await.unwrap();
+        compatible_versions!(client, 3, 4);
         let response = initialize_client(&mut client, true).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+    }
+
+    #[tokio::test]
+    async fn hello_fail() {
+        let mut client = new_client().await.unwrap();
+        compatible_versions!(client, 3, 4);
+        let response = initialize_client(&mut client, false).await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
     }
 }
