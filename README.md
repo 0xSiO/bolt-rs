@@ -14,9 +14,12 @@ ongoing.
 [![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)
 [![Released API docs](https://docs.rs/bolt-client/badge.svg)](https://docs.rs/bolt-client)
 
-Contains an asynchronous client for Bolt-compatible servers, using a [tokio](https://crates.io/crates/tokio) 
-[`BufStream`](https://docs.rs/tokio/0.2.10/tokio/io/struct.BufStream.html) wrapping a 
-[`TcpStream`](https://docs.rs/tokio/0.2.10/tokio/net/struct.TcpStream.html), optionally secured using TLS.
+Contains an asynchronous client for Bolt-compatible servers, using a TCP stream optionally secured using
+TLS.
+
+### bolt-client-macros
+
+Procedural macros used in bolt-client for client version requirements and smarter tests.
 
 ### bolt-proto
 [![crates.io](https://img.shields.io/crates/v/bolt-proto.svg)](https://crates.io/crates/bolt-proto)
