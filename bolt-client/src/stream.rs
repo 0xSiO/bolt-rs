@@ -3,9 +3,9 @@ use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use async_native_tls::TlsStream;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
+use tokio_rustls::client::TlsStream;
 
 #[derive(Debug)]
 pub(crate) enum Stream {
