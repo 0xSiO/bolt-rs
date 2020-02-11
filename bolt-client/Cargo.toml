@@ -17,11 +17,11 @@ criterion = "0.3.0"
 bolt-client-macros = { path = "../bolt-client-macros", version = "0.1.0" }
 bolt-proto = { path = "../bolt-proto", version = "0.6.0" }
 
-# TODO: tokio-rustls
-async-native-tls = { version = "0.3.2", default-features = false, features = [ "runtime-tokio" ] }
 bytes = "0.5.3"
 failure = "0.1.6"
 tokio = { version = "0.2", features = ["full"] }
+tokio-rustls = "0.12.2"
+webpki-roots = "0.19.0"
 
 [[bench]]
 name = "basic"
