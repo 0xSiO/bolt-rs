@@ -294,6 +294,8 @@ pub(crate) mod tests {
         assert!(Failure::try_from(response).is_ok());
     }
 
+    // TODO: Test https://github.com/neo4j/neo4j/pull/8050 (ACK_FAILURE on failed INIT)
+
     #[tokio::test]
     async fn ack_failure() {
         let mut client = get_initialized_client().await.unwrap();
