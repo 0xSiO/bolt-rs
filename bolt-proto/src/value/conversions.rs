@@ -89,9 +89,29 @@ impl From<UnboundRelationship> for Value {
     }
 }
 
+// Date (year, month, day)
+impl TryFrom<(i32, u32, u32)> for Value {
+    type Error = Error;
+
+    fn try_from(value: (i32, u32, u32)) -> Result<Self> {
+        Ok(Value::Date(Date::new(value.0, value.1, value.2)?))
+    }
+}
+
 impl From<NaiveDate> for Value {
     fn from(value: NaiveDate) -> Self {
         Value::Date(Date::from(value))
+    }
+}
+
+// Time (hour, minute, second, nanosecond, zone offset)
+impl TryFrom<(u32, u32, u32, u32, (i32, i32))> for Value {
+    type Error = Error;
+
+    fn try_from(value: (u32, u32, u32, u32, (i32, i32))) -> Result<Self> {
+        Ok(Value::Time(Time::new(
+            value.0, value.1, value.2, value.3, value.4,
+        )?))
     }
 }
 

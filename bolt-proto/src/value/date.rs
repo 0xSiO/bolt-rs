@@ -15,6 +15,15 @@ pub struct Date {
     pub(crate) value: i64,
 }
 
+impl Date {
+    pub fn new(year: i32, month: u32, day: u32) -> Result<Self> {
+        Ok(Self::from(
+            NaiveDate::from_ymd_opt(year, month, day)
+                .ok_or(ValueError::InvalidDate(year, month, day))?,
+        ))
+    }
+}
+
 impl From<NaiveDate> for Date {
     fn from(naive_date: NaiveDate) -> Self {
         Self {
@@ -35,7 +44,7 @@ impl TryFrom<Value> for Date {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Date(date) => Ok(Date::from(date)),
+            Value::Date(date) => Ok(date),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
