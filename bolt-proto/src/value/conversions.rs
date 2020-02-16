@@ -5,6 +5,7 @@ use std::hash::Hash;
 
 use crate::error::*;
 use crate::value::*;
+use chrono::NaiveDate;
 
 // ----------------------- FROM -----------------------
 
@@ -85,6 +86,12 @@ impl From<Path> for Value {
 impl From<UnboundRelationship> for Value {
     fn from(value: UnboundRelationship) -> Self {
         Value::UnboundRelationship(value)
+    }
+}
+
+impl From<NaiveDate> for Value {
+    fn from(value: NaiveDate) -> Self {
+        Value::Date(value)
     }
 }
 
