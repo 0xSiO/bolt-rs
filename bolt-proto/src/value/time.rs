@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use chrono::{DateTime, FixedOffset, Timelike};
+use chrono::{DateTime, FixedOffset, NaiveTime, Timelike};
 
 use bolt_proto_derive::*;
 
@@ -14,6 +14,24 @@ pub(crate) const SIGNATURE: u8 = 0x54;
 pub struct Time {
     pub(crate) nanos_since_midnight: i64,
     pub(crate) zone_offset: i32,
+}
+
+impl Time {
+    pub fn new(
+        hour: u32,
+        minute: u32,
+        second: u32,
+        fraction: u32,
+        zone_offset: (i32, i32),
+    ) -> Result<Self> {
+        let time = NaiveTime::from_hms_nano_opt(hour, minute, second, fraction).ok_or(
+            ValueError::InvalidTime(hour, minute, second, fraction, zone_offset),
+        )?;
+        Ok(Self {
+            nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
+            zone_offset: zone_offset.0 * 3600 + zone_offset.1 * 60,
+        })
+    }
 }
 
 impl From<DateTime<FixedOffset>> for Time {
