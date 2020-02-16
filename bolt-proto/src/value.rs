@@ -7,6 +7,7 @@ use bytes::{Buf, Bytes};
 
 pub(crate) use boolean::Boolean;
 pub(crate) use byte_array::ByteArray;
+pub(crate) use date::Date;
 pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
@@ -24,6 +25,7 @@ use crate::serialization::*;
 pub(crate) mod boolean;
 pub(crate) mod byte_array;
 pub(crate) mod conversions;
+pub(crate) mod date;
 pub(crate) mod float;
 pub(crate) mod integer;
 pub(crate) mod list;
@@ -51,8 +53,8 @@ pub enum Value {
     Relationship(Relationship),
     Path(Path),
     UnboundRelationship(UnboundRelationship),
-    // TODO: V2-compatible value types
-    // Date,
+    // TODO: V2-compatible value types + tests
+    Date(chrono::NaiveDate),
     // Time,
     // DateTime,
     // LocalTime,
@@ -78,6 +80,7 @@ impl Hash for Value {
             Value::List(list) => list.hash(state),
             Value::Null => Null.hash(state),
             Value::String(string) => string.hash(state),
+            Value::Date(date) => date.hash(state),
         }
     }
 }
@@ -106,6 +109,7 @@ impl Marker for Value {
             Value::Relationship(rel) => rel.get_marker(),
             Value::Path(path) => path.get_marker(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
+            Value::Date(date) => Date::from(date.clone()).get_marker(),
         }
     }
 }
@@ -129,6 +133,7 @@ impl TryInto<Bytes> for Value {
             Value::Relationship(rel) => rel.try_into(),
             Value::Path(path) => path.try_into(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.try_into(),
+            Value::Date(date) => Date::from(date).try_into(),
         }
     }
 }
