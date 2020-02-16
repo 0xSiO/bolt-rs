@@ -91,7 +91,7 @@ impl From<UnboundRelationship> for Value {
 
 impl From<NaiveDate> for Value {
     fn from(value: NaiveDate) -> Self {
-        Value::Date(value)
+        Value::Date(Date::from(value))
     }
 }
 

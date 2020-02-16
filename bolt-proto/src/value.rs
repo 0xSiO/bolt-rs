@@ -56,7 +56,7 @@ pub enum Value {
     Path(Path),
     UnboundRelationship(UnboundRelationship),
     // TODO: V2-compatible value types + tests
-    Date(chrono::NaiveDate),
+    Date(Date),
     Time(Time),
     // DateTime,
     // LocalTime,
@@ -112,7 +112,7 @@ impl Marker for Value {
             Value::Relationship(rel) => rel.get_marker(),
             Value::Path(path) => path.get_marker(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
-            Value::Date(date) => Date::from(date.clone()).get_marker(),
+            Value::Date(date) => date.get_marker(),
             Value::Time(time) => time.get_marker(),
         }
     }
@@ -137,7 +137,7 @@ impl TryInto<Bytes> for Value {
             Value::Relationship(rel) => rel.try_into(),
             Value::Path(path) => path.try_into(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.try_into(),
-            Value::Date(date) => Date::from(date).try_into(),
+            Value::Date(date) => date.try_into(),
             Value::Time(time) => time.try_into(),
         }
     }
