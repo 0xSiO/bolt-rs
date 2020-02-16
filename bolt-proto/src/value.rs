@@ -17,6 +17,7 @@ pub(crate) use null::Null;
 pub use path::Path;
 pub use relationship::Relationship;
 pub(crate) use string::String;
+pub(crate) use time::Time;
 pub use unbound_relationship::UnboundRelationship;
 
 use crate::error::*;
@@ -35,6 +36,7 @@ pub(crate) mod null;
 pub(crate) mod path;
 pub(crate) mod relationship;
 pub(crate) mod string;
+pub(crate) mod time;
 pub(crate) mod unbound_relationship;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -55,7 +57,7 @@ pub enum Value {
     UnboundRelationship(UnboundRelationship),
     // TODO: V2-compatible value types + tests
     Date(chrono::NaiveDate),
-    // Time,
+    Time(Time),
     // DateTime,
     // LocalTime,
     // LocalDateTime,
@@ -81,6 +83,7 @@ impl Hash for Value {
             Value::Null => Null.hash(state),
             Value::String(string) => string.hash(state),
             Value::Date(date) => date.hash(state),
+            Value::Time(time) => time.hash(state),
         }
     }
 }
@@ -110,6 +113,7 @@ impl Marker for Value {
             Value::Path(path) => path.get_marker(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
             Value::Date(date) => Date::from(date.clone()).get_marker(),
+            Value::Time(time) => time.get_marker(),
         }
     }
 }
@@ -134,6 +138,7 @@ impl TryInto<Bytes> for Value {
             Value::Path(path) => path.try_into(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.try_into(),
             Value::Date(date) => Date::from(date).try_into(),
+            Value::Time(time) => time.try_into(),
         }
     }
 }
@@ -223,6 +228,8 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
         unbound_relationship::SIGNATURE => Ok(Value::UnboundRelationship(
             UnboundRelationship::try_from(input_arc)?,
         )),
+        date::SIGNATURE => Ok(Value::Date(Date::try_from(input_arc)?.into())),
+        time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?.into())),
         _ => Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into()),
     }
 }
