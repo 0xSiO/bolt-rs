@@ -27,7 +27,7 @@ impl Client {
     pub async fn new(addr: impl ToSocketAddrs, domain: Option<&str>) -> Result<Self> {
         let stream = match domain {
             Some(domain) => Stream::SecureTcp(
-                async_native_tls::connect(&domain, TcpStream::connect(addr).await?).await?,
+                async_native_tls::connect(domain, TcpStream::connect(addr).await?).await?,
             ),
             None => Stream::Tcp(TcpStream::connect(addr).await?),
         };
