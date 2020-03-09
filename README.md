@@ -2,9 +2,11 @@
 [![Build Status](https://travis-ci.org/lucis-fluxum/bolt-rs.svg?branch=master)](https://travis-ci.org/lucis-fluxum/bolt-rs)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
+NOTE: This project is under construction, and the public API is unstable.
+
 ## Overview
 
-This project provides a comprehensive set of libraries that allow for interaction with graph database servers that
+This project aims to provide a comprehensive set of libraries that allow for interaction with graph database servers that
 support the [Bolt v1](https://boltprotocol.org/v1/) protocol, namely, [Neo4j](https://neo4j.com). Since there is
 currently no good documentation for Bolt v2, v3, or v4, this set of libraries allows interacting with Neo4j versions up
 to 3.5.14, which is the last version supporting Bolt v1. Development to support the newer versions of the protocol is
@@ -46,7 +48,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/lucis-
 
 ## License
 
-This crate is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT), with
+These crates are available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT), with
 portions of the documentation licensed under the 
 [Creative Commons Attribution-ShareAlike 3.0 License](https://creativecommons.org/licenses/by-sa/3.0/).
 
