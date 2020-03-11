@@ -49,3 +49,40 @@ impl TryFrom<Value> for Date {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use bytes::Bytes;
+
+    use crate::serialization::*;
+    use crate::value::integer::MARKER_INT_16;
+
+    use super::*;
+
+    #[test]
+    fn get_marker() {
+        let date = Date::from(NaiveDate::from_ymd(2020, 01, 01));
+        assert_eq!(date.get_marker().unwrap(), MARKER);
+    }
+
+    #[test]
+    fn try_into_bytes() {
+        let date = Date::new(1901, 12, 31).unwrap();
+        assert_eq!(
+            date.try_into_bytes().unwrap(),
+            Bytes::from_static(&[MARKER, SIGNATURE, MARKER_INT_16, 0x9E, 0xFA])
+        );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let date = Date::new(1901, 12, 31).unwrap();
+        let date_bytes = &[MARKER_INT_16, 0x9E, 0xFA];
+        assert_eq!(
+            Date::try_from(Arc::new(Mutex::new(Bytes::from_static(date_bytes)))).unwrap(),
+            date
+        );
+    }
+}
