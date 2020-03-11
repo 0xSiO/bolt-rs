@@ -22,9 +22,15 @@ macro_rules! impl_from_wrapped_int {
         $(
             impl From<crate::value::Integer> for $T {
                 fn from(mut integer: crate::value::Integer) -> Self {
+                    // If positive, extend with zeros. If negative, extend with ones.
+                    let extension = if integer.bytes[0] & 0b10000000 == 0 {
+                                        0x00
+                                    } else {
+                                        0xFF
+                                    };
                     // Get bytes in little-endian order
                     integer.bytes.reverse();
-                    integer.bytes.resize(::std::mem::size_of::<$T>(), 0);
+                    integer.bytes.resize(::std::mem::size_of::<$T>(), extension);
                     let mut bytes: [u8; ::std::mem::size_of::<$T>()] = [0; ::std::mem::size_of::<$T>()];
                     bytes.copy_from_slice(&integer.bytes);
                     <$T>::from_le_bytes(bytes)

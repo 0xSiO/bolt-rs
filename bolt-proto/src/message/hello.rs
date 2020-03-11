@@ -67,7 +67,6 @@ mod tests {
 
     #[test]
     fn try_into_bytes() {
-        println!("{:?}", new_msg().try_into_bytes().unwrap().as_ref());
         assert_eq!(
             new_msg().try_into_bytes().unwrap(),
             Bytes::from_static(&[
