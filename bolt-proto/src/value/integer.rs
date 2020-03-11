@@ -198,4 +198,48 @@ mod tests {
             very_large
         );
     }
+
+    #[test]
+    fn zero_extension() {
+        let number = 12123_i16;
+        let number_bytes = &[0xC9, 0x2F, 0x5B];
+        assert_eq!(
+            Integer::from(number).try_into_bytes().unwrap().as_ref(),
+            number_bytes,
+        );
+        assert_eq!(
+            i32::from(
+                Integer::try_from(Arc::new(Mutex::new(Bytes::from_static(number_bytes)))).unwrap()
+            ),
+            number as i32
+        );
+        assert_eq!(
+            i64::from(
+                Integer::try_from(Arc::new(Mutex::new(Bytes::from_static(number_bytes)))).unwrap()
+            ),
+            number as i64
+        );
+    }
+
+    #[test]
+    fn sign_extension() {
+        let number = -60_i8;
+        let number_bytes = &[0xC8, 0xC4];
+        assert_eq!(
+            Integer::from(number).try_into_bytes().unwrap().as_ref(),
+            number_bytes,
+        );
+        assert_eq!(
+            i32::from(
+                Integer::try_from(Arc::new(Mutex::new(Bytes::from_static(number_bytes)))).unwrap()
+            ),
+            number as i32
+        );
+        assert_eq!(
+            i64::from(
+                Integer::try_from(Arc::new(Mutex::new(Bytes::from_static(number_bytes)))).unwrap()
+            ),
+            number as i64
+        );
+    }
 }

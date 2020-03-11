@@ -28,7 +28,7 @@ impl From<NaiveDate> for Date {
     fn from(naive_date: NaiveDate) -> Self {
         Self {
             // (seconds since epoch) / (seconds per day)
-            value: (NaiveDate::from_ymd(1970, 1, 1) - naive_date).num_days(),
+            value: (naive_date - NaiveDate::from_ymd(1970, 1, 1)).num_days(),
         }
     }
 }

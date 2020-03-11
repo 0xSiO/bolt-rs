@@ -275,6 +275,8 @@ mod tests {
         let small_bytes = small.clone().try_into_bytes().unwrap();
         let medium = Integer::from(8000_i16);
         let medium_bytes = medium.clone().try_into_bytes().unwrap();
+        let medium_negative = Integer::from(-18621_i16);
+        let medium_negative_bytes = medium_negative.clone().try_into_bytes().unwrap();
         let large = Integer::from(-1_000_000_000_i32);
         let large_bytes = large.clone().try_into_bytes().unwrap();
         let very_large = Integer::from(9_000_000_000_000_000_000_i64);
@@ -290,6 +292,10 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
             Value::Integer(medium)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(medium_negative_bytes))).unwrap(),
+            Value::Integer(medium_negative)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
@@ -537,6 +543,32 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(unbound_rel_bytes))).unwrap(),
             Value::UnboundRelationship(get_unbound_rel())
+        );
+    }
+
+    #[test]
+    fn date_from_bytes() {
+        let christmas = Date::new(2020, 12, 25).unwrap();
+        let christmas_bytes: Bytes = christmas.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(christmas_bytes))).unwrap(),
+            Value::Date(christmas)
+        );
+    }
+
+    #[test]
+    fn time_from_bytes() {
+        let midnight_utc = Time::new(0, 0, 0, 0, (0, 0)).unwrap();
+        let midnight_utc_bytes = midnight_utc.clone().try_into_bytes().unwrap();
+        let about_four_pm_pacific = Time::new(16, 4, 35, 235, (-8, 0)).unwrap();
+        let about_four_pm_pacific_bytes = about_four_pm_pacific.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(midnight_utc_bytes))).unwrap(),
+            Value::Time(midnight_utc)
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(about_four_pm_pacific_bytes))).unwrap(),
+            Value::Time(about_four_pm_pacific)
         );
     }
 }
