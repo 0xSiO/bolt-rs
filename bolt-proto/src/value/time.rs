@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use chrono::{DateTime, FixedOffset, NaiveTime, Timelike};
+use chrono::{DateTime, NaiveTime, Offset, TimeZone, Timelike};
 
 use bolt_proto_derive::*;
 
@@ -34,11 +34,11 @@ impl Time {
     }
 }
 
-impl From<DateTime<FixedOffset>> for Time {
-    fn from(date_time: DateTime<FixedOffset>) -> Self {
+impl<T: TimeZone> From<DateTime<T>> for Time {
+    fn from(date_time: DateTime<T>) -> Self {
         Self {
             nanos_since_midnight: date_time.num_seconds_from_midnight() as i64 * 1_000_000_000,
-            zone_offset: date_time.offset().local_minus_utc(),
+            zone_offset: date_time.offset().fix().local_minus_utc(),
         }
     }
 }
@@ -59,28 +59,29 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
-    use chrono::NaiveDateTime;
+    use chrono::{FixedOffset, NaiveDateTime};
 
     use crate::serialization::*;
     use crate::value::integer::{MARKER_INT_16, MARKER_INT_64};
 
     use super::*;
 
-    #[test]
-    fn get_marker() {
-        let time = Time::from(DateTime::from_utc(
+    fn get_chrono_date_time() -> DateTime<FixedOffset> {
+        DateTime::from_utc(
             NaiveDateTime::from_timestamp(1000, 0),
             FixedOffset::east(3600),
-        ));
+        )
+    }
+
+    #[test]
+    fn get_marker() {
+        let time = Time::from(get_chrono_date_time());
         assert_eq!(time.get_marker().unwrap(), MARKER);
     }
 
     #[test]
     fn try_into_bytes() {
-        let time = Time::from(DateTime::from_utc(
-            NaiveDateTime::from_timestamp(1000, 0),
-            FixedOffset::east(3600),
-        ));
+        let time = Time::from(get_chrono_date_time());
         assert_eq!(
             time.try_into_bytes().unwrap(),
             Bytes::from_static(&[
@@ -104,10 +105,7 @@ mod tests {
 
     #[test]
     fn try_from_bytes() {
-        let time = Time::from(DateTime::from_utc(
-            NaiveDateTime::from_timestamp(1000, 0),
-            FixedOffset::east(3600),
-        ));
+        let time = Time::from(get_chrono_date_time());
         let time_bytes = &[
             MARKER_INT_64,
             0x00,

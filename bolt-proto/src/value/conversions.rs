@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::hash::Hash;
 
+use chrono::{DateTime, NaiveDate, TimeZone};
+
 use crate::error::*;
 use crate::value::*;
-use chrono::{DateTime, FixedOffset, NaiveDate};
 
 // ----------------------- FROM -----------------------
 
@@ -115,8 +116,8 @@ impl TryFrom<(u32, u32, u32, u32, (i32, i32))> for Value {
     }
 }
 
-impl From<DateTime<FixedOffset>> for Value {
-    fn from(value: DateTime<FixedOffset>) -> Self {
+impl<T: TimeZone> From<DateTime<T>> for Value {
+    fn from(value: DateTime<T>) -> Self {
         Value::Time(Time::from(value))
     }
 }
