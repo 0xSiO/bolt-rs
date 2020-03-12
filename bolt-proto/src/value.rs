@@ -55,11 +55,16 @@ pub enum Value {
     Relationship(Relationship),
     Path(Path),
     UnboundRelationship(UnboundRelationship),
-    // TODO: V2-compatible value types + tests
+    // A date without a time zone, a.k.a. LocalDate
     Date(Date),
+    // A time with a UTC offset, a.k.a. OffsetTime
     Time(Time),
+    // TODO: Other V2-compatible value types + tests
+    //// A date-time with zone or UTC offset, a.k.a. OffsetDateTime/ZonedDateTime
     // DateTime,
+    //// A time without a time zone
     // LocalTime,
+    //// A date-time without a time zone
     // LocalDateTime,
     // Duration,
     // Point,
