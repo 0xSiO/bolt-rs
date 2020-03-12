@@ -13,7 +13,7 @@ pub(crate) const SIGNATURE: u8 = 0x44;
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct DateTimeZoned {
     pub(crate) epoch_seconds: i64,
-    pub(crate) nanos: i32,
+    pub(crate) nanos: i64,
     pub(crate) zone_id: String,
 }
 
