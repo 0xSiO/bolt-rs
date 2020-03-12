@@ -239,8 +239,8 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
         unbound_relationship::SIGNATURE => Ok(Value::UnboundRelationship(
             UnboundRelationship::try_from(input_arc)?,
         )),
-        date::SIGNATURE => Ok(Value::Date(Date::try_from(input_arc)?.into())),
-        time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?.into())),
+        date::SIGNATURE => Ok(Value::Date(Date::try_from(input_arc)?)),
+        time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?)),
         _ => Err(DeserializeError(format!("Invalid signature byte: {:x}", signature)).into()),
     }
 }

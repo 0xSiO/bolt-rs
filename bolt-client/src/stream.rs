@@ -10,7 +10,7 @@ use tokio_rustls::client::TlsStream;
 #[derive(Debug)]
 pub(crate) enum Stream {
     Tcp(TcpStream),
-    SecureTcp(TlsStream<TcpStream>),
+    SecureTcp(Box<TlsStream<TcpStream>>),
 }
 
 impl AsyncRead for Stream {

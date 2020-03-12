@@ -36,7 +36,7 @@ impl Client {
                 let tls_connector = Client::configure_tls_connector(&TLS_SERVER_ROOTS);
                 let dns_name_ref = DNSNameRef::try_from_ascii_str(&domain)?;
                 let stream = TcpStream::connect(addr).await?;
-                Stream::SecureTcp(tls_connector.connect(dns_name_ref, stream).await?)
+                Stream::SecureTcp(Box::new(tls_connector.connect(dns_name_ref, stream).await?))
             }
             None => Stream::Tcp(TcpStream::connect(addr).await?),
         };
