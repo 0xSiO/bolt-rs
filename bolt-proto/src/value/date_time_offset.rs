@@ -11,8 +11,8 @@ pub(crate) const SIGNATURE: u8 = 0x46;
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct DateTimeOffset {
     pub(crate) epoch_seconds: i64,
-    pub(crate) nanos: i64,
-    pub(crate) offset_seconds: i64,
+    pub(crate) nanos: i32,
+    pub(crate) offset_seconds: i32,
 }
 
 // TODO
