@@ -9,13 +9,7 @@ use quote::quote;
 fn get_fn_info(
     func: &ItemFn,
     args: AttributeArgs,
-) -> (
-    &Vec<Attribute>,
-    &Visibility,
-    &Signature,
-    Vec<u32>,
-    &Box<Block>,
-) {
+) -> (&Vec<Attribute>, &Visibility, &Signature, Vec<u32>, &Block) {
     let signature = &func.sig;
     let function_body = &func.block;
     let attributes = &func.attrs;

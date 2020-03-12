@@ -29,7 +29,7 @@ impl TryFrom<Value> for ByteArray {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Bytes(vec) => Ok(ByteArray::from(vec)),
+            Value::Bytes(byte_array) => Ok(byte_array),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }

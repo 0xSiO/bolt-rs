@@ -103,7 +103,7 @@ impl Client {
 
         for _ in 0..responses.capacity() {
             let mut response = self.read_message().await?;
-            while let &Message::Record(_) = &response {
+            while let Message::Record(_) = response {
                 responses.push(response);
                 response = self.read_message().await?;
             }
