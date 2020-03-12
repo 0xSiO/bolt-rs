@@ -26,6 +26,15 @@ impl Date {
 
 impl From<NaiveDate> for Date {
     fn from(naive_date: NaiveDate) -> Self {
+        // TODO: Pick between one of these methods
+        println!(
+            "Subtraction epoch days: {}",
+            (naive_date - NaiveDate::from_ymd(1970, 1, 1)).num_days()
+        );
+        println!(
+            "Using timestamp(): {}",
+            naive_date.and_hms(0, 0, 0).timestamp() / Duration::days(1).num_seconds()
+        );
         Self {
             // (seconds since epoch) / (seconds per day)
             days_since_epoch: (naive_date - NaiveDate::from_ymd(1970, 1, 1)).num_days(),
