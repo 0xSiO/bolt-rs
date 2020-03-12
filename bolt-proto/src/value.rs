@@ -8,6 +8,8 @@ use bytes::{Buf, Bytes};
 pub(crate) use boolean::Boolean;
 pub(crate) use byte_array::ByteArray;
 pub(crate) use date::Date;
+pub(crate) use date_time_offset::DateTimeOffset;
+pub(crate) use date_time_zoned::DateTimeZoned;
 pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
@@ -27,6 +29,8 @@ pub(crate) mod boolean;
 pub(crate) mod byte_array;
 pub(crate) mod conversions;
 pub(crate) mod date;
+pub(crate) mod date_time_offset;
+pub(crate) mod date_time_zoned;
 pub(crate) mod float;
 pub(crate) mod integer;
 pub(crate) mod list;
@@ -60,8 +64,10 @@ pub enum Value {
     // A time with a UTC offset, a.k.a. OffsetTime
     Time(Time),
     // TODO: Other V2-compatible value types + tests
-    //// A date-time with zone or UTC offset, a.k.a. OffsetDateTime/ZonedDateTime
-    // DateTime,
+    //// A date-time with a UTC offset, a.k.a. OffsetDateTime
+    // DateTimeOffset(DateTimeOffset),
+    //// A date-time with a time zone ID, a.k.a. ZonedDateTime
+    // DateTimeZoned(DateTimeZoned),
     //// A time without a time zone
     // LocalTime,
     //// A date-time without a time zone
