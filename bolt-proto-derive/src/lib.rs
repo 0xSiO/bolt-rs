@@ -111,7 +111,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         impl ::std::convert::TryFrom<::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>> for #name#type_args
         #where_clause
         {
-            type Error = ::failure::Error;
+            type Error = crate::error::Error;
 
             fn try_from(remaining_bytes_arc: ::std::sync::Arc<::std::sync::Mutex<::bytes::Bytes>>) -> crate::error::Result<Self> {
                 use ::std::convert::{TryFrom, TryInto};
