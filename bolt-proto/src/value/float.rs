@@ -48,11 +48,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Float {
 
             match marker {
                 MARKER => Ok(Float::from(input_bytes.get_f64())),
-                _ => Err(Error::DeserializationFailed(format!(
-                    "Invalid marker byte: {:x}",
-                    marker
-                ))
-                .into()),
+                _ => Err(DeserializationError::InvalidMarkerByte(marker).into()),
             }
         })
         .map_err(|_| DeserializationError::Panicked)?

@@ -73,11 +73,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for String {
                 MARKER_MEDIUM => input_bytes.get_u16() as usize,
                 MARKER_LARGE => input_bytes.get_u32() as usize,
                 _ => {
-                    return Err(Error::DeserializationFailed(format!(
-                        "Invalid marker byte: {:x}",
-                        marker
-                    ))
-                    .into());
+                    return Err(DeserializationError::InvalidMarkerByte(marker).into());
                 }
             };
             let mut string_bytes = BytesMut::with_capacity(size);

@@ -39,18 +39,14 @@ impl MessageBytes {
     ) -> Result<MessageBytes> {
         let mut message = MessageBytes::new();
         loop {
-            let size = buf_stream.read_u16().await.map_err(|io_err| {
-                Error::DeserializationFailed(format!("Failed to read message size: {}", io_err))
-            })? as usize;
+            let size = buf_stream.read_u16().await? as usize;
             if size == 0 {
                 // We've reached the end of the message
                 // Note that after this point we will have consumed the last two 0 bytes
                 break;
             }
             let mut buf = BytesMut::with_capacity(size);
-            buf_stream.read_buf(&mut buf).await.map_err(|io_err| {
-                Error::DeserializationFailed(format!("Failed to read message chunk: {}", io_err))
-            })?;
+            buf_stream.read_buf(&mut buf).await?;
             debug_assert!(buf.len() == size);
             message.add_chunk(Chunk::try_from(buf.freeze())?)
         }
