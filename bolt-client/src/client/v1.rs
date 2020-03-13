@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 use bolt_proto::message::*;
 use bolt_proto::{Message, Value};
@@ -154,7 +153,7 @@ impl Client {
         let mut records = vec![];
         loop {
             match self.read_message().await? {
-                Message::Record(record) => records.push(Record::try_from(record)?),
+                Message::Record(record) => records.push(record),
                 other => return Ok((other, records)),
             }
         }

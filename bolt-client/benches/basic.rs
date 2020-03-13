@@ -3,12 +3,12 @@ use std::env;
 use std::iter::FromIterator;
 
 use criterion::*;
-use failure::Fallible;
 use tokio::runtime::Runtime;
 
+use bolt_client::error::Result;
 use bolt_client::*;
 
-async fn get_initialized_client() -> Fallible<Client> {
+async fn get_initialized_client() -> Result<Client> {
     let mut client = Client::new(
         env::var("BOLT_TEST_ADDR").unwrap(),
         env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
