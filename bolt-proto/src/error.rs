@@ -22,6 +22,8 @@ pub enum Error {
     InvalidTime(u32, u32, u32, u32),
     #[error("Invalid time zone offset: {0:?}")]
     InvalidTimeZoneOffset((i32, i32)),
+    #[error("Invalid time zone ID: {0}")]
+    InvalidTimeZoneId(String),
     #[error(transparent)]
     DeserializationError(#[from] DeserializationError),
 }

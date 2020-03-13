@@ -66,8 +66,8 @@ pub enum Value {
     // TODO: Other V2-compatible value types + tests
     // A date-time with a UTC offset, a.k.a. OffsetDateTime
     DateTimeOffset(DateTimeOffset),
-    //// A date-time with a time zone ID, a.k.a. ZonedDateTime
-    // DateTimeZoned(DateTimeZoned),
+    // A date-time with a time zone ID, a.k.a. ZonedDateTime
+    DateTimeZoned(DateTimeZoned),
     //// A time without a time zone
     // LocalTime,
     //// A date-time without a time zone
@@ -96,6 +96,7 @@ impl Hash for Value {
             Value::Date(date) => date.hash(state),
             Value::Time(time) => time.hash(state),
             Value::DateTimeOffset(date_time_offset) => date_time_offset.hash(state),
+            Value::DateTimeZoned(date_time_zoned) => date_time_zoned.hash(state),
         }
     }
 }
@@ -127,6 +128,7 @@ impl Marker for Value {
             Value::Date(date) => date.get_marker(),
             Value::Time(time) => time.get_marker(),
             Value::DateTimeOffset(date_time_offset) => date_time_offset.get_marker(),
+            Value::DateTimeZoned(date_time_zoned) => date_time_zoned.get_marker(),
         }
     }
 }
@@ -153,6 +155,7 @@ impl TryInto<Bytes> for Value {
             Value::Date(date) => date.try_into(),
             Value::Time(time) => time.try_into(),
             Value::DateTimeOffset(date_time_offset) => date_time_offset.try_into(),
+            Value::DateTimeZoned(date_time_zoned) => date_time_zoned.try_into(),
         }
     }
 }
@@ -243,6 +246,7 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
         date_time_offset::SIGNATURE => {
             Ok(Value::DateTimeOffset(DateTimeOffset::try_from(input_arc)?))
         }
+        date_time_zoned::SIGNATURE => Ok(Value::DateTimeZoned(DateTimeZoned::try_from(input_arc)?)),
         _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
     }
 }
