@@ -62,7 +62,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for List {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
-        let result: Result<List> = catch_unwind(move || {
+        catch_unwind(move || {
             let marker = input_arc.lock().unwrap().get_u8();
             let size = match marker {
                 marker if (MARKER_TINY..=(MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -85,11 +85,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for List {
             }
             Ok(List::from(list))
         })
-        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
-
-        Ok(result.map_err(|err: Error| {
-            Error::DeserializationFailed(format!("Error creating List from Bytes: {}", err))
-        })?)
+        .map_err(|_| DeserializationError::Panicked)?
     }
 }
 

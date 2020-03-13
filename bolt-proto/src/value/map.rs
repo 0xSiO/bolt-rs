@@ -91,7 +91,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Map {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
-        let result: Result<Map> = catch_unwind(move || {
+        catch_unwind(move || {
             let marker = input_arc.lock().unwrap().get_u8();
             let size = match marker {
                 marker if (MARKER_TINY..=(MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -116,11 +116,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Map {
             }
             Ok(Map::from(hash_map))
         })
-        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
-
-        Ok(result.map_err(|err: Error| {
-            Error::DeserializationFailed(format!("Error creating Map from Bytes: {}", err))
-        })?)
+        .map_err(|_| DeserializationError::Panicked)?
     }
 }
 

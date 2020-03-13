@@ -58,7 +58,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for ByteArray {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
-        let result: Result<ByteArray> = catch_unwind(move || {
+        catch_unwind(move || {
             let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
             let size = match marker {
@@ -79,11 +79,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for ByteArray {
             input_bytes.copy_to_slice(&mut byte_arr);
             Ok(ByteArray::from(byte_arr.as_ref()))
         })
-        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
-
-        Ok(result.map_err(|err: Error| {
-            Error::DeserializationFailed(format!("Error creating ByteArray from Bytes: {}", err))
-        })?)
+        .map_err(|_| DeserializationError::Panicked)?
     }
 }
 

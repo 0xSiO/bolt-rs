@@ -140,7 +140,7 @@ impl TryFrom<MessageBytes> for Message {
     type Error = Error;
 
     fn try_from(mut message_bytes: MessageBytes) -> Result<Self> {
-        let result: Result<Message> = catch_unwind(move || {
+        catch_unwind(move || {
             let signature = get_signature_from_bytes(&mut message_bytes)?;
             let remaining_bytes_arc =
                 Arc::new(Mutex::new(message_bytes.split_to(message_bytes.len())));
@@ -187,11 +187,7 @@ impl TryFrom<MessageBytes> for Message {
                 .into()),
             }
         })
-        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
-
-        Ok(result.map_err(|err: Error| {
-            Error::DeserializationFailed(format!("Error creating Message from Bytes: {}", err))
-        })?)
+        .map_err(|_| DeserializationError::Panicked)?
     }
 }
 
