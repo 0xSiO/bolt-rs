@@ -218,11 +218,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                     deserialize_structure(input_arc)
                 }
                 STRUCT_MARKER_SMALL | STRUCT_MARKER_MEDIUM => deserialize_structure(input_arc),
-                _ => Err(Error::DeserializationFailed(format!(
-                    "Invalid marker byte: {:x}",
-                    marker
-                ))
-                .into()),
+                _ => Err(DeserializationError::InvalidMarkerByte(marker).into()),
             }
         })
         .map_err(|_| DeserializationError::Panicked)?
@@ -241,9 +237,7 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
         )),
         date::SIGNATURE => Ok(Value::Date(Date::try_from(input_arc)?)),
         time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?)),
-        _ => Err(
-            Error::DeserializationFailed(format!("Invalid signature byte: {:x}", signature)).into(),
-        ),
+        _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
     }
 }
 

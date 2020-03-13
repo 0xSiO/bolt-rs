@@ -80,11 +80,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
                 MARKER_INT_16 => Ok(Integer::from(input_bytes.get_i16())),
                 MARKER_INT_32 => Ok(Integer::from(input_bytes.get_i32())),
                 MARKER_INT_64 => Ok(Integer::from(input_bytes.get_i64())),
-                _ => Err(Error::DeserializationFailed(format!(
-                    "Invalid marker byte: {:x}",
-                    marker
-                ))
-                .into()),
+                _ => Err(DeserializationError::InvalidMarkerByte(marker).into()),
             }
         })
         .map_err(|_| DeserializationError::Panicked)?

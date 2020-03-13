@@ -180,11 +180,7 @@ impl TryFrom<MessageBytes> for Message {
                     Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?))
                 }
                 ignored::SIGNATURE => Ok(Message::Ignored),
-                _ => Err(Error::DeserializationFailed(format!(
-                    "Invalid signature byte: {:x}",
-                    signature
-                ))
-                .into()),
+                _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
             }
         })
         .map_err(|_| DeserializationError::Panicked)?

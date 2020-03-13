@@ -101,11 +101,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Map {
                 MARKER_MEDIUM => input_arc.lock().unwrap().get_u16() as usize,
                 MARKER_LARGE => input_arc.lock().unwrap().get_u32() as usize,
                 _ => {
-                    return Err(Error::DeserializationFailed(format!(
-                        "Invalid marker byte: {:x}",
-                        marker
-                    ))
-                    .into());
+                    return Err(DeserializationError::InvalidMarkerByte(marker).into());
                 }
             };
             let mut hash_map: HashMap<Value, Value> = HashMap::with_capacity(size);

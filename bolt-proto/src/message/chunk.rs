@@ -15,10 +15,7 @@ impl TryFrom<Bytes> for Chunk {
 
     fn try_from(bytes: Bytes) -> Result<Chunk> {
         if bytes.len() > std::u16::MAX as usize {
-            Err(
-                Error::DeserializationFailed(format!("Bytes length too long: {}", bytes.len()))
-                    .into(),
-            )
+            Err(Error::ValueTooLarge(bytes.len()))
         } else {
             Ok(Chunk {
                 size: bytes.len() as u16,

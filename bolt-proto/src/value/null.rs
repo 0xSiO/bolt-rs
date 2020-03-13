@@ -41,10 +41,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Null {
             if marker == MARKER {
                 Ok(Null)
             } else {
-                Err(
-                    Error::DeserializationFailed(format!("Invalid marker byte: {:x}", marker))
-                        .into(),
-                )
+                Err(DeserializationError::InvalidMarkerByte(marker).into())
             }
         })
         .map_err(|_| DeserializationError::Panicked)?
