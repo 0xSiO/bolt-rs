@@ -61,7 +61,7 @@ impl TryFrom<Value> for Relationship {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Relationship(rel) => Ok(Relationship::try_from(rel)?),
+            Value::Relationship(rel) => Ok(rel),
             _ => Err(ValueError::InvalidConversion(value).into()),
         }
     }
