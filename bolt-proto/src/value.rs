@@ -160,7 +160,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
-        let result: Result<Value> = catch_unwind(move || {
+        catch_unwind(move || {
             let marker = input_arc.lock().unwrap().clone().get_u8();
 
             match marker {
@@ -225,11 +225,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 .into()),
             }
         })
-        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
-
-        Ok(result.map_err(|err: Error| {
-            Error::DeserializationFailed(format!("Error creating Value from Bytes: {}", err))
-        })?)
+        .map_err(|_| DeserializationError::Panicked)?
     }
 }
 

@@ -70,7 +70,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
     type Error = Error;
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
-        let result: Result<Integer> = catch_unwind(move || {
+        catch_unwind(move || {
             let mut input_bytes = input_arc.lock().unwrap();
             let marker = input_bytes.get_u8();
 
@@ -87,11 +87,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
                 .into()),
             }
         })
-        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
-
-        Ok(result.map_err(|err: Error| {
-            Error::DeserializationFailed(format!("Error creating Integer from Bytes: {}", err))
-        })?)
+        .map_err(|_| DeserializationError::Panicked)?
     }
 }
 
