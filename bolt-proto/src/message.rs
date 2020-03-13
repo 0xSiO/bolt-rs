@@ -9,7 +9,7 @@ use tokio::prelude::*;
 pub use ack_failure::AckFailure;
 pub(crate) use chunk::Chunk;
 pub use discard_all::DiscardAll;
-pub use failure_::Failure;
+pub use failure::Failure;
 pub use hello::Hello;
 pub use ignored::Ignored;
 pub use init::Init;
@@ -26,7 +26,7 @@ use crate::value::*;
 
 pub(crate) mod ack_failure;
 pub(crate) mod discard_all;
-pub(crate) mod failure_;
+pub(crate) mod failure;
 pub(crate) mod hello;
 pub(crate) mod ignored;
 pub(crate) mod init;
@@ -176,9 +176,7 @@ impl TryFrom<MessageBytes> for Message {
                 reset::SIGNATURE => Ok(Message::Reset),
                 record::SIGNATURE => Ok(Message::Record(Record::try_from(remaining_bytes_arc)?)),
                 success::SIGNATURE => Ok(Message::Success(Success::try_from(remaining_bytes_arc)?)),
-                failure_::SIGNATURE => {
-                    Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?))
-                }
+                failure::SIGNATURE => Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?)),
                 ignored::SIGNATURE => Ok(Message::Ignored),
                 _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
             }
