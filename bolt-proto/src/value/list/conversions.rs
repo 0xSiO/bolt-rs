@@ -15,16 +15,8 @@ where
     }
 }
 
-impl TryFrom<Value> for List {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::List(list) => Ok(list),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+// We don't need TryFrom<Value> for List since it can be converted directly into a Vec
+// impl_try_from_value!(List, List);
 
 impl<T> TryInto<Vec<T>> for List
 where

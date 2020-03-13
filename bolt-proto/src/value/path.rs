@@ -1,8 +1,6 @@
-use std::convert::TryFrom;
-
 use bolt_proto_derive::*;
 
-use crate::error::*;
+use crate::impl_try_from_value;
 use crate::value::*;
 
 pub(crate) const MARKER: u8 = 0xB3;
@@ -37,13 +35,4 @@ impl Path {
     }
 }
 
-impl TryFrom<Value> for Path {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Path(path) => Ok(path),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+impl_try_from_value!(Path, Path);

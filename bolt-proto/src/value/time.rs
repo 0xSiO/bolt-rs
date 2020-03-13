@@ -1,11 +1,9 @@
-use std::convert::TryFrom;
-
 use chrono::{DateTime, NaiveTime, Offset, TimeZone, Timelike};
 
 use bolt_proto_derive::*;
 
 use crate::error::*;
-use crate::Value;
+use crate::impl_try_from_value;
 
 pub(crate) const MARKER: u8 = 0xB2;
 pub(crate) const SIGNATURE: u8 = 0x54;
@@ -42,19 +40,11 @@ impl<T: TimeZone> From<DateTime<T>> for Time {
     }
 }
 
-impl TryFrom<Value> for Time {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Time(time) => Ok(time),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+impl_try_from_value!(Time, Time);
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;

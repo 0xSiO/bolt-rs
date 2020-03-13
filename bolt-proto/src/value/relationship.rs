@@ -1,9 +1,8 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 use bolt_proto_derive::*;
 
-use crate::error::*;
+use crate::impl_try_from_value;
 use crate::Value;
 
 pub(crate) const MARKER: u8 = 0xB5;
@@ -56,13 +55,4 @@ impl Relationship {
     }
 }
 
-impl TryFrom<Value> for Relationship {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Relationship(rel) => Ok(rel),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+impl_try_from_value!(Relationship, Relationship);

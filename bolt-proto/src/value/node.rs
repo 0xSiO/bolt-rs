@@ -1,9 +1,8 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 use bolt_proto_derive::*;
 
-use crate::error::*;
+use crate::impl_try_from_value;
 use crate::Value;
 
 pub(crate) const MARKER: u8 = 0xB3;
@@ -42,13 +41,4 @@ impl Node {
     }
 }
 
-impl TryFrom<Value> for Node {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Node(node) => Ok(node),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+impl_try_from_value!(Node, Node);

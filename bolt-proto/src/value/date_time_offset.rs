@@ -63,7 +63,7 @@ impl From<DateTimeOffset> for DateTime<FixedOffset> {
     }
 }
 
-impl_try_from_value!(DateTimeOffset);
+impl_try_from_value!(DateTimeOffset, DateTimeOffset);
 
 #[cfg(test)]
 // TODO
