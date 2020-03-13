@@ -30,7 +30,7 @@ impl TryFrom<Value> for String {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::String(string) => Ok(String::from(string)),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }
@@ -41,7 +41,7 @@ impl TryFrom<Value> for std::string::String {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::String(string) => Ok(string),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }

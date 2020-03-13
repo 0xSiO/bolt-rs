@@ -30,9 +30,9 @@ impl DateTimeOffset {
     ) -> Result<Self> {
         let date_time = NaiveDateTime::new(
             NaiveDate::from_ymd_opt(year, month, day)
-                .ok_or(ValueError::InvalidDate(year, month, day))?,
+                .ok_or(Error::InvalidDate(year, month, day))?,
             NaiveTime::from_hms_nano_opt(hour, minute, second, nanosecond).ok_or(
-                ValueError::InvalidTime(hour, minute, second, nanosecond, zone_offset),
+                Error::InvalidTime(hour, minute, second, nanosecond, zone_offset),
             )?,
         );
         Ok(Self {

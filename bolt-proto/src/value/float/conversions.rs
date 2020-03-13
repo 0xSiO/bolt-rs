@@ -30,7 +30,7 @@ impl TryFrom<Value> for f64 {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Float(float) => Ok(float),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }

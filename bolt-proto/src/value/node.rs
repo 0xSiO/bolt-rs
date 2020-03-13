@@ -48,7 +48,7 @@ impl TryFrom<Value> for Node {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Node(node) => Ok(node),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }

@@ -30,7 +30,7 @@ impl TryFrom<Message> for Hello {
     fn try_from(message: Message) -> Result<Self> {
         match message {
             Message::Hello(hello) => Ok(hello),
-            _ => Err(MessageError::InvalidConversion(message).into()),
+            _ => Err(Error::InvalidMessageConversion(message).into()),
         }
     }
 }

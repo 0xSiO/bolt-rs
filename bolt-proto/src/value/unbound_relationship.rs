@@ -48,7 +48,7 @@ impl TryFrom<Value> for UnboundRelationship {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::UnboundRelationship(ub_rel) => Ok(ub_rel),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }

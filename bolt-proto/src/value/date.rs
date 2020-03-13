@@ -19,7 +19,7 @@ impl Date {
     pub fn new(year: i32, month: u32, day: u32) -> Result<Self> {
         Ok(Self::from(
             NaiveDate::from_ymd_opt(year, month, day)
-                .ok_or(ValueError::InvalidDate(year, month, day))?,
+                .ok_or(Error::InvalidDate(year, month, day))?,
         ))
     }
 }
@@ -54,7 +54,7 @@ impl TryFrom<Value> for Date {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Date(date) => Ok(date),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }

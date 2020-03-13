@@ -50,13 +50,17 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Boolean {
             match marker {
                 MARKER_TRUE => Ok(Boolean::from(true)),
                 MARKER_FALSE => Ok(Boolean::from(false)),
-                _ => Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into()),
+                _ => Err(Error::DeserializationFailed(format!(
+                    "Invalid marker byte: {:x}",
+                    marker
+                ))
+                .into()),
             }
         })
-        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError(format!("Error creating Boolean from Bytes: {}", err))
+            Error::DeserializationFailed(format!("Error creating Boolean from Bytes: {}", err))
         })?)
     }
 }
