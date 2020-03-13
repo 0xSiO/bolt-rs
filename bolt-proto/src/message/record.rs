@@ -28,7 +28,7 @@ impl TryFrom<Message> for Record {
 
     fn try_from(message: Message) -> Result<Self> {
         match message {
-            Message::Record(record) => Ok(Record::try_from(record)?),
+            Message::Record(record) => Ok(record),
             _ => Err(MessageError::InvalidConversion(message).into()),
         }
     }
