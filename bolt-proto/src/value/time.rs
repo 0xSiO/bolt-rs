@@ -24,9 +24,8 @@ impl Time {
         fraction: u32,
         zone_offset: (i32, i32),
     ) -> Result<Self> {
-        let time = NaiveTime::from_hms_nano_opt(hour, minute, second, fraction).ok_or(
-            Error::InvalidTime(hour, minute, second, fraction, zone_offset),
-        )?;
+        let time = NaiveTime::from_hms_nano_opt(hour, minute, second, fraction)
+            .ok_or(Error::InvalidTime(hour, minute, second, fraction))?;
         Ok(Self {
             nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
             zone_offset: zone_offset.0 * 3600 + zone_offset.1 * 60,

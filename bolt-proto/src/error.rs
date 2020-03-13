@@ -18,8 +18,10 @@ pub enum Error {
     InvalidMessageConversion(Message),
     #[error("Invalid date: {0}-{1}-{2}")]
     InvalidDate(i32, u32, u32),
-    #[error("Invalid time: {0}:{1}:{2}:{3} offset {4:?}")]
-    InvalidTime(u32, u32, u32, u32, (i32, i32)),
+    #[error("Invalid time: {0}:{1}:{2}:{3}")]
+    InvalidTime(u32, u32, u32, u32),
+    #[error("Invalid time zone offset: {0:?}")]
+    InvalidTimeZoneOffset((i32, i32)),
     #[error(transparent)]
     DeserializationError(#[from] DeserializationError),
 }

@@ -123,6 +123,17 @@ impl<T: TimeZone> From<DateTime<T>> for Value {
     }
 }
 
+// DateTime w/ offset (year, month, day, hour, minute, second, nanosecond, zone offset)
+impl TryFrom<(i32, u32, u32, u32, u32, u32, u32, (i32, i32))> for Value {
+    type Error = Error;
+
+    fn try_from(value: (i32, u32, u32, u32, u32, u32, u32, (i32, i32))) -> Result<Self> {
+        Ok(Value::DateTimeOffset(DateTimeOffset::new(
+            value.0, value.1, value.2, value.3, value.4, value.5, value.6, value.7,
+        )?))
+    }
+}
+
 // ----------------------- INTO -----------------------
 
 impl<T> TryInto<Vec<T>> for Value
