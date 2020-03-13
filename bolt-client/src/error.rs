@@ -1,11 +1,11 @@
-use failure::{Fail, Fallible};
+use thiserror::Error;
 
-pub(crate) type Result<T> = Fallible<T>;
+pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Fail)]
-pub(crate) enum ClientError {
-    #[fail(display = "Handshake with server failed")]
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Handshake with server failed")]
     HandshakeFailed,
-    #[fail(display = "Unsupported operation for Bolt v{}", _0)]
+    #[error("Unsupported operation for Bolt v{0}")]
     UnsupportedOperation(u32),
 }
