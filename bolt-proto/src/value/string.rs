@@ -28,7 +28,7 @@ impl Marker for String {
             16..=255 => Ok(MARKER_SMALL),
             256..=65_535 => Ok(MARKER_MEDIUM),
             65_536..=4_294_967_295 => Ok(MARKER_LARGE),
-            _ => Err(ValueError::TooLarge(self.value.len()).into()),
+            _ => Err(Error::ValueTooLarge(self.value.len()).into()),
         }
     }
 }
@@ -50,7 +50,7 @@ impl TryInto<Bytes> for String {
             16..=255 => bytes.put_u8(self.value.len() as u8),
             256..=65_535 => bytes.put_u16(self.value.len() as u16),
             65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
-            _ => return Err(ValueError::TooLarge(self.value.len()).into()),
+            _ => return Err(Error::ValueTooLarge(self.value.len()).into()),
         }
         bytes.put_slice(self.value.as_bytes());
         Ok(bytes.freeze())
@@ -73,21 +73,27 @@ impl TryFrom<Arc<Mutex<Bytes>>> for String {
                 MARKER_MEDIUM => input_bytes.get_u16() as usize,
                 MARKER_LARGE => input_bytes.get_u32() as usize,
                 _ => {
-                    return Err(
-                        DeserializeError(format!("Invalid marker byte: {:x}", marker)).into(),
-                    );
+                    return Err(Error::DeserializationFailed(format!(
+                        "Invalid marker byte: {:x}",
+                        marker
+                    ))
+                    .into());
                 }
             };
             let mut string_bytes = BytesMut::with_capacity(size);
             // We resize here so that the length of string_bytes is nonzero, which allows us to use copy_to_slice
             string_bytes.resize(size, 0);
             input_bytes.copy_to_slice(&mut string_bytes);
-            Ok(String::from(str::from_utf8(&string_bytes)?))
+            Ok(String::from(str::from_utf8(&string_bytes).map_err(
+                |utf8_err| {
+                    Error::DeserializationFailed(format!("Failed to create String: {}", utf8_err))
+                },
+            )?))
         })
-        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError(format!("Error creating String from Bytes: {}", err))
+            Error::DeserializationFailed(format!("Error creating String from Bytes: {}", err))
         })?)
     }
 }

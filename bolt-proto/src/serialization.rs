@@ -35,7 +35,9 @@ pub(crate) fn get_signature_from_bytes(bytes: &mut impl Buf) -> Result<u8> {
         STRUCT_MARKER_SMALL => bytes.get_u8() as usize,
         STRUCT_MARKER_MEDIUM => bytes.get_u16() as usize,
         _ => {
-            return Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into());
+            return Err(
+                Error::DeserializationFailed(format!("Invalid marker byte: {:x}", marker)).into(),
+            );
         }
     };
     let signature = bytes.get_u8();

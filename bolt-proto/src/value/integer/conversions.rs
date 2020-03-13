@@ -47,7 +47,7 @@ impl TryFrom<Value> for Integer {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Integer(integer) => Ok(integer),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }
@@ -61,7 +61,7 @@ macro_rules! impl_from_value {
                 fn try_from(value: crate::Value) -> crate::error::Result<Self> {
                     match value {
                         crate::Value::Integer(integer) => Ok(<$T>::from(integer)),
-                        _ => Err(crate::error::ValueError::InvalidConversion(value).into()),
+                        _ => Err(crate::error::Error::InvalidValueConversion(value).into()),
                     }
                 }
             }

@@ -25,7 +25,7 @@ impl Time {
         zone_offset: (i32, i32),
     ) -> Result<Self> {
         let time = NaiveTime::from_hms_nano_opt(hour, minute, second, fraction).ok_or(
-            ValueError::InvalidTime(hour, minute, second, fraction, zone_offset),
+            Error::InvalidTime(hour, minute, second, fraction, zone_offset),
         )?;
         Ok(Self {
             nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
@@ -49,7 +49,7 @@ impl TryFrom<Value> for Time {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Time(time) => Ok(time),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }

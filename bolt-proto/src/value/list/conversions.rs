@@ -21,7 +21,7 @@ impl TryFrom<Value> for List {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::List(list) => Ok(list),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }

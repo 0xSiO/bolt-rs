@@ -28,7 +28,7 @@ impl Marker for Integer {
             2 => self.bytes.clone().get_i16() as i64,
             4 => self.bytes.clone().get_i32() as i64,
             8 => self.bytes.clone().get_i64() as i64,
-            _ => return Err(ValueError::TooLarge(self.bytes.len()).into()),
+            _ => return Err(Error::ValueTooLarge(self.bytes.len()).into()),
         };
         match value {
             -9_223_372_036_854_775_808..=-2_147_483_649
@@ -80,13 +80,17 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
                 MARKER_INT_16 => Ok(Integer::from(input_bytes.get_i16())),
                 MARKER_INT_32 => Ok(Integer::from(input_bytes.get_i32())),
                 MARKER_INT_64 => Ok(Integer::from(input_bytes.get_i64())),
-                _ => Err(DeserializeError(format!("Invalid marker byte: {:x}", marker)).into()),
+                _ => Err(Error::DeserializationFailed(format!(
+                    "Invalid marker byte: {:x}",
+                    marker
+                ))
+                .into()),
             }
         })
-        .map_err(|_| DeserializeError("Panicked during deserialization".to_string()))?;
+        .map_err(|_| Error::DeserializationFailed("Panicked during deserialization".to_string()))?;
 
         Ok(result.map_err(|err: Error| {
-            DeserializeError(format!("Error creating Integer from Bytes: {}", err))
+            Error::DeserializationFailed(format!("Error creating Integer from Bytes: {}", err))
         })?)
     }
 }

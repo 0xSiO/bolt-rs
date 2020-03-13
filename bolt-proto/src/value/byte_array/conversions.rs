@@ -30,7 +30,7 @@ impl TryFrom<Value> for ByteArray {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Bytes(byte_array) => Ok(byte_array),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }

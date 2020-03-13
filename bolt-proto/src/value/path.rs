@@ -43,7 +43,7 @@ impl TryFrom<Value> for Path {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Path(path) => Ok(path),
-            _ => Err(ValueError::InvalidConversion(value).into()),
+            _ => Err(Error::InvalidValueConversion(value).into()),
         }
     }
 }
