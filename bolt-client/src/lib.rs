@@ -8,7 +8,6 @@
 //! use std::env;
 //! use std::iter::FromIterator;
 //!
-//! use failure::Error;
 //! use tokio::prelude::*;
 //!
 //! use bolt_client::Client;
@@ -17,7 +16,7 @@
 //! use bolt_proto::value::*;
 //!
 //! #[tokio::main]
-//! async fn main() -> Result<(), Error> {
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     // Create a new connection to the server and perform a handshake to establish a
 //!     // protocol version. In this example, all connection/authentication details are
 //!     // stored in environment variables. A domain is optional - including it will
@@ -75,7 +74,7 @@
 pub use self::client::Client;
 
 pub mod client;
-mod error;
+pub mod error;
 mod stream;
 
 // TODO: This shouldn't really be exposed

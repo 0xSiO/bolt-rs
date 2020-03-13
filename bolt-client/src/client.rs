@@ -34,7 +34,8 @@ impl Client {
         let stream = match domain {
             Some(domain) => {
                 let tls_connector = Client::configure_tls_connector(&TLS_SERVER_ROOTS);
-                let dns_name_ref = DNSNameRef::try_from_ascii_str(&domain)?;
+                let dns_name_ref = DNSNameRef::try_from_ascii_str(&domain)
+                    .map_err(|_| Error::InvalidDNSName(domain.to_string()))?;
                 let stream = TcpStream::connect(addr).await?;
                 Stream::SecureTcp(Box::new(tls_connector.connect(dns_name_ref, stream).await?))
             }
@@ -67,7 +68,7 @@ impl Client {
         if SUPPORTED_VERSIONS.contains(&version) {
             Ok(version)
         } else {
-            Err(ClientError::HandshakeFailed.into())
+            Err(Error::HandshakeFailed)
         }
     }
 
