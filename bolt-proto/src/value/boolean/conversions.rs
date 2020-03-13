@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 
 use crate::error::*;
+use crate::impl_try_from_value;
 use crate::value::Boolean;
 use crate::Value;
 
@@ -24,13 +25,4 @@ impl TryFrom<Value> for Boolean {
     }
 }
 
-impl TryFrom<Value> for bool {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Boolean(boolean) => Ok(boolean),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+impl_try_from_value!(bool, Boolean);

@@ -10,13 +10,13 @@ pub mod value;
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_try_from_value {
-    ($T:ident) => {
+    ($T:path, $V:ident) => {
         impl ::std::convert::TryFrom<$crate::Value> for $T {
             type Error = $crate::error::Error;
 
             fn try_from(value: $crate::Value) -> $crate::error::Result<Self> {
                 match value {
-                    $crate::Value::$T(inner) => Ok(inner),
+                    $crate::Value::$V(inner) => Ok(inner),
                     _ => Err($crate::error::Error::InvalidValueConversion(value).into()),
                 }
             }

@@ -1,10 +1,9 @@
 use std::convert::TryFrom;
 
-use crate::error::*;
+use crate::impl_try_from_value;
 use crate::value::Integer;
-use crate::Value;
 
-macro_rules! impl_from_int {
+macro_rules! impl_from_primitives_for_integer {
     ($($T:ty),+) => {
         $(
             impl From<$T> for $crate::value::Integer {
@@ -15,9 +14,9 @@ macro_rules! impl_from_int {
         )*
     };
 }
-impl_from_int!(i8, i16, i32, i64);
+impl_from_primitives_for_integer!(i8, i16, i32, i64);
 
-macro_rules! impl_from_wrapped_int {
+macro_rules! impl_from_integer_for_primitives {
     ($($T:ty),+) => {
         $(
             impl From<crate::value::Integer> for $T {
@@ -39,20 +38,11 @@ macro_rules! impl_from_wrapped_int {
         )*
     };
 }
-impl_from_wrapped_int!(i8, i16, i32, i64);
+impl_from_integer_for_primitives!(i8, i16, i32, i64);
 
-impl TryFrom<Value> for Integer {
-    type Error = Error;
+impl_try_from_value!(Integer, Integer);
 
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Integer(integer) => Ok(integer),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
-
-macro_rules! impl_from_value {
+macro_rules! impl_try_from_value_for_primitives {
     ($($T:ty),+) => {
         $(
             impl TryFrom<crate::Value> for $T {
@@ -68,4 +58,4 @@ macro_rules! impl_from_value {
         )*
     };
 }
-impl_from_value!(i8, i16, i32, i64);
+impl_try_from_value_for_primitives!(i8, i16, i32, i64);

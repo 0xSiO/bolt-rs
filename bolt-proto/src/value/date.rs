@@ -1,11 +1,9 @@
-use std::convert::TryFrom;
-
 use chrono::{Duration, NaiveDate};
 
 use bolt_proto_derive::*;
 
 use crate::error::*;
-use crate::Value;
+use crate::impl_try_from_value;
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x44;
@@ -48,19 +46,11 @@ impl From<Date> for NaiveDate {
     }
 }
 
-impl TryFrom<Value> for Date {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Date(date) => Ok(date),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+impl_try_from_value!(Date, Date);
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;

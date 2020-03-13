@@ -36,3 +36,6 @@ where
         Ok(map)
     }
 }
+
+// We don't need TryFrom<Value> for Map since it can be converted directly into a HashMap
+// impl_try_from_value!(Map, Map);

@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 
 use crate::error::*;
+use crate::impl_try_from_value;
 use crate::value::String;
 use crate::Value;
 
@@ -35,13 +36,6 @@ impl TryFrom<Value> for String {
     }
 }
 
-impl TryFrom<Value> for std::string::String {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::String(string) => Ok(string),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+// TODO: Consider implementing this for the wrapper type rather than the std type
+// Converting to the wrapper type involves copying the std type at the moment
+impl_try_from_value!(std::string::String, String);

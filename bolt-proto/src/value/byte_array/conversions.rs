@@ -1,8 +1,4 @@
-use std::convert::TryFrom;
-
-use crate::error::*;
 use crate::value::ByteArray;
-use crate::Value;
 
 impl From<&[u8]> for ByteArray {
     fn from(value: &[u8]) -> Self {
@@ -24,13 +20,5 @@ impl From<ByteArray> for Vec<u8> {
     }
 }
 
-impl TryFrom<Value> for ByteArray {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Bytes(byte_array) => Ok(byte_array),
-            _ => Err(Error::InvalidValueConversion(value).into()),
-        }
-    }
-}
+// We don't need TryFrom<Value> for ByteArray since it can be converted directly into a Vec
+// impl_try_from_value!(ByteArray, Bytes);
