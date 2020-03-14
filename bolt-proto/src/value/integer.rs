@@ -28,7 +28,7 @@ impl Marker for Integer {
             2 => self.bytes.clone().get_i16() as i64,
             4 => self.bytes.clone().get_i32() as i64,
             8 => self.bytes.clone().get_i64() as i64,
-            _ => return Err(Error::ValueTooLarge(self.bytes.len()).into()),
+            _ => return Err(Error::ValueTooLarge(self.bytes.len())),
         };
         match value {
             -9_223_372_036_854_775_808..=-2_147_483_649

@@ -17,6 +17,7 @@ pub struct DateTimeOffset {
 }
 
 impl DateTimeOffset {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         year: i32,
         month: u32,
