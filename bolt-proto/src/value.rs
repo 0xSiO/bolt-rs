@@ -10,6 +10,7 @@ pub(crate) use byte_array::ByteArray;
 pub(crate) use date::Date;
 pub(crate) use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
+pub(crate) use duration::Duration;
 pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
@@ -33,6 +34,7 @@ pub(crate) mod conversions;
 pub(crate) mod date;
 pub(crate) mod date_time_offset;
 pub(crate) mod date_time_zoned;
+pub(crate) mod duration;
 pub(crate) mod float;
 pub(crate) mod integer;
 pub(crate) mod list;
@@ -76,7 +78,7 @@ pub enum Value {
     LocalTime(LocalTime),
     // A date-time without a time zone
     LocalDateTime(LocalDateTime),
-    // Duration,
+    Duration(Duration),
     // Point,
 }
 
@@ -103,6 +105,7 @@ impl Hash for Value {
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.hash(state),
             Value::LocalTime(local_time) => local_time.hash(state),
             Value::LocalDateTime(local_date_time) => local_date_time.hash(state),
+            Value::Duration(duration) => duration.hash(state),
         }
     }
 }
@@ -137,6 +140,7 @@ impl Marker for Value {
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.get_marker(),
             Value::LocalTime(local_time) => local_time.get_marker(),
             Value::LocalDateTime(local_date_time) => local_date_time.get_marker(),
+            Value::Duration(duration) => duration.get_marker(),
         }
     }
 }
@@ -166,6 +170,7 @@ impl TryInto<Bytes> for Value {
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.try_into(),
             Value::LocalTime(local_time) => local_time.try_into(),
             Value::LocalDateTime(local_date_time) => local_date_time.try_into(),
+            Value::Duration(duration) => duration.try_into(),
         }
     }
 }
@@ -259,6 +264,7 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
         date_time_zoned::SIGNATURE => Ok(Value::DateTimeZoned(DateTimeZoned::try_from(input_arc)?)),
         local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
         local_date_time::SIGNATURE => Ok(Value::LocalDateTime(LocalDateTime::try_from(input_arc)?)),
+        duration::SIGNATURE => Ok(Value::Duration(Duration::try_from(input_arc)?)),
         _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
     }
 }

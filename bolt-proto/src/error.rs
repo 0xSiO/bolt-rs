@@ -10,12 +10,14 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    #[error("Value too large (length {0})")]
+    #[error("Value too large (size: {0})")]
     ValueTooLarge(usize),
+    #[error("Overflow encountered")]
+    Overflow,
     #[error("Invalid conversion from value {0:?}")]
-    InvalidValueConversion(Value),
+    InvalidValueConversion(Value), // TODO: Remove
     #[error("Invalid conversion from message {0:?}")]
-    InvalidMessageConversion(Message),
+    InvalidMessageConversion(Message), // TODO: Remove
     #[error("Invalid date: {0}-{1}-{2}")]
     InvalidDate(i32, u32, u32),
     #[error("Invalid time: {0}:{1}:{2}:{3}")]
@@ -25,7 +27,19 @@ pub enum Error {
     #[error("Invalid time zone ID: {0}")]
     InvalidTimeZoneId(String),
     #[error(transparent)]
+    ConversionError(#[from] ConversionError),
+    #[error(transparent)]
     DeserializationError(#[from] DeserializationError),
+}
+
+#[derive(Debug, Error)]
+pub enum ConversionError {
+    #[error("Panicked during conversion")]
+    Panicked,
+    #[error("Invalid conversion from value {0:?}")]
+    FromValue(Value),
+    #[error("Invalid conversion from message {0:?}")]
+    FromMessage(Message),
 }
 
 #[derive(Debug, Error)]
