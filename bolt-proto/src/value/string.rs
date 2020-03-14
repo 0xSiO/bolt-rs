@@ -28,7 +28,7 @@ impl Marker for String {
             16..=255 => Ok(MARKER_SMALL),
             256..=65_535 => Ok(MARKER_MEDIUM),
             65_536..=4_294_967_295 => Ok(MARKER_LARGE),
-            _ => Err(Error::ValueTooLarge(self.value.len()).into()),
+            _ => Err(Error::ValueTooLarge(self.value.len())),
         }
     }
 }
@@ -50,7 +50,7 @@ impl TryInto<Bytes> for String {
             16..=255 => bytes.put_u8(self.value.len() as u8),
             256..=65_535 => bytes.put_u16(self.value.len() as u16),
             65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
-            _ => return Err(Error::ValueTooLarge(self.value.len()).into()),
+            _ => return Err(Error::ValueTooLarge(self.value.len())),
         }
         bytes.put_slice(self.value.as_bytes());
         Ok(bytes.freeze())
@@ -80,9 +80,9 @@ impl TryFrom<Arc<Mutex<Bytes>>> for String {
             // We resize here so that the length of string_bytes is nonzero, which allows us to use copy_to_slice
             string_bytes.resize(size, 0);
             input_bytes.copy_to_slice(&mut string_bytes);
-            Ok(String::from(str::from_utf8(&string_bytes).map_err(
-                |utf8_err| DeserializationError::InvalidUTF8(utf8_err),
-            )?))
+            Ok(String::from(
+                str::from_utf8(&string_bytes).map_err(DeserializationError::InvalidUTF8)?,
+            ))
         })
         .map_err(|_| DeserializationError::Panicked)?
     }
