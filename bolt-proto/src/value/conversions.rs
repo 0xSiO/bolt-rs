@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::hash::Hash;
 
-use chrono::{DateTime, NaiveDate, TimeZone};
+use chrono::{DateTime, NaiveDate, NaiveTime, TimeZone};
 
 use crate::error::*;
 use crate::value::*;
@@ -130,6 +130,18 @@ impl From<DateTimeZoned> for Value {
 }
 
 // No zoned date-time in chrono, only FixedOffset. Can't determine a zone ID from a fixed offset.
+
+impl From<LocalTime> for Value {
+    fn from(value: LocalTime) -> Self {
+        Value::LocalTime(value)
+    }
+}
+
+impl From<NaiveTime> for Value {
+    fn from(value: NaiveTime) -> Self {
+        Value::LocalTime(LocalTime::from(value))
+    }
+}
 
 // ----------------------- INTO -----------------------
 

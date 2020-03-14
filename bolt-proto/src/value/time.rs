@@ -28,13 +28,12 @@ impl Time {
         let time = NaiveTime::from_hms_nano_opt(hour, minute, second, nanosecond)
             .ok_or(Error::InvalidTime(hour, minute, second, nanosecond))?;
         // Calculating the zone_offset may panic if it overflows
-        catch_unwind(|| {
-            Ok(Self {
-                nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
-                zone_offset: zone_offset.0 * 3600 + zone_offset.1 * 60,
-            })
+        let zone_offset = catch_unwind(|| zone_offset.0 * 3600 + zone_offset.1 * 60)
+            .map_err(|_| Error::InvalidTimeZoneOffset(zone_offset))?;
+        Ok(Self {
+            nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
+            zone_offset,
         })
-        .map_err(|_| Error::InvalidTimeZoneOffset(zone_offset))?
     }
 }
 
@@ -109,5 +108,14 @@ mod tests {
             Time::try_from(Arc::new(Mutex::new(Bytes::from_static(time_bytes)))).unwrap(),
             time
         );
+    }
+
+    #[test]
+    fn rejects_invalid_times() {
+        assert!(Time::new(0, 0, 0, 0, (0, 0)).is_ok());
+        assert!(Time::new(25, 0, 0, 0, (0, 0)).is_err());
+        assert!(Time::new(0, 60, 0, 0, (0, 0)).is_err());
+        assert!(Time::new(0, 0, 60, 0, (0, 0)).is_err());
+        assert!(Time::new(0, 0, 0, 0, (i32::max_value(), 0)).is_err());
     }
 }
