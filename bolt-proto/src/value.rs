@@ -81,8 +81,8 @@ pub enum Value {
     LocalTime(LocalTime),
     // A date-time without a time zone
     LocalDateTime(LocalDateTime),
-    // TODO: Other V2-compatible value types + tests
     Duration(Duration),
+    // TODO: Other V2-compatible value types + tests
     Point2D(Point2D),
     Point3D(Point3D),
 }
@@ -658,6 +658,16 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(local_date_time_bytes))).unwrap(),
             Value::LocalDateTime(local_date_time)
+        )
+    }
+
+    #[test]
+    fn duration_from_bytes() {
+        let duration = Duration::new(9876, 12345, 65332, 23435);
+        let duration_bytes = duration.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(duration_bytes))).unwrap(),
+            Value::Duration(duration)
         )
     }
 }
