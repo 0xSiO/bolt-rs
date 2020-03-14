@@ -17,7 +17,7 @@ macro_rules! impl_try_from_value {
             fn try_from(value: $crate::Value) -> $crate::error::Result<Self> {
                 match value {
                     $crate::Value::$V(inner) => Ok(inner),
-                    _ => Err($crate::error::Error::InvalidValueConversion(value).into()),
+                    _ => Err($crate::error::ConversionError::FromValue(value).into()),
                 }
             }
         }

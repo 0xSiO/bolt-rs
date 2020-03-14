@@ -51,7 +51,7 @@ macro_rules! impl_try_from_value_for_primitives {
                 fn try_from(value: crate::Value) -> crate::error::Result<Self> {
                     match value {
                         crate::Value::Integer(integer) => Ok(<$T>::from(integer)),
-                        _ => Err(crate::error::Error::InvalidValueConversion(value).into()),
+                        _ => Err(crate::error::ConversionError::FromValue(value).into()),
                     }
                 }
             }

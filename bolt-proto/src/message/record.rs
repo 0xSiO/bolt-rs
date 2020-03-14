@@ -29,7 +29,7 @@ impl TryFrom<Message> for Record {
     fn try_from(message: Message) -> Result<Self> {
         match message {
             Message::Record(record) => Ok(record),
-            _ => Err(Error::InvalidMessageConversion(message).into()),
+            _ => Err(ConversionError::FromMessage(message).into()),
         }
     }
 }
