@@ -49,7 +49,6 @@ mod tests {
     #[test]
     fn try_into_bytes() {
         let duration = get_duration();
-        dbg!(get_duration());
         assert_eq!(
             duration.try_into_bytes().unwrap(),
             Bytes::from_static(&[
