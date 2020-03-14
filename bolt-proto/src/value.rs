@@ -7,7 +7,7 @@ use bytes::{Buf, Bytes};
 
 pub(crate) use boolean::Boolean;
 pub(crate) use byte_array::ByteArray;
-pub(crate) use date::Date;
+pub use date::Date;
 pub(crate) use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
 pub(crate) use duration::Duration;
