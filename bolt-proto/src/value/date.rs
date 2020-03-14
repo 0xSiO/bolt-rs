@@ -1,9 +1,10 @@
-use chrono::{Duration, NaiveDate};
+use chrono::NaiveDate;
 
 use bolt_proto_derive::*;
 
 use crate::error::*;
-use crate::impl_try_from_value;
+
+mod conversions;
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x44;
@@ -21,22 +22,6 @@ impl Date {
         ))
     }
 }
-
-impl From<NaiveDate> for Date {
-    fn from(naive_date: NaiveDate) -> Self {
-        Self {
-            days_since_epoch: (naive_date - NaiveDate::from_ymd(1970, 1, 1)).num_days(),
-        }
-    }
-}
-
-impl From<Date> for NaiveDate {
-    fn from(date: Date) -> Self {
-        NaiveDate::from_ymd(1970, 1, 1) + Duration::days(date.days_since_epoch)
-    }
-}
-
-impl_try_from_value!(Date, Date);
 
 #[cfg(test)]
 mod tests {
