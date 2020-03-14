@@ -15,7 +15,7 @@ pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
 pub(crate) use local_date_time::LocalDateTime;
-pub(crate) use local_time::LocalTime;
+pub use local_time::LocalTime;
 pub(crate) use map::Map;
 pub use node::Node;
 pub(crate) use null::Null;
@@ -77,9 +77,9 @@ pub enum Value {
     DateTimeOffset(DateTimeOffset),
     // A date-time with a time zone ID, a.k.a. ZonedDateTime
     DateTimeZoned(DateTimeZoned),
-    // TODO: Other V2-compatible value types + tests
     // A time without a time zone
     LocalTime(LocalTime),
+    // TODO: Other V2-compatible value types + tests
     // A date-time without a time zone
     LocalDateTime(LocalDateTime),
     Duration(Duration),
@@ -638,6 +638,16 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
             Value::DateTimeZoned(date_time)
+        )
+    }
+
+    #[test]
+    fn local_time_from_bytes() {
+        let local_time = LocalTime::new(23, 59, 59, 999).unwrap();
+        let local_time_bytes = local_time.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(local_time_bytes))).unwrap(),
+            Value::LocalTime(local_time)
         )
     }
 }

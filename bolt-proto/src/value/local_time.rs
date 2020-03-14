@@ -3,7 +3,8 @@ use chrono::{NaiveTime, Timelike};
 use bolt_proto_derive::*;
 
 use crate::error::*;
-use crate::impl_try_from_value;
+
+mod conversions;
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x74;
@@ -22,16 +23,6 @@ impl LocalTime {
         })
     }
 }
-
-impl From<NaiveTime> for LocalTime {
-    fn from(naive_time: NaiveTime) -> Self {
-        Self {
-            nanos_since_midnight: naive_time.num_seconds_from_midnight() as i64 * 1_000_000_000,
-        }
-    }
-}
-
-impl_try_from_value!(LocalTime, LocalTime);
 
 #[cfg(test)]
 mod tests {
@@ -94,5 +85,14 @@ mod tests {
             LocalTime::try_from(Arc::new(Mutex::new(Bytes::from_static(time_bytes)))).unwrap(),
             time
         );
+    }
+
+    #[test]
+    fn rejects_invalid_times() {
+        assert!(LocalTime::new(0, 0, 0, 0).is_ok());
+        assert!(LocalTime::new(25, 0, 0, 0).is_err());
+        assert!(LocalTime::new(0, 60, 0, 0).is_err());
+        assert!(LocalTime::new(0, 0, 60, 0).is_err());
+        assert!(LocalTime::new(u32::max_value(), 0, 0, 0).is_err());
     }
 }
