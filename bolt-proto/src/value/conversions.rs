@@ -111,14 +111,15 @@ impl From<Time> for Value {
 // No conversion from timezone-aware time in chrono
 // chrono docs say this type is not implemented "due to the lack of usefulness and also the complexity"
 
-// DateTime w/ offset (year, month, day, hour, minute, second, nanosecond, zone offset)
-impl TryFrom<(i32, u32, u32, u32, u32, u32, u32, (i32, i32))> for Value {
-    type Error = Error;
+impl From<DateTimeOffset> for Value {
+    fn from(value: DateTimeOffset) -> Self {
+        Value::DateTimeOffset(value)
+    }
+}
 
-    fn try_from(value: (i32, u32, u32, u32, u32, u32, u32, (i32, i32))) -> Result<Self> {
-        Ok(Value::DateTimeOffset(DateTimeOffset::new(
-            value.0, value.1, value.2, value.3, value.4, value.5, value.6, value.7,
-        )?))
+impl<T: TimeZone> From<DateTime<T>> for Value {
+    fn from(value: DateTime<T>) -> Self {
+        Value::DateTimeOffset(DateTimeOffset::from(value))
     }
 }
 
