@@ -24,17 +24,7 @@ impl Date {
 
 impl From<NaiveDate> for Date {
     fn from(naive_date: NaiveDate) -> Self {
-        // TODO: Pick between one of these methods
-        println!(
-            "Subtraction epoch days: {}",
-            (naive_date - NaiveDate::from_ymd(1970, 1, 1)).num_days()
-        );
-        println!(
-            "Using timestamp(): {}",
-            naive_date.and_hms(0, 0, 0).timestamp() / Duration::days(1).num_seconds()
-        );
         Self {
-            // (seconds since epoch) / (seconds per day)
             days_since_epoch: (naive_date - NaiveDate::from_ymd(1970, 1, 1)).num_days(),
         }
     }
@@ -56,7 +46,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::serialization::*;
-    use crate::value::integer::MARKER_INT_16;
+    use crate::value::integer::{MARKER_INT_16, MARKER_INT_32};
 
     use super::*;
 
@@ -77,11 +67,23 @@ mod tests {
 
     #[test]
     fn try_from_bytes() {
-        let date = Date::new(1901, 12, 31).unwrap();
-        let date_bytes = &[MARKER_INT_16, 0x9E, 0xFA];
+        let past_date = Date::new(1901, 12, 31).unwrap();
+        let past_bytes = &[MARKER_INT_16, 0x9E, 0xFA];
+        let future_date = Date::new(3000, 5, 23).unwrap();
+        let future_bytes = &[MARKER_INT_32, 0x00, 0x05, 0xBE, 0x16];
         assert_eq!(
-            Date::try_from(Arc::new(Mutex::new(Bytes::from_static(date_bytes)))).unwrap(),
-            date
+            Date::try_from(Arc::new(Mutex::new(Bytes::from_static(past_bytes)))).unwrap(),
+            past_date
         );
+        assert_eq!(
+            Date::try_from(Arc::new(Mutex::new(Bytes::from_static(future_bytes)))).unwrap(),
+            future_date
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_date() {
+        assert!(Date::new(2019, 1, 0).is_err());
+        assert!(Date::new(2000, 13, 1).is_err());
     }
 }
