@@ -24,7 +24,7 @@ pub(crate) use point_2d::Point2D;
 pub(crate) use point_3d::Point3D;
 pub use relationship::Relationship;
 pub(crate) use string::String;
-pub(crate) use time::Time;
+pub use time::Time;
 pub use unbound_relationship::UnboundRelationship;
 
 use crate::error::*;
