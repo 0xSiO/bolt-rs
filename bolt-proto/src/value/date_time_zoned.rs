@@ -1,12 +1,11 @@
-use chrono::{
-    DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone, Timelike,
-};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use chrono_tz::Tz;
 
 use bolt_proto_derive::*;
 
 use crate::error::*;
-use crate::impl_try_from_value;
+
+mod conversions;
 
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x66;
@@ -46,29 +45,127 @@ impl DateTimeZoned {
     }
 }
 
-// Can't impl<T: TimeZone> From<DateTime<T>> for DateTimeZoned, since we can't get a timezone name from an Offset
-
-impl From<DateTimeZoned> for DateTime<FixedOffset> {
-    fn from(date_time_zoned: DateTimeZoned) -> Self {
-        // Time zone guaranteed to be valid in existing objects, ok to unwrap
-        let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
-        let timezone: FixedOffset = timezone
-            // TODO: Check if any random date works here (it should...)
-            .offset_from_utc_date(&NaiveDate::from_ymd(2020, 1, 1))
-            .fix();
-        timezone.timestamp(date_time_zoned.epoch_seconds, date_time_zoned.nanos as u32)
-    }
-}
-
-impl From<DateTimeZoned> for DateTime<Tz> {
-    fn from(date_time_zoned: DateTimeZoned) -> Self {
-        // Time zone guaranteed to be valid in existing objects, ok to unwrap
-        let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
-        timezone.timestamp(date_time_zoned.epoch_seconds, date_time_zoned.nanos as u32)
-    }
-}
-
-impl_try_from_value!(DateTimeZoned, DateTimeZoned);
-
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use std::convert::TryFrom;
+    use std::sync::{Arc, Mutex};
+
+    use bytes::Bytes;
+
+    use crate::serialization::*;
+    use crate::value::integer::{MARKER_INT_32, MARKER_INT_64};
+    use crate::value::string;
+
+    use super::*;
+
+    fn get_date_time() -> DateTimeZoned {
+        let zone = "Antarctica/Rothera".to_string();
+        DateTimeZoned::new(3500, 7, 29, 13, 05, 01, 123456, zone).unwrap()
+    }
+
+    #[test]
+    fn get_marker() {
+        let time = get_date_time();
+        assert_eq!(time.get_marker().unwrap(), MARKER);
+    }
+
+    #[test]
+    fn try_into_bytes() {
+        let date_time_offset = get_date_time();
+        assert_eq!(
+            date_time_offset.try_into_bytes().unwrap(),
+            Bytes::from_static(&[
+                MARKER,
+                SIGNATURE,
+                MARKER_INT_64,
+                0x00,
+                0x00,
+                0x00,
+                0x0B,
+                0x3E,
+                0xEB,
+                0x28,
+                0xFD,
+                MARKER_INT_32,
+                0x00,
+                0x01,
+                0xE2,
+                0x40,
+                string::MARKER_SMALL,
+                18,
+                b'A',
+                b'n',
+                b't',
+                b'a',
+                b'r',
+                b'c',
+                b't',
+                b'i',
+                b'c',
+                b'a',
+                b'/',
+                b'R',
+                b'o',
+                b't',
+                b'h',
+                b'e',
+                b'r',
+                b'a'
+            ])
+        );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let date_time_offset = get_date_time();
+        let date_time_bytes = &[
+            MARKER_INT_64,
+            0x00,
+            0x00,
+            0x00,
+            0x0B,
+            0x3E,
+            0xEB,
+            0x28,
+            0xFD,
+            MARKER_INT_32,
+            0x00,
+            0x01,
+            0xE2,
+            0x40,
+            string::MARKER_SMALL,
+            18,
+            b'A',
+            b'n',
+            b't',
+            b'a',
+            b'r',
+            b'c',
+            b't',
+            b'i',
+            b'c',
+            b'a',
+            b'/',
+            b'R',
+            b'o',
+            b't',
+            b'h',
+            b'e',
+            b'r',
+            b'a',
+        ];
+        assert_eq!(
+            DateTimeZoned::try_from(Arc::new(Mutex::new(Bytes::from_static(date_time_bytes))))
+                .unwrap(),
+            date_time_offset
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_date_time() {
+        assert!(DateTimeZoned::new(2015, 1, 1, 1, 1, 1, 1, "UTC".to_string()).is_ok());
+        assert!(DateTimeZoned::new(2015, 13, 1, 1, 1, 1, 1, "UTC".to_string()).is_err());
+        assert!(DateTimeZoned::new(2015, 1, 32, 1, 1, 1, 1, "UTC".to_string()).is_err());
+        assert!(DateTimeZoned::new(2015, 1, 1, 1, 1, 1, 1, "INVALID".to_string()).is_err());
+    }
+}

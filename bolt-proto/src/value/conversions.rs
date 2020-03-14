@@ -108,7 +108,7 @@ impl From<Time> for Value {
     }
 }
 
-// No conversion from timezone-aware time in chrono
+// No timezone-aware time in chrono
 // chrono docs say this type is not implemented "due to the lack of usefulness and also the complexity"
 
 impl From<DateTimeOffset> for Value {
@@ -123,16 +123,13 @@ impl<T: TimeZone> From<DateTime<T>> for Value {
     }
 }
 
-// DateTime w/ zone ID (year, month, day, hour, minute, second, nanosecond, zone id)
-impl TryFrom<(i32, u32, u32, u32, u32, u32, u32, std::string::String)> for Value {
-    type Error = Error;
-
-    fn try_from(value: (i32, u32, u32, u32, u32, u32, u32, std::string::String)) -> Result<Self> {
-        Ok(Value::DateTimeZoned(DateTimeZoned::new(
-            value.0, value.1, value.2, value.3, value.4, value.5, value.6, value.7,
-        )?))
+impl From<DateTimeZoned> for Value {
+    fn from(value: DateTimeZoned) -> Self {
+        Value::DateTimeZoned(value)
     }
 }
+
+// No zoned date-time in chrono, only FixedOffset. Can't determine a zone ID from a fixed offset.
 
 // ----------------------- INTO -----------------------
 
