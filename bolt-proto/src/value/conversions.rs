@@ -102,23 +102,14 @@ impl From<NaiveDate> for Value {
     }
 }
 
-// Time (hour, minute, second, nanosecond, zone offset)
-impl TryFrom<(u32, u32, u32, u32, (i32, i32))> for Value {
-    type Error = Error;
-
-    fn try_from(value: (u32, u32, u32, u32, (i32, i32))) -> Result<Self> {
-        Ok(Value::Time(Time::new(
-            value.0, value.1, value.2, value.3, value.4,
-        )?))
+impl From<Time> for Value {
+    fn from(value: Time) -> Self {
+        Value::Time(value)
     }
 }
 
-// TODO: This should be implemented using DateTime, not Time
-impl<T: TimeZone> From<DateTime<T>> for Value {
-    fn from(value: DateTime<T>) -> Self {
-        Value::Time(Time::from(value))
-    }
-}
+// No conversion from timezone-aware time in chrono
+// chrono docs say this type is not implemented "due to the lack of usefulness and also the complexity"
 
 // DateTime w/ offset (year, month, day, hour, minute, second, nanosecond, zone offset)
 impl TryFrom<(i32, u32, u32, u32, u32, u32, u32, (i32, i32))> for Value {

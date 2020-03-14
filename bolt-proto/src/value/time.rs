@@ -1,9 +1,12 @@
-use chrono::{DateTime, NaiveTime, Offset, TimeZone, Timelike};
+use std::panic::catch_unwind;
+
+use chrono::{NaiveTime, Timelike};
 
 use bolt_proto_derive::*;
 
 use crate::error::*;
-use crate::impl_try_from_value;
+
+mod conversions;
 
 pub(crate) const MARKER: u8 = 0xB2;
 pub(crate) const SIGNATURE: u8 = 0x54;
@@ -19,28 +22,21 @@ impl Time {
         hour: u32,
         minute: u32,
         second: u32,
-        fraction: u32,
+        nanosecond: u32,
         zone_offset: (i32, i32),
     ) -> Result<Self> {
-        let time = NaiveTime::from_hms_nano_opt(hour, minute, second, fraction)
-            .ok_or(Error::InvalidTime(hour, minute, second, fraction))?;
-        Ok(Self {
-            nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
-            zone_offset: zone_offset.0 * 3600 + zone_offset.1 * 60,
+        let time = NaiveTime::from_hms_nano_opt(hour, minute, second, nanosecond)
+            .ok_or(Error::InvalidTime(hour, minute, second, nanosecond))?;
+        // Calculating the zone_offset may panic if it overflows
+        catch_unwind(|| {
+            Ok(Self {
+                nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
+                zone_offset: zone_offset.0 * 3600 + zone_offset.1 * 60,
+            })
         })
+        .map_err(|_| Error::InvalidTimeZoneOffset(zone_offset))?
     }
 }
-
-impl<T: TimeZone> From<DateTime<T>> for Time {
-    fn from(date_time: DateTime<T>) -> Self {
-        Self {
-            nanos_since_midnight: date_time.num_seconds_from_midnight() as i64 * 1_000_000_000,
-            zone_offset: date_time.offset().fix().local_minus_utc(),
-        }
-    }
-}
-
-impl_try_from_value!(Time, Time);
 
 #[cfg(test)]
 mod tests {
@@ -48,7 +44,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
-    use chrono::{FixedOffset, NaiveDateTime};
+    use chrono::{DateTime, FixedOffset, NaiveDateTime};
 
     use crate::serialization::*;
     use crate::value::integer::{MARKER_INT_16, MARKER_INT_64};
