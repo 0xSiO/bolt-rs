@@ -155,6 +155,18 @@ impl From<NaiveDateTime> for Value {
     }
 }
 
+impl From<Duration> for Value {
+    fn from(value: Duration) -> Self {
+        Value::Duration(value)
+    }
+}
+
+impl From<std::time::Duration> for Value {
+    fn from(value: std::time::Duration) -> Self {
+        Value::Duration(Duration::from(value))
+    }
+}
+
 // ----------------------- INTO -----------------------
 
 impl<T> TryInto<Vec<T>> for Value
