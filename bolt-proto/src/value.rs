@@ -8,7 +8,7 @@ use bytes::{Buf, Bytes};
 pub(crate) use boolean::Boolean;
 pub(crate) use byte_array::ByteArray;
 pub use date::Date;
-pub(crate) use date_time_offset::DateTimeOffset;
+pub use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
 pub(crate) use duration::Duration;
 pub(crate) use float::Float;
@@ -73,9 +73,9 @@ pub enum Value {
     Date(Date),
     // A time with a UTC offset, a.k.a. OffsetTime
     Time(Time),
-    // TODO: Other V2-compatible value types + tests
     // A date-time with a UTC offset, a.k.a. OffsetDateTime
     DateTimeOffset(DateTimeOffset),
+    // TODO: Other V2-compatible value types + tests
     // A date-time with a time zone ID, a.k.a. ZonedDateTime
     DateTimeZoned(DateTimeZoned),
     // A time without a time zone
@@ -618,5 +618,15 @@ mod tests {
             Value::try_from(Arc::new(Mutex::new(about_four_pm_pacific_bytes))).unwrap(),
             Value::Time(about_four_pm_pacific)
         );
+    }
+
+    #[test]
+    fn date_time_offset_from_bytes() {
+        let date_time = DateTimeOffset::new(2050, 12, 31, 23, 59, 59, 10, (-5, 0)).unwrap();
+        let date_time_bytes = date_time.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
+            Value::DateTimeOffset(date_time)
+        )
     }
 }
