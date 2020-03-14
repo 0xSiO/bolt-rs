@@ -36,3 +36,105 @@ impl Point3D {
 }
 
 impl_try_from_value!(Point3D, Point3D);
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+    use std::sync::{Arc, Mutex};
+
+    use bytes::Bytes;
+
+    use crate::serialization::*;
+    use crate::value::float::MARKER as FLOAT_MARKER;
+
+    use super::*;
+
+    fn get_point() -> Point3D {
+        Point3D::new(7, 1234.56543, 5421394.5693251, 1.9287)
+    }
+
+    #[test]
+    fn get_marker() {
+        let point = get_point();
+        assert_eq!(point.get_marker().unwrap(), MARKER);
+    }
+
+    #[test]
+    fn try_into_bytes() {
+        let point = get_point();
+        assert_eq!(
+            point.try_into_bytes().unwrap(),
+            Bytes::from_static(&[
+                MARKER,
+                SIGNATURE,
+                0x07,
+                FLOAT_MARKER,
+                0x40,
+                0x93,
+                0x4A,
+                0x43,
+                0x00,
+                0x14,
+                0xF8,
+                0xB6,
+                FLOAT_MARKER,
+                0x41,
+                0x54,
+                0xAE,
+                0x54,
+                0xA4,
+                0x6F,
+                0xD2,
+                0x8B,
+                FLOAT_MARKER,
+                0x3F,
+                0xFE,
+                0xDB,
+                0xF4,
+                0x87,
+                0xFC,
+                0xB9,
+                0x24
+            ])
+        );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let point = get_point();
+        let point_bytes = &[
+            0x07,
+            FLOAT_MARKER,
+            0x40,
+            0x93,
+            0x4A,
+            0x43,
+            0x00,
+            0x14,
+            0xF8,
+            0xB6,
+            FLOAT_MARKER,
+            0x41,
+            0x54,
+            0xAE,
+            0x54,
+            0xA4,
+            0x6F,
+            0xD2,
+            0x8B,
+            FLOAT_MARKER,
+            0x3F,
+            0xFE,
+            0xDB,
+            0xF4,
+            0x87,
+            0xFC,
+            0xB9,
+            0x24,
+        ];
+        assert_eq!(
+            Point3D::try_from(Arc::new(Mutex::new(Bytes::from_static(point_bytes)))).unwrap(),
+            point
+        );
+    }
+}

@@ -14,14 +14,14 @@ pub(crate) use duration::Duration;
 pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
-pub(crate) use local_date_time::LocalDateTime;
+pub use local_date_time::LocalDateTime;
 pub use local_time::LocalTime;
 pub(crate) use map::Map;
 pub use node::Node;
 pub(crate) use null::Null;
 pub use path::Path;
-pub(crate) use point_2d::Point2D;
-pub(crate) use point_3d::Point3D;
+pub use point_2d::Point2D;
+pub use point_3d::Point3D;
 pub use relationship::Relationship;
 pub(crate) use string::String;
 pub use time::Time;
@@ -627,7 +627,7 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
             Value::DateTimeOffset(date_time)
-        )
+        );
     }
 
     #[test]
@@ -638,7 +638,7 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
             Value::DateTimeZoned(date_time)
-        )
+        );
     }
 
     #[test]
@@ -648,7 +648,7 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(local_time_bytes))).unwrap(),
             Value::LocalTime(local_time)
-        )
+        );
     }
 
     #[test]
@@ -658,7 +658,7 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(local_date_time_bytes))).unwrap(),
             Value::LocalDateTime(local_date_time)
-        )
+        );
     }
 
     #[test]
@@ -668,6 +668,23 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(duration_bytes))).unwrap(),
             Value::Duration(duration)
-        )
+        );
+    }
+
+    #[test]
+    fn point_from_bytes() {
+        let point2d = Point2D::new(9876, 12.312345, 134564.123567543);
+        let point2d_bytes = point2d.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(point2d_bytes))).unwrap(),
+            Value::Point2D(point2d)
+        );
+
+        let point3d = Point3D::new(249, 543.598387, 2945732849.29385, 45438.874385);
+        let point3d_bytes = point3d.clone().try_into_bytes().unwrap();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(point3d_bytes))).unwrap(),
+            Value::Point3D(point3d)
+        );
     }
 }

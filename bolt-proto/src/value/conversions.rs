@@ -167,6 +167,18 @@ impl From<std::time::Duration> for Value {
     }
 }
 
+impl From<Point2D> for Value {
+    fn from(value: Point2D) -> Self {
+        Value::Point2D(value)
+    }
+}
+
+impl From<Point3D> for Value {
+    fn from(value: Point3D) -> Self {
+        Value::Point3D(value)
+    }
+}
+
 // ----------------------- INTO -----------------------
 
 impl<T> TryInto<Vec<T>> for Value
