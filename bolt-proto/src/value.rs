@@ -20,6 +20,8 @@ pub(crate) use map::Map;
 pub use node::Node;
 pub(crate) use null::Null;
 pub use path::Path;
+pub(crate) use point_2d::Point2D;
+pub(crate) use point_3d::Point3D;
 pub use relationship::Relationship;
 pub(crate) use string::String;
 pub(crate) use time::Time;
@@ -44,6 +46,8 @@ pub(crate) mod map;
 pub(crate) mod node;
 pub(crate) mod null;
 pub(crate) mod path;
+pub(crate) mod point_2d;
+pub(crate) mod point_3d;
 pub(crate) mod relationship;
 pub(crate) mod string;
 pub(crate) mod time;
@@ -79,7 +83,8 @@ pub enum Value {
     // A date-time without a time zone
     LocalDateTime(LocalDateTime),
     Duration(Duration),
-    // Point,
+    Point2D(Point2D),
+    Point3D(Point3D),
 }
 
 #[allow(clippy::derive_hash_xor_eq)]
@@ -93,7 +98,9 @@ impl Hash for Value {
             | Value::Node(_)
             | Value::Relationship(_)
             | Value::UnboundRelationship(_)
-            | Value::Path(_) => panic!("Cannot hash a {:?}", self),
+            | Value::Path(_)
+            | Value::Point2D(_)
+            | Value::Point3D(_) => panic!("Cannot hash a {:?}", self),
             Value::Boolean(boolean) => boolean.hash(state),
             Value::Integer(integer) => integer.hash(state),
             Value::List(list) => list.hash(state),
@@ -112,8 +119,8 @@ impl Hash for Value {
 
 impl Eq for Value {
     fn assert_receiver_is_total_eq(&self) {
-        if let Value::Float(_) = self {
-            panic!("Floats do not impl Eq")
+        if let Value::Float(_) | Value::Point2D(_) | Value::Point3D(_) = self {
+            panic!("{:?} does not impl Eq", self)
         }
     }
 }
@@ -141,6 +148,8 @@ impl Marker for Value {
             Value::LocalTime(local_time) => local_time.get_marker(),
             Value::LocalDateTime(local_date_time) => local_date_time.get_marker(),
             Value::Duration(duration) => duration.get_marker(),
+            Value::Point2D(point_2d) => point_2d.get_marker(),
+            Value::Point3D(point_3d) => point_3d.get_marker(),
         }
     }
 }
@@ -171,6 +180,8 @@ impl TryInto<Bytes> for Value {
             Value::LocalTime(local_time) => local_time.try_into(),
             Value::LocalDateTime(local_date_time) => local_date_time.try_into(),
             Value::Duration(duration) => duration.try_into(),
+            Value::Point2D(point_2d) => point_2d.try_into(),
+            Value::Point3D(point_3d) => point_3d.try_into(),
         }
     }
 }
@@ -265,6 +276,8 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
         local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
         local_date_time::SIGNATURE => Ok(Value::LocalDateTime(LocalDateTime::try_from(input_arc)?)),
         duration::SIGNATURE => Ok(Value::Duration(Duration::try_from(input_arc)?)),
+        point_2d::SIGNATURE => Ok(Value::Point2D(Point2D::try_from(input_arc)?)),
+        point_3d::SIGNATURE => Ok(Value::Point3D(Point3D::try_from(input_arc)?)),
         _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
     }
 }
