@@ -31,7 +31,7 @@ impl TryFrom<Value> for String {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::String(string) => Ok(String::from(string)),
-            _ => Err(Error::InvalidValueConversion(value).into()),
+            _ => Err(ConversionError::FromValue(value).into()),
         }
     }
 }

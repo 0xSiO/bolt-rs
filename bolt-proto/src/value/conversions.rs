@@ -142,7 +142,7 @@ where
     fn try_into(self) -> Result<Vec<T>> {
         match self {
             Value::List(list) => list.try_into(),
-            _ => Err(Error::InvalidValueConversion(self).into()),
+            _ => Err(ConversionError::FromValue(self).into()),
         }
     }
 }
@@ -153,7 +153,7 @@ impl TryInto<Vec<u8>> for Value {
     fn try_into(self) -> Result<Vec<u8>> {
         match self {
             Value::Bytes(byte_array) => Ok(byte_array.into()),
-            _ => Err(Error::InvalidValueConversion(self).into()),
+            _ => Err(ConversionError::FromValue(self).into()),
         }
     }
 }
@@ -164,7 +164,7 @@ impl TryInto<Vec<Value>> for Value {
     fn try_into(self) -> Result<Vec<Value>> {
         match self {
             Value::List(list) => list.try_into(),
-            _ => Err(Error::InvalidValueConversion(self).into()),
+            _ => Err(ConversionError::FromValue(self).into()),
         }
     }
 }
@@ -179,7 +179,7 @@ where
     fn try_into(self) -> Result<HashMap<K, V>> {
         match self {
             Value::Map(map) => Ok(map.try_into()?),
-            _ => Err(Error::InvalidValueConversion(self).into()),
+            _ => Err(ConversionError::FromValue(self).into()),
         }
     }
 }
@@ -193,7 +193,7 @@ where
     fn try_into(self) -> Result<HashMap<K, Value>> {
         match self {
             Value::Map(map) => Ok(map.try_into()?),
-            _ => Err(Error::InvalidValueConversion(self).into()),
+            _ => Err(ConversionError::FromValue(self).into()),
         }
     }
 }

@@ -38,7 +38,7 @@ impl TryFrom<Message> for Init {
     fn try_from(message: Message) -> Result<Self> {
         match message {
             Message::Init(init) => Ok(init),
-            _ => Err(Error::InvalidMessageConversion(message).into()),
+            _ => Err(ConversionError::FromMessage(message).into()),
         }
     }
 }

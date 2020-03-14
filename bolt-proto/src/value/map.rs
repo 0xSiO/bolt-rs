@@ -44,7 +44,7 @@ impl TryFrom<Value> for Map {
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Map(map) => Ok(map),
-            _ => Err(Error::InvalidValueConversion(value).into()),
+            _ => Err(ConversionError::FromValue(value).into()),
         }
     }
 }
