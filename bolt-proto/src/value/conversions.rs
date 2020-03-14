@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::hash::Hash;
 
-use chrono::{DateTime, NaiveDate, NaiveTime, TimeZone};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
 use crate::error::*;
 use crate::value::*;
@@ -140,6 +140,18 @@ impl From<LocalTime> for Value {
 impl From<NaiveTime> for Value {
     fn from(value: NaiveTime) -> Self {
         Value::LocalTime(LocalTime::from(value))
+    }
+}
+
+impl From<LocalDateTime> for Value {
+    fn from(value: LocalDateTime) -> Self {
+        Value::LocalDateTime(value)
+    }
+}
+
+impl From<NaiveDateTime> for Value {
+    fn from(value: NaiveDateTime) -> Self {
+        Value::LocalDateTime(LocalDateTime::from(value))
     }
 }
 
