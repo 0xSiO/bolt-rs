@@ -19,7 +19,6 @@ mod v1;
 mod v3;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
-const SUPPORTED_VERSIONS: [u32; 4] = [1, 0, 0, 0];
 
 #[derive(Debug)]
 pub struct Client {
@@ -41,12 +40,10 @@ impl Client {
             }
             None => Stream::Tcp(TcpStream::connect(addr).await?),
         };
-        let mut client = Client {
+        Ok(Client {
             stream: BufStream::new(stream),
             version: 0,
-        };
-        client.version = client.handshake().await?;
-        Ok(client)
+        })
     }
 
     fn configure_tls_connector(root_certs: &webpki::TLSServerTrustAnchors) -> TlsConnector {
@@ -55,9 +52,10 @@ impl Client {
         TlsConnector::from(Arc::new(config))
     }
 
-    async fn handshake(&mut self) -> Result<u32> {
+    /// Perform a handshake with the Bolt server and agree upon a protocol version to use for the client.
+    pub async fn handshake(&mut self, supported_versions: &[u32; 4]) -> Result<()> {
         let mut allowed_versions = BytesMut::with_capacity(16);
-        SUPPORTED_VERSIONS
+        supported_versions
             .iter()
             .for_each(|&v| allowed_versions.put_u32(v));
         self.stream.write(&PREAMBLE).await?;
@@ -65,8 +63,9 @@ impl Client {
         self.stream.flush().await?;
 
         let version = self.stream.read_u32().await?;
-        if SUPPORTED_VERSIONS.contains(&version) {
-            Ok(version)
+        if supported_versions.contains(&version) {
+            self.version = version;
+            Ok(())
         } else {
             Err(Error::HandshakeFailed)
         }
