@@ -214,17 +214,17 @@ pub(crate) mod tests {
     use bolt_proto::message::*;
     use bolt_proto::value::*;
 
-    use crate::compatible_versions;
+    use crate::skip_if_err;
 
     use super::*;
 
-    pub(crate) async fn new_client() -> Result<Client> {
+    pub(crate) async fn new_client(version: u32) -> Result<Client> {
         let mut client = Client::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
         )
         .await?;
-        client.handshake(&[1, 0, 0, 0]).await?; // We only want v1 here
+        client.handshake(&[version, 0, 0, 0]).await?;
         Ok(client)
     }
 
@@ -236,7 +236,8 @@ pub(crate) mod tests {
             "invalid".to_string()
         };
 
-        if [1, 2].contains(&client.version) {
+        let version = client.version.unwrap();
+        if [1_u32, 2_u32].contains(&version) {
             client
                 .init(
                     "bolt-client/X.Y.Z".to_string(),
@@ -262,8 +263,8 @@ pub(crate) mod tests {
         }
     }
 
-    pub(crate) async fn get_initialized_client() -> Result<Client> {
-        let mut client = new_client().await?;
+    pub(crate) async fn get_initialized_client(version: u32) -> Result<Client> {
+        let mut client = new_client(version).await?;
         initialize_client(&mut client, true).await?;
         Ok(client)
     }
@@ -280,16 +281,18 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn init() {
-        let mut client = new_client().await.unwrap();
-        compatible_versions!(client, 1, 2);
+        let client = new_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = initialize_client(&mut client, true).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn init_fail() {
-        let mut client = new_client().await.unwrap();
-        compatible_versions!(client, 1, 2);
+        let client = new_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
     }
@@ -298,8 +301,9 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn ack_failure() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = client.ack_failure().await.unwrap();
@@ -310,8 +314,9 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn ack_failure_after_ignored() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
@@ -327,16 +332,18 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn run() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn run_pipelined() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let messages = vec![
             Message::Run(Run::new("MATCH (n) DETACH DELETE n;".to_string(), Default::default())),
             Message::PullAll,
@@ -368,8 +375,9 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn run_and_pull() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = client
             .run("RETURN 3458376 as n;".to_string(), None)
             .await
@@ -384,8 +392,9 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn node_and_rel_creation() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let statement = "MATCH (n) DETACH DELETE n;".to_string();
         client.run(statement, None).await.unwrap();
         client.pull_all().await.unwrap();
@@ -420,16 +429,18 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn discard_all_fail() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2, 3);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = client.discard_all().await.unwrap();
         assert!(Failure::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn discard_all() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2, 3);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = client.discard_all().await.unwrap();
@@ -438,8 +449,9 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn discard_all_and_pull() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2, 3);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = client.discard_all().await.unwrap();
@@ -451,8 +463,9 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn reset() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2, 3);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
@@ -468,8 +481,9 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn ignored() {
-        let mut client = get_initialized_client().await.unwrap();
-        compatible_versions!(client, 1, 2, 3);
+        let client = get_initialized_client(1).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();

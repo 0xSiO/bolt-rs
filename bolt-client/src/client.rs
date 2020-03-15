@@ -23,7 +23,7 @@ const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 #[derive(Debug)]
 pub struct Client {
     pub(crate) stream: BufStream<Stream>,
-    pub(crate) version: u32,
+    pub(crate) version: Option<u32>,
 }
 
 impl Client {
@@ -42,7 +42,7 @@ impl Client {
         };
         Ok(Client {
             stream: BufStream::new(stream),
-            version: 0,
+            version: None,
         })
     }
 
@@ -63,8 +63,8 @@ impl Client {
         self.stream.flush().await?;
 
         let version = self.stream.read_u32().await?;
-        if supported_versions.contains(&version) {
-            self.version = version;
+        if supported_versions.contains(&version) && version > 0 {
+            self.version = Some(version);
             Ok(())
         } else {
             Err(Error::HandshakeFailed)

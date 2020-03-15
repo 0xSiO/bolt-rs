@@ -23,22 +23,24 @@ mod tests {
     use std::convert::TryFrom;
 
     use crate::client::v1::tests::*;
-    use crate::compatible_versions;
+    use crate::skip_if_err;
 
     use super::*;
 
     #[tokio::test]
     async fn hello() {
-        let mut client = new_client().await.unwrap();
-        compatible_versions!(client, 3, 4);
+        let client = new_client(3).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = initialize_client(&mut client, true).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
     #[tokio::test]
     async fn hello_fail() {
-        let mut client = new_client().await.unwrap();
-        compatible_versions!(client, 3, 4);
+        let client = new_client(3).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
     }
