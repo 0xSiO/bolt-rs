@@ -59,8 +59,7 @@ pub enum Value {
     Boolean(bool),
     Integer(Integer),
     Float(f64),
-    // Bytes was added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
-    Bytes(ByteArray),
+    Bytes(ByteArray), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
     List(List),
     Map(Map),
     Null,
@@ -69,20 +68,15 @@ pub enum Value {
     Relationship(Relationship),
     Path(Path),
     UnboundRelationship(UnboundRelationship),
-    // A date without a time zone, a.k.a. LocalDate
-    Date(Date),
-    // A time with a UTC offset, a.k.a. OffsetTime
-    Time(Time),
-    // A date-time with a UTC offset, a.k.a. OffsetDateTime
-    DateTimeOffset(DateTimeOffset),
-    // A date-time with a time zone ID, a.k.a. ZonedDateTime
-    DateTimeZoned(DateTimeZoned),
-    // A time without a time zone
-    LocalTime(LocalTime),
-    // A date-time without a time zone
-    LocalDateTime(LocalDateTime),
+
+    // V2-compatible value types
+    Date(Date),                     // A date without a time zone, a.k.a. LocalDate
+    Time(Time),                     // A time with a UTC offset, a.k.a. OffsetTime
+    DateTimeOffset(DateTimeOffset), // A date-time with a UTC offset, a.k.a. OffsetDateTime
+    DateTimeZoned(DateTimeZoned),   // A date-time with a time zone ID, a.k.a. ZonedDateTime
+    LocalTime(LocalTime),           // A time without a time zone
+    LocalDateTime(LocalDateTime),   // A date-time without a time zone
     Duration(Duration),
-    // TODO: Other V2-compatible value types + tests
     Point2D(Point2D),
     Point3D(Point3D),
 }
