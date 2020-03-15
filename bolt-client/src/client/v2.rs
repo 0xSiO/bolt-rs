@@ -131,6 +131,23 @@ mod tests {
                 NaiveTime::from_hms_nano(12, 30, 1, 500)
             ))]
         );
+
+        let response = client
+            .run(
+                "RETURN point({x: 42.5123, y: 1.123, z: 3214});".to_string(),
+                None,
+            )
+            .await
+            .unwrap();
+        assert!(Success::try_from(response).is_ok());
+
+        let (response, records) = client.pull_all().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+        assert_eq!(records.len(), 1);
+        assert_eq!(
+            records[0].fields(),
+            &[Value::from(Point3D::new(9157, 42.5123, 1.123, 3214.0))]
+        );
     }
 
     #[tokio::test]
