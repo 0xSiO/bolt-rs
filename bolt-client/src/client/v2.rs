@@ -143,7 +143,7 @@ mod tests {
         client.pull_all().await.unwrap();
 
         let statement =
-            "CREATE (:Client {name: 'bolt-client', test: 'v2-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v2-node-rel'});"
+            "CREATE (:Client {name: 'bolt-client', starting: datetime('2019-12-19T16:08:04-08:00'), test: 'v2-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v2-node-rel'});"
                 .to_string();
         client.run(statement, None).await.unwrap();
         client.pull_all().await.unwrap();
@@ -160,6 +160,12 @@ mod tests {
         assert_eq!(
             c.properties().get("name"),
             Some(&Value::from("bolt-client"))
+        );
+        assert_eq!(
+            c.properties().get("starting"),
+            Some(&Value::from(
+                DateTimeOffset::new(2019, 12, 19, 16, 8, 4, 0, (-8, 0)).unwrap()
+            ))
         );
         assert_eq!(l.labels(), &["Language".to_string()]);
         assert_eq!(l.properties().get("name"), Some(&Value::from("Rust")));
