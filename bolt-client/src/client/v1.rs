@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bolt_client_macros::*;
 use bolt_proto::message::*;
 use bolt_proto::{Message, Value};
 
@@ -26,6 +27,7 @@ impl Client {
     /// - `SUCCESS {}` if initialization has completed successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if initialization
     ///     cannot be performed at this time, or if the authorization failed.
+    #[bolt_version(1, 2)]
     pub async fn init(
         &mut self,
         client_name: String,
@@ -62,6 +64,7 @@ impl Client {
     /// - `SUCCESS {"fields": …​, "result_available_after"}` if the statement has been accepted for execution
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or if a statement may not be executed at this
     ///     time
+    #[bolt_version(1, 2)]
     pub async fn run(
         &mut self,
         statement: String,
@@ -92,6 +95,7 @@ impl Client {
     /// acknowledge the `FAILURE` message by sending an `ACK_FAILURE` message to the server. Until the server receives
     /// the `ACK_FAILURE` message, it will send an `IGNORED` message in response to any other message from the client,
     /// including messages that were sent in a pipeline.
+    #[bolt_version(1, 2)]
     pub async fn run_pipelined(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
@@ -126,6 +130,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {}` if the result stream has been successfully discarded
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
+    #[bolt_version(1, 2, 3)]
     pub async fn discard_all(&mut self) -> Result<Message> {
         self.send_message(Message::DiscardAll).await?;
         self.read_message().await
@@ -148,6 +153,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available or if retrieval fails
+    #[bolt_version(1, 2, 3)]
     pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>)> {
         self.send_message(Message::PullAll).await?;
         let mut records = vec![];
@@ -172,6 +178,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting to be cleared
+    #[bolt_version(1, 2)] // TODO: Try this for v3+
     pub async fn ack_failure(&mut self) -> Result<Message> {
         self.send_message(Message::AckFailure).await?;
         self.read_message().await
@@ -198,6 +205,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently possible
+    #[bolt_version(1, 2, 3, 4)]
     pub async fn reset(&mut self) -> Result<Message> {
         self.send_message(Message::Reset).await?;
         self.read_message().await
