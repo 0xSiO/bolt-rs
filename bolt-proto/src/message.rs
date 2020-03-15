@@ -8,6 +8,7 @@ use tokio::prelude::*;
 
 // TODO: Do these need to be pub used?
 pub use ack_failure::AckFailure;
+pub use begin::Begin;
 pub(crate) use chunk::Chunk;
 pub use discard_all::DiscardAll;
 pub use failure::Failure;
@@ -27,6 +28,7 @@ use crate::error::*;
 use crate::serialization::*;
 
 pub(crate) mod ack_failure;
+pub(crate) mod begin;
 pub(crate) mod discard_all;
 pub(crate) mod failure;
 pub(crate) mod goodbye;
@@ -66,6 +68,8 @@ pub enum Message {
     Hello(Hello),
     Goodbye,
     RunWithMetadata(RunWithMetadata),
+    // DiscardAll, PullAll are kept from v1
+    Begin(Begin),
 }
 
 impl Message {
@@ -92,6 +96,7 @@ impl Marker for Message {
             Message::Hello(hello) => hello.get_marker(),
             Message::Goodbye => Goodbye.get_marker(),
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_marker(),
+            Message::Begin(begin) => begin.get_marker(),
         }
     }
 }
@@ -112,6 +117,7 @@ impl Signature for Message {
             Message::Hello(hello) => hello.get_signature(),
             Message::Goodbye => Goodbye.get_signature(),
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_signature(),
+            Message::Begin(begin) => begin.get_signature(),
         }
     }
 }
@@ -136,6 +142,7 @@ impl TryInto<Bytes> for Message {
             Message::Hello(hello) => hello.try_into(),
             Message::Goodbye => Goodbye.try_into(),
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.try_into(),
+            Message::Begin(begin) => begin.try_into(),
         }
     }
 }
@@ -190,6 +197,7 @@ impl TryFrom<MessageBytes> for Message {
                 failure::SIGNATURE => Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?)),
                 ignored::SIGNATURE => Ok(Message::Ignored),
                 goodbye::SIGNATURE => Ok(Message::Goodbye),
+                begin::SIGNATURE => Ok(Message::Begin(Begin::try_from(remaining_bytes_arc)?)),
                 _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
             }
         })
