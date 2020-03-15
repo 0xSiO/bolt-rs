@@ -10,8 +10,8 @@ pub enum Error {
     IOError(#[from] std::io::Error),
     #[error("Handshake with server failed")]
     HandshakeFailed,
-    #[error("Unsupported operation for Bolt v{0}")]
-    UnsupportedOperation(u32),
+    #[error("Unsupported operation for client with version = {0:?}")]
+    UnsupportedOperation(Option<u32>),
     #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
 }

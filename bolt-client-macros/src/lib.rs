@@ -42,7 +42,7 @@ pub fn bolt_version(attr_args: TokenStream, item: TokenStream) -> TokenStream {
     let gen = quote! {
         #(#attributes)*
         #visibility #signature {
-            if [#(#versions),*].contains(&self.version) {
+            if self.version.is_some() && [#(#versions),*].contains(&self.version.unwrap()) {
                 #function_body
             } else {
                 Err(crate::error::Error::UnsupportedOperation(self.version))
