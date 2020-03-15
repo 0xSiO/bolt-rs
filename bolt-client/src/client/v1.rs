@@ -271,11 +271,11 @@ pub(crate) mod tests {
 
     // TODO: For run_valid_query and run_invalid_query, call run_with_metadata instead of run for v3 clients
 
-    async fn run_invalid_query(client: &mut Client) -> Result<Message> {
+    pub(crate) async fn run_invalid_query(client: &mut Client) -> Result<Message> {
         client.run("".to_string(), None).await
     }
 
-    async fn run_valid_query(client: &mut Client) -> Result<Message> {
+    pub(crate) async fn run_valid_query(client: &mut Client) -> Result<Message> {
         client.run("RETURN 1 as n;".to_string(), None).await
     }
 
