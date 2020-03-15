@@ -10,6 +10,7 @@
 //!
 //! use tokio::prelude::*;
 //!
+//! # use bolt_client::skip_if_err;
 //! use bolt_client::Client;
 //! use bolt_proto::{Message, Value};
 //! use bolt_proto::message::*;
@@ -23,7 +24,9 @@
 //!     // create a client that uses a TLS-secured connection.
 //!     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
 //!                                  env::var("BOLT_TEST_DOMAIN").ok().as_deref()).await?;
-//!     client.handshake(&[1, 0, 0, 0]).await?; // Currently only v1 is supported
+//!     // This example demonstrates usage of the v1 or v2 protocol
+//!     let handshake_result = client.handshake(&[2, 1, 0, 0]).await;
+//!     # skip_if_err!(handshake_result, Ok(())); // Swallow any failures
 //!     
 //!     // Send an INIT message with authorization details to the server to initialize
 //!     // the session.
@@ -82,10 +85,16 @@ mod stream;
 #[doc(hidden)]
 #[macro_export]
 macro_rules! skip_if_err {
-    ($c:ident) => {
-        if $c.is_err() {
+    ($var:expr) => {
+        if $var.is_err() {
             println!("Skipping test: client initialization failed.");
             return;
+        }
+    };
+    ($var:expr, $ret:expr) => {
+        if $var.is_err() {
+            println!("Skipping test: client initialization failed.");
+            return $ret;
         }
     };
 }
