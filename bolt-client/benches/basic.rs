@@ -14,6 +14,7 @@ async fn get_initialized_client() -> Result<Client> {
         env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
     )
     .await?;
+    client.handshake(&[1, 0, 0, 0]).await?; // TODO: Update this to use higher versions when implemented
     client
         .init(
             "bolt-client/X.Y.Z".to_string(),

@@ -219,11 +219,12 @@ pub(crate) mod tests {
     use super::*;
 
     pub(crate) async fn new_client() -> Result<Client> {
-        let client = Client::new(
+        let mut client = Client::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
         )
         .await?;
+        client.handshake(&[1, 0, 0, 0]).await?; // We only want v1 here
         Ok(client)
     }
 

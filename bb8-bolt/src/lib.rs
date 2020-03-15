@@ -50,6 +50,7 @@ impl ManageConnection for BoltV1ConnectionManager {
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
         let mut client = Client::new(self.addr, self.domain.as_deref()).await?;
+        client.handshake(&[1, 0, 0, 0]).await?; // TODO: Update this to use higher versions when implemented
         let response = client
             .init(self.client_name.clone(), self.auth_token.clone())
             .await?;

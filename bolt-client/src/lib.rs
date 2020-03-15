@@ -23,6 +23,7 @@
 //!     // create a client that uses a TLS-secured connection.
 //!     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
 //!                                  env::var("BOLT_TEST_DOMAIN").ok().as_deref()).await?;
+//!     client.handshake(&[1, 0, 0, 0]).await?; // Currently only v1 is supported
 //!     
 //!     // Send an INIT message with authorization details to the server to initialize
 //!     // the session.
