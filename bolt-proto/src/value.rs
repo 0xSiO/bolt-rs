@@ -253,7 +253,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
 
 // Might panic. Use this inside a catch_unwind block
 fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
-    let signature = get_signature_from_bytes(&mut *input_arc.lock().unwrap())?;
+    let (_marker, signature) = get_info_from_bytes(&mut *input_arc.lock().unwrap())?;
     match signature {
         node::SIGNATURE => Ok(Value::Node(Node::try_from(input_arc)?)),
         relationship::SIGNATURE => Ok(Value::Relationship(Relationship::try_from(input_arc)?)),
