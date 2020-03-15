@@ -10,7 +10,7 @@ pub(crate) use byte_array::ByteArray;
 pub use date::Date;
 pub use date_time_offset::DateTimeOffset;
 pub use date_time_zoned::DateTimeZoned;
-pub(crate) use duration::Duration;
+pub use duration::Duration;
 pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
