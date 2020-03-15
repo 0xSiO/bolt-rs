@@ -4,6 +4,8 @@
 mod tests {
     use std::convert::TryFrom;
 
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+
     use bolt_proto::message::*;
     use bolt_proto::value::*;
     use bolt_proto::{Message, Value};
@@ -111,15 +113,24 @@ mod tests {
         skip_if_err!(client);
         let mut client = client.unwrap();
         let response = client
-            .run("RETURN 3458376 as n;".to_string(), None)
+            .run(
+                "RETURN localdatetime('2010-03-05T12:30:01.000000500');".to_string(),
+                None,
+            )
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
 
         let (response, records) = client.pull_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
-        assert!(!records.is_empty());
-        assert_eq!(records[0].fields(), &[Value::from(3458376)]);
+        assert_eq!(records.len(), 1);
+        assert_eq!(
+            records[0].fields(),
+            &[Value::from(NaiveDateTime::new(
+                NaiveDate::from_ymd(2010, 3, 5),
+                NaiveTime::from_hms_nano(12, 30, 1, 500)
+            ))]
+        );
     }
 
     #[tokio::test]

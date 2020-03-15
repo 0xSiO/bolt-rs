@@ -386,7 +386,7 @@ pub(crate) mod tests {
 
         let (response, records) = client.pull_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
-        assert!(!records.is_empty());
+        assert_eq!(records.len(), 1);
         assert_eq!(records[0].fields(), &[Value::from(3458376)]);
     }
 
