@@ -15,6 +15,13 @@ impl Client {
         self.read_message().await
     }
 
+    // Closes connection to server, no message sent in response
+    #[bolt_version(3, 4)]
+    pub async fn goodbye(&mut self) -> Result<()> {
+        self.send_message(Message::Goodbye).await?;
+        Ok(())
+    }
+
     // TODO: Implement run_with_metadata, or just modify run if possible
 }
 
@@ -43,5 +50,13 @@ mod tests {
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+    }
+
+    #[tokio::test]
+    async fn goodbye() {
+        let client = get_initialized_client(3).await;
+        skip_if_err!(client);
+        let mut client = client.unwrap();
+        assert!(client.goodbye().await.is_ok());
     }
 }

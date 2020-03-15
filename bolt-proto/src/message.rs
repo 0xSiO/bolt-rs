@@ -6,10 +6,12 @@ use bytes::Bytes;
 use tokio::io::BufStream;
 use tokio::prelude::*;
 
+// TODO: Do these need to be pub used?
 pub use ack_failure::AckFailure;
 pub(crate) use chunk::Chunk;
 pub use discard_all::DiscardAll;
 pub use failure::Failure;
+pub use goodbye::Goodbye;
 pub use hello::Hello;
 pub use ignored::Ignored;
 pub use init::Init;
@@ -27,6 +29,7 @@ use crate::value::*;
 pub(crate) mod ack_failure;
 pub(crate) mod discard_all;
 pub(crate) mod failure;
+pub(crate) mod goodbye;
 pub(crate) mod hello;
 pub(crate) mod ignored;
 pub(crate) mod init;
@@ -57,6 +60,7 @@ pub enum Message {
     Ignored,
     // V3+-compatible message types
     Hello(Hello),
+    Goodbye,
 }
 
 impl Message {
@@ -81,6 +85,7 @@ impl Marker for Message {
             Message::Failure(failure) => failure.get_marker(),
             Message::Ignored => Ignored.get_marker(),
             Message::Hello(hello) => hello.get_marker(),
+            Message::Goodbye => Goodbye.get_marker(),
         }
     }
 }
@@ -99,6 +104,7 @@ impl Signature for Message {
             Message::Failure(failure) => failure.get_signature(),
             Message::Ignored => Ignored.get_signature(),
             Message::Hello(hello) => hello.get_signature(),
+            Message::Goodbye => Goodbye.get_signature(),
         }
     }
 }
@@ -121,6 +127,7 @@ impl TryInto<Bytes> for Message {
             Message::Failure(failure) => failure.try_into(),
             Message::Ignored => Ignored.try_into(),
             Message::Hello(hello) => hello.try_into(),
+            Message::Goodbye => Goodbye.try_into(),
         }
     }
 }
@@ -178,6 +185,7 @@ impl TryFrom<MessageBytes> for Message {
                 success::SIGNATURE => Ok(Message::Success(Success::try_from(remaining_bytes_arc)?)),
                 failure::SIGNATURE => Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?)),
                 ignored::SIGNATURE => Ok(Message::Ignored),
+                goodbye::SIGNATURE => Ok(Message::Goodbye),
                 _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
             }
         })
