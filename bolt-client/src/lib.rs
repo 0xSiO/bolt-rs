@@ -87,13 +87,13 @@ mod stream;
 macro_rules! skip_if_err {
     ($var:expr) => {
         if $var.is_err() {
-            println!("Skipping test: client initialization failed.");
+            println!("Skipping test: client initialization failed, {:?}", $var);
             return;
         }
     };
     ($var:expr, $ret:expr) => {
         if $var.is_err() {
-            println!("Skipping test: client initialization failed.");
+            println!("Skipping test: client initialization failed, {:?}", $var);
             return $ret;
         }
     };
