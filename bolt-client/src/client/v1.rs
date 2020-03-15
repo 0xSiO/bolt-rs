@@ -345,16 +345,16 @@ pub(crate) mod tests {
         skip_if_err!(client);
         let mut client = client.unwrap();
         let messages = vec![
-            Message::Run(Run::new("MATCH (n) DETACH DELETE n;".to_string(), Default::default())),
+            Message::Run(Run::new("MATCH (n {test: 'v1-pipelined'}) DETACH DELETE n;".to_string(), Default::default())),
             Message::PullAll,
-            Message::Run(Run::new("CREATE (:Database {name: 'neo4j', born: 2007});".to_string(), Default::default())),
+            Message::Run(Run::new("CREATE (:Database {name: 'neo4j', born: 2007, test: 'v1-pipelined'});".to_string(), Default::default())),
             Message::PullAll,
             Message::Run(Run::new(
-                "MATCH (neo4j:Database {name: 'neo4j'}) CREATE (:Library {name: 'bolt-client', born: 2019})-[:CLIENT_FOR]->(neo4j);".to_string(),
+                "MATCH (neo4j:Database {name: 'neo4j', test: 'v1-pipelined'}) CREATE (:Library {name: 'bolt-client', born: 2019, test: 'v1-pipelined'})-[:CLIENT_FOR]->(neo4j);".to_string(),
                 Default::default())),
             Message::PullAll,
             Message::Run(Run::new(
-                "MATCH (neo4j:Database {name: 'neo4j'}), (bolt_client:Library {name: 'bolt-client'}) RETURN bolt_client.born - neo4j.born;".to_string(),
+                "MATCH (neo4j:Database {name: 'neo4j', test: 'v1-pipelined'}), (bolt_client:Library {name: 'bolt-client', test: 'v1-pipelined'}) RETURN bolt_client.born - neo4j.born;".to_string(),
                 Default::default())),
             Message::PullAll,
         ];
@@ -395,16 +395,17 @@ pub(crate) mod tests {
         let client = get_initialized_client(1).await;
         skip_if_err!(client);
         let mut client = client.unwrap();
-        let statement = "MATCH (n) DETACH DELETE n;".to_string();
+        let statement = "MATCH (n {test: 'v1-node-rel'}) DETACH DELETE n;".to_string();
         client.run(statement, None).await.unwrap();
         client.pull_all().await.unwrap();
 
         let statement =
-            "CREATE (:Client {name: 'bolt-client'})-[:WRITTEN_IN]->(:Language {name: 'Rust'});"
+            "CREATE (:Client {name: 'bolt-client', test: 'v1-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v1-node-rel'});"
                 .to_string();
         client.run(statement, None).await.unwrap();
         client.pull_all().await.unwrap();
-        let statement = "MATCH (c)-[r:WRITTEN_IN]->(l) RETURN c, r, l;".to_string();
+        let statement =
+            "MATCH (c {test: 'v1-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;".to_string();
         client.run(statement, None).await.unwrap();
         let (_response, records) = client.pull_all().await.unwrap();
 
