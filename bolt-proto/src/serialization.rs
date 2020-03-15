@@ -26,7 +26,7 @@ pub(crate) const STRUCT_MARKER_SMALL: u8 = 0xDC;
 pub(crate) const STRUCT_MARKER_MEDIUM: u8 = 0xDD;
 
 // Might panic. Use this inside a catch_unwind block
-pub(crate) fn get_signature_from_bytes(bytes: &mut impl Buf) -> Result<u8> {
+pub(crate) fn get_info_from_bytes(bytes: &mut impl Buf) -> Result<(u8, u8)> {
     let marker = bytes.get_u8();
     let _size = match marker {
         marker if (STRUCT_MARKER_TINY..=(STRUCT_MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -39,5 +39,5 @@ pub(crate) fn get_signature_from_bytes(bytes: &mut impl Buf) -> Result<u8> {
         }
     };
     let signature = bytes.get_u8();
-    Ok(signature)
+    Ok((marker, signature))
 }

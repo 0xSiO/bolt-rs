@@ -20,11 +20,11 @@ pub use pull_all::PullAll;
 pub use record::Record;
 pub use reset::Reset;
 pub use run::Run;
+pub use run_with_metadata::RunWithMetadata;
 pub use success::Success;
 
 use crate::error::*;
 use crate::serialization::*;
-use crate::value::*;
 
 pub(crate) mod ack_failure;
 pub(crate) mod discard_all;
@@ -37,6 +37,7 @@ pub(crate) mod pull_all;
 pub(crate) mod record;
 pub(crate) mod reset;
 pub(crate) mod run;
+pub(crate) mod run_with_metadata;
 pub(crate) mod success;
 
 mod chunk;
@@ -45,6 +46,9 @@ mod message_bytes;
 // This is what's used in the protocol spec, but it could technically be any size.
 const CHUNK_SIZE: usize = 16; // TODO: Make this configurable
 
+// TODO: Derive Eq, PartialEq for all messages where possible
+// TODO: Improve tests so they're similar to the value type tests
+// TODO: Move all message conversions to separate modules
 #[derive(Debug, Clone)]
 pub enum Message {
     // V1-compatible message types
@@ -61,6 +65,7 @@ pub enum Message {
     // V3+-compatible message types
     Hello(Hello),
     Goodbye,
+    RunWithMetadata(RunWithMetadata),
 }
 
 impl Message {
@@ -86,6 +91,7 @@ impl Marker for Message {
             Message::Ignored => Ignored.get_marker(),
             Message::Hello(hello) => hello.get_marker(),
             Message::Goodbye => Goodbye.get_marker(),
+            Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_marker(),
         }
     }
 }
@@ -105,6 +111,7 @@ impl Signature for Message {
             Message::Ignored => Ignored.get_signature(),
             Message::Hello(hello) => hello.get_signature(),
             Message::Goodbye => Goodbye.get_signature(),
+            Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_signature(),
         }
     }
 }
@@ -128,6 +135,7 @@ impl TryInto<Bytes> for Message {
             Message::Ignored => Ignored.try_into(),
             Message::Hello(hello) => hello.try_into(),
             Message::Goodbye => Goodbye.try_into(),
+            Message::RunWithMetadata(run_with_metadata) => run_with_metadata.try_into(),
         }
     }
 }
@@ -148,35 +156,31 @@ impl TryFrom<MessageBytes> for Message {
 
     fn try_from(mut message_bytes: MessageBytes) -> Result<Self> {
         catch_unwind(move || {
-            let signature = get_signature_from_bytes(&mut message_bytes)?;
+            let (marker, signature) = get_info_from_bytes(&mut message_bytes)?;
             let remaining_bytes_arc =
                 Arc::new(Mutex::new(message_bytes.split_to(message_bytes.len())));
 
             match signature {
                 init::SIGNATURE => {
-                    // Equal to hello::SIGNATURE, so we have to check for metadata. The way we'll do this is to check
-                    // for the existence of a string (indicating it's an INIT), if not, then it's assumed to be a HELLO
-
-                    // I confirmed that this peeking doesn't advance any buffer cursors
-                    let next_byte = remaining_bytes_arc.lock().unwrap().as_ref()[0];
-
-                    match next_byte {
-                        // Tiny string
-                        marker
-                            if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F))
-                                .contains(&marker) =>
-                        {
-                            Ok(Message::Init(Init::try_from(remaining_bytes_arc)?))
-                        }
-                        // Other string sizes
-                        string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
-                            Ok(Message::Init(Init::try_from(remaining_bytes_arc)?))
-                        }
-                        // Else, must be a metadata map
-                        _ => Ok(Message::Hello(Hello::try_from(remaining_bytes_arc)?)),
+                    // Equal to hello::SIGNATURE, so we have to check for metadata.
+                    // INIT has 2 fields, while HELLO has 1.
+                    if marker == init::MARKER {
+                        Ok(Message::Init(Init::try_from(remaining_bytes_arc)?))
+                    } else {
+                        Ok(Message::Hello(Hello::try_from(remaining_bytes_arc)?))
                     }
                 }
-                run::SIGNATURE => Ok(Message::Run(Run::try_from(remaining_bytes_arc)?)),
+                run::SIGNATURE => {
+                    // Equal to run_with_metadata::SIGNATURE, so we have to check for metadata.
+                    // RUN has 2 fields, while RUN_WITH_METADATA has 3.
+                    if marker == run::MARKER {
+                        Ok(Message::Run(Run::try_from(remaining_bytes_arc)?))
+                    } else {
+                        Ok(Message::RunWithMetadata(RunWithMetadata::try_from(
+                            remaining_bytes_arc,
+                        )?))
+                    }
+                }
                 discard_all::SIGNATURE => Ok(Message::DiscardAll),
                 pull_all::SIGNATURE => Ok(Message::PullAll),
                 ack_failure::SIGNATURE => Ok(Message::AckFailure),
