@@ -1,5 +1,3 @@
-use std::panic::catch_unwind;
-
 use chrono::{NaiveTime, Timelike};
 
 use bolt_proto_derive::*;
@@ -27,9 +25,15 @@ impl Time {
     ) -> Result<Self> {
         let time = NaiveTime::from_hms_nano_opt(hour, minute, second, nanosecond)
             .ok_or(Error::InvalidTime(hour, minute, second, nanosecond))?;
-        // Calculating the zone_offset may panic if it overflows
-        let zone_offset = catch_unwind(|| zone_offset.0 * 3600 + zone_offset.1 * 60)
-            .map_err(|_| Error::InvalidTimeZoneOffset(zone_offset))?;
+        let zone_offset = {
+            // Calculating the zone_offset may overflow, so we should check
+            let result = zone_offset.0 as i64 * 3600 + zone_offset.1 as i64 * 60;
+            if result > i32::max_value() as i64 {
+                Err(Error::InvalidTimeZoneOffset(zone_offset))
+            } else {
+                Ok(result as i32)
+            }
+        }?;
         Ok(Self {
             nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
             zone_offset,
