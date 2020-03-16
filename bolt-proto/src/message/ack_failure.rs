@@ -8,18 +8,40 @@ pub struct AckFailure;
 
 #[cfg(test)]
 mod tests {
+    use bytes::Bytes;
     use std::convert::TryFrom;
     use std::sync::{Arc, Mutex};
 
-    use bytes::Bytes;
+    use crate::serialization::*;
 
     use super::*;
 
     #[test]
+    fn get_marker() {
+        assert_eq!(AckFailure.get_marker().unwrap(), MARKER);
+    }
+
+    #[test]
+    fn get_signature() {
+        assert_eq!(AckFailure.get_signature(), SIGNATURE);
+    }
+
+    #[test]
+    fn try_into_bytes() {
+        let msg = AckFailure;
+        assert_eq!(
+            msg.try_into_bytes().unwrap(),
+            Bytes::from_static(&[MARKER, SIGNATURE])
+        );
+    }
+
+    #[test]
     fn try_from_bytes() {
-        // No data needed!
-        let bytes = Bytes::from_static(&[]);
-        let ack_failure = AckFailure::try_from(Arc::new(Mutex::new(bytes)));
-        assert!(ack_failure.is_ok());
+        let msg = AckFailure;
+        let msg_bytes = &[];
+        assert_eq!(
+            AckFailure::try_from(Arc::new(Mutex::new(Bytes::from_static(msg_bytes)))).unwrap(),
+            msg
+        );
     }
 }
