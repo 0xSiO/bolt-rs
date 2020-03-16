@@ -40,3 +40,48 @@ macro_rules! impl_try_from_message {
         }
     };
 }
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_empty_message_tests {
+    ($T:ident) => {
+        mod tests {
+            use ::bytes::Bytes;
+            use ::std::convert::TryFrom;
+            use ::std::sync::{Arc, Mutex};
+
+            use crate::serialization::*;
+
+            use super::*;
+
+            #[test]
+            fn get_marker() {
+                assert_eq!($T.get_marker().unwrap(), MARKER);
+            }
+
+            #[test]
+            fn get_signature() {
+                assert_eq!($T.get_signature(), SIGNATURE);
+            }
+
+            #[test]
+            fn try_into_bytes() {
+                let msg = $T;
+                assert_eq!(
+                    msg.try_into_bytes().unwrap(),
+                    Bytes::from_static(&[MARKER, SIGNATURE])
+                );
+            }
+
+            #[test]
+            fn try_from_bytes() {
+                let msg = $T;
+                let msg_bytes = &[];
+                assert_eq!(
+                    $T::try_from(Arc::new(Mutex::new(Bytes::from_static(msg_bytes)))).unwrap(),
+                    msg
+                );
+            }
+        }
+    };
+}
