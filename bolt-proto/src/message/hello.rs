@@ -1,10 +1,8 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 use bolt_proto_derive::*;
 
-use crate::error::*;
-use crate::{Message, Value};
+use crate::{impl_try_from_message, Value};
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x01;
@@ -24,16 +22,7 @@ impl Hello {
     }
 }
 
-impl TryFrom<Message> for Hello {
-    type Error = Error;
-
-    fn try_from(message: Message) -> Result<Self> {
-        match message {
-            Message::Hello(hello) => Ok(hello),
-            _ => Err(ConversionError::FromMessage(message).into()),
-        }
-    }
-}
+impl_try_from_message!(Hello, Hello);
 
 #[cfg(test)]
 mod tests {
