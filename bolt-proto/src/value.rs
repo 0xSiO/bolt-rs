@@ -285,8 +285,7 @@ mod tests {
 
     #[test]
     fn null_from_bytes() {
-        let null = Null;
-        let null_bytes = null.clone().try_into_bytes().unwrap();
+        let null_bytes = Null.try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(null_bytes))).unwrap(),
             Value::Null
@@ -295,10 +294,8 @@ mod tests {
 
     #[test]
     fn boolean_from_bytes() {
-        let t = Boolean::from(true);
-        let true_bytes = t.clone().try_into_bytes().unwrap();
-        let f = Boolean::from(false);
-        let false_bytes = f.clone().try_into_bytes().unwrap();
+        let true_bytes = Boolean::from(true).try_into_bytes().unwrap();
+        let false_bytes = Boolean::from(false).try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(true_bytes))).unwrap(),
             Value::Boolean(true)
@@ -667,14 +664,14 @@ mod tests {
 
     #[test]
     fn point_from_bytes() {
-        let point2d = Point2D::new(9876, 12.312345, 134564.123567543);
+        let point2d = Point2D::new(9876, 12.312_345, 134_564.123_567_543);
         let point2d_bytes = point2d.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(point2d_bytes))).unwrap(),
             Value::Point2D(point2d)
         );
 
-        let point3d = Point3D::new(249, 543.598387, 2945732849.29385, 45438.874385);
+        let point3d = Point3D::new(249, 543.598_387, 2_945_732_849.293_85, 45_438.874_385);
         let point3d_bytes = point3d.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(point3d_bytes))).unwrap(),

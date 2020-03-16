@@ -37,7 +37,7 @@ mod tests {
 
     #[test]
     fn get_marker() {
-        let date = Date::from(NaiveDate::from_ymd(2020, 01, 01));
+        let date = Date::from(NaiveDate::from_ymd(2020, 1, 1));
         assert_eq!(date.get_marker().unwrap(), MARKER);
     }
 

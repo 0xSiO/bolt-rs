@@ -219,6 +219,7 @@ pub(crate) mod tests {
     use std::convert::TryFrom;
     use std::env;
     use std::iter::FromIterator;
+    use std::string::String;
 
     use bolt_proto::message::*;
     use bolt_proto::value::*;
@@ -396,7 +397,7 @@ pub(crate) mod tests {
         let (response, records) = client.pull_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
         assert_eq!(records.len(), 1);
-        assert_eq!(records[0].fields(), &[Value::from(3458376)]);
+        assert_eq!(records[0].fields(), &[Value::from(3_458_376)]);
     }
 
     #[tokio::test]
