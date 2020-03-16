@@ -3,7 +3,7 @@ use bolt_proto_derive::*;
 pub(crate) const MARKER: u8 = 0xB0;
 pub(crate) const SIGNATURE: u8 = 0x3F;
 
-#[derive(Debug, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct PullAll;
 
 #[cfg(test)]
