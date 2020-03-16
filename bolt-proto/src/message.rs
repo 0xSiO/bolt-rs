@@ -21,6 +21,7 @@ pub(crate) use message_bytes::MessageBytes;
 pub use pull_all::PullAll;
 pub use record::Record;
 pub use reset::Reset;
+pub use rollback::Rollback;
 pub use run::Run;
 pub use run_with_metadata::RunWithMetadata;
 pub use success::Success;
@@ -40,6 +41,7 @@ pub(crate) mod init;
 pub(crate) mod pull_all;
 pub(crate) mod record;
 pub(crate) mod reset;
+pub(crate) mod rollback;
 pub(crate) mod run;
 pub(crate) mod run_with_metadata;
 pub(crate) mod success;
@@ -70,6 +72,7 @@ pub enum Message {
     // DiscardAll, PullAll are kept from v1
     Begin(Begin),
     Commit,
+    Rollback,
 }
 
 impl Message {
@@ -98,6 +101,7 @@ impl Marker for Message {
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_marker(),
             Message::Begin(begin) => begin.get_marker(),
             Message::Commit => Commit.get_marker(),
+            Message::Rollback => Rollback.get_marker(),
         }
     }
 }
@@ -120,6 +124,7 @@ impl Signature for Message {
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_signature(),
             Message::Begin(begin) => begin.get_signature(),
             Message::Commit => Commit.get_signature(),
+            Message::Rollback => Rollback.get_signature(),
         }
     }
 }
@@ -146,6 +151,7 @@ impl TryInto<Bytes> for Message {
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.try_into(),
             Message::Begin(begin) => begin.try_into(),
             Message::Commit => Commit.try_into(),
+            Message::Rollback => Rollback.try_into(),
         }
     }
 }
@@ -202,6 +208,7 @@ impl TryFrom<MessageBytes> for Message {
                 goodbye::SIGNATURE => Ok(Message::Goodbye),
                 begin::SIGNATURE => Ok(Message::Begin(Begin::try_from(remaining_bytes_arc)?)),
                 commit::SIGNATURE => Ok(Message::Commit),
+                rollback::SIGNATURE => Ok(Message::Rollback),
                 _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
             }
         })
