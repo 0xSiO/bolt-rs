@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
-use crate::impl_try_from_message;
+use crate::{impl_try_from_message, Value};
 
 pub(crate) const MARKER: u8 = 0xB2;
 pub(crate) const SIGNATURE: u8 = 0x01;
@@ -10,11 +10,11 @@ pub(crate) const SIGNATURE: u8 = 0x01;
 #[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Init {
     pub(crate) client_name: String,
-    pub(crate) auth_token: HashMap<String, String>,
+    pub(crate) auth_token: HashMap<String, Value>,
 }
 
 impl Init {
-    pub fn new(client_name: String, auth_token: HashMap<String, String>) -> Self {
+    pub fn new(client_name: String, auth_token: HashMap<String, Value>) -> Self {
         Self {
             client_name,
             auth_token,
@@ -25,7 +25,7 @@ impl Init {
         &self.client_name
     }
 
-    pub fn auth_token(&self) -> &HashMap<String, String> {
+    pub fn auth_token(&self) -> &HashMap<String, Value> {
         &self.auth_token
     }
 }
@@ -48,7 +48,7 @@ mod tests {
     fn new_msg() -> Init {
         Init::new(
             "MyClient/1.0".to_string(),
-            HashMap::from_iter(vec![("scheme".to_string(), "basic".to_string())]),
+            HashMap::from_iter(vec![("scheme".to_string(), Value::from("basic"))]),
         )
     }
 
