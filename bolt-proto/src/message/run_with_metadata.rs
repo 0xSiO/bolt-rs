@@ -1,10 +1,8 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 use bolt_proto_derive::*;
 
-use crate::error::*;
-use crate::{Message, Value};
+use crate::{impl_try_from_message, Value};
 
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x10;
@@ -42,24 +40,15 @@ impl RunWithMetadata {
     }
 }
 
-impl TryFrom<Message> for RunWithMetadata {
-    type Error = Error;
-
-    fn try_from(message: Message) -> Result<Self> {
-        match message {
-            Message::RunWithMetadata(run_with_meta) => Ok(run_with_meta),
-            _ => Err(ConversionError::FromMessage(message).into()),
-        }
-    }
-}
+impl_try_from_message!(RunWithMetadata, RunWithMetadata);
 
 #[cfg(test)]
 mod tests {
+    use bytes::Bytes;
     use std::collections::HashMap;
+    use std::convert::TryFrom;
     use std::iter::FromIterator;
     use std::sync::{Arc, Mutex};
-
-    use bytes::Bytes;
 
     use crate::serialization::*;
     use crate::value::*;
