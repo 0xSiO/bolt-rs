@@ -44,11 +44,11 @@ impl_try_from_message!(RunWithMetadata, RunWithMetadata);
 
 #[cfg(test)]
 mod tests {
-    use bytes::Bytes;
-    use std::collections::HashMap;
     use std::convert::TryFrom;
     use std::iter::FromIterator;
     use std::sync::{Arc, Mutex};
+
+    use bytes::Bytes;
 
     use crate::serialization::*;
     use crate::value::*;

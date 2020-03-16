@@ -1,5 +1,6 @@
-use bolt_proto_derive::*;
 use std::collections::HashMap;
+
+use bolt_proto_derive::*;
 
 use crate::impl_try_from_message;
 
@@ -33,11 +34,11 @@ impl_try_from_message!(Init, Init);
 
 #[cfg(test)]
 mod tests {
-    use bytes::Bytes;
-    use std::collections::HashMap;
     use std::convert::TryFrom;
     use std::iter::FromIterator;
     use std::sync::{Arc, Mutex};
+
+    use bytes::Bytes;
 
     use crate::serialization::*;
     use crate::value::*;

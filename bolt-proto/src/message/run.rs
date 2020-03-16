@@ -35,18 +35,115 @@ impl_try_from_message!(Run, Run);
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use std::iter::FromIterator;
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
 
+    use crate::serialization::*;
+    use crate::value::*;
+
     use super::*;
+
+    fn new_msg() -> Run {
+        Run::new(
+            "RETURN $param;".to_string(),
+            HashMap::from_iter(vec![("param".to_string(), Value::from(25_123_321_123_i64))]),
+        )
+    }
+
+    #[test]
+    fn get_marker() {
+        assert_eq!(new_msg().get_marker().unwrap(), MARKER);
+    }
+
+    #[test]
+    fn get_signature() {
+        assert_eq!(new_msg().get_signature(), SIGNATURE);
+    }
+
+    #[test]
+    fn try_into_bytes() {
+        let msg = new_msg();
+        assert_eq!(
+            msg.try_into_bytes().unwrap(),
+            Bytes::from_static(&[
+                MARKER,
+                SIGNATURE,
+                string::MARKER_TINY | 14,
+                b'R',
+                b'E',
+                b'T',
+                b'U',
+                b'R',
+                b'N',
+                b' ',
+                b'$',
+                b'p',
+                b'a',
+                b'r',
+                b'a',
+                b'm',
+                b';',
+                map::MARKER_TINY | 1,
+                string::MARKER_TINY | 5,
+                b'p',
+                b'a',
+                b'r',
+                b'a',
+                b'm',
+                integer::MARKER_INT_64,
+                0x00,
+                0x00,
+                0x00,
+                0x05,
+                0xD9,
+                0x77,
+                0x75,
+                0x23
+            ])
+        );
+    }
 
     #[test]
     fn try_from_bytes() {
-        let bytes = Bytes::from_static(&[
-            0x8F, 0x52, 0x45, 0x54, 0x55, 0x52, 0x4E, 0x20, 0x31, 0x20, 0x41, 0x53, 0x20, 0x6E,
-            0x75, 0x6D, 0xA0,
-        ]);
-        assert!(Run::try_from(Arc::new(Mutex::new(bytes))).is_ok());
+        let msg = new_msg();
+        let msg_bytes = &[
+            string::MARKER_TINY | 14,
+            b'R',
+            b'E',
+            b'T',
+            b'U',
+            b'R',
+            b'N',
+            b' ',
+            b'$',
+            b'p',
+            b'a',
+            b'r',
+            b'a',
+            b'm',
+            b';',
+            map::MARKER_TINY | 1,
+            string::MARKER_TINY | 5,
+            b'p',
+            b'a',
+            b'r',
+            b'a',
+            b'm',
+            integer::MARKER_INT_64,
+            0x00,
+            0x00,
+            0x00,
+            0x05,
+            0xD9,
+            0x77,
+            0x75,
+            0x23,
+        ];
+        assert_eq!(
+            Run::try_from(Arc::new(Mutex::new(Bytes::from_static(msg_bytes)))).unwrap(),
+            msg
+        );
     }
 }
