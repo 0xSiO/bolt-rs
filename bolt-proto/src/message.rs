@@ -10,6 +10,7 @@ use tokio::prelude::*;
 pub use ack_failure::AckFailure;
 pub use begin::Begin;
 pub(crate) use chunk::Chunk;
+pub use commit::Commit;
 pub use discard_all::DiscardAll;
 pub use failure::Failure;
 pub use goodbye::Goodbye;
@@ -29,6 +30,7 @@ use crate::serialization::*;
 
 pub(crate) mod ack_failure;
 pub(crate) mod begin;
+pub(crate) mod commit;
 pub(crate) mod discard_all;
 pub(crate) mod failure;
 pub(crate) mod goodbye;
@@ -67,6 +69,7 @@ pub enum Message {
     RunWithMetadata(RunWithMetadata),
     // DiscardAll, PullAll are kept from v1
     Begin(Begin),
+    Commit,
 }
 
 impl Message {
@@ -94,6 +97,7 @@ impl Marker for Message {
             Message::Goodbye => Goodbye.get_marker(),
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_marker(),
             Message::Begin(begin) => begin.get_marker(),
+            Message::Commit => Commit.get_marker(),
         }
     }
 }
@@ -115,6 +119,7 @@ impl Signature for Message {
             Message::Goodbye => Goodbye.get_signature(),
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_signature(),
             Message::Begin(begin) => begin.get_signature(),
+            Message::Commit => Commit.get_signature(),
         }
     }
 }
@@ -140,6 +145,7 @@ impl TryInto<Bytes> for Message {
             Message::Goodbye => Goodbye.try_into(),
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.try_into(),
             Message::Begin(begin) => begin.try_into(),
+            Message::Commit => Commit.try_into(),
         }
     }
 }
@@ -195,6 +201,7 @@ impl TryFrom<MessageBytes> for Message {
                 ignored::SIGNATURE => Ok(Message::Ignored),
                 goodbye::SIGNATURE => Ok(Message::Goodbye),
                 begin::SIGNATURE => Ok(Message::Begin(Begin::try_from(remaining_bytes_arc)?)),
+                commit::SIGNATURE => Ok(Message::Commit),
                 _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
             }
         })
