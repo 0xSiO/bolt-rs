@@ -37,7 +37,7 @@ mod tests {
     use super::*;
 
     fn get_duration() -> Duration {
-        Duration::new(7, 123456543, 54213945693251, 19287)
+        Duration::new(7, 123_456_543, 54_213_945_693_251, 19287)
     }
 
     #[test]

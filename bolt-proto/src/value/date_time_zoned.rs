@@ -61,7 +61,7 @@ mod tests {
 
     fn get_date_time() -> DateTimeZoned {
         let zone = "Antarctica/Rothera".to_string();
-        DateTimeZoned::new(3500, 7, 29, 13, 05, 01, 123456, zone).unwrap()
+        DateTimeZoned::new(3500, 7, 29, 13, 5, 1, 123_456, zone).unwrap()
     }
 
     #[test]

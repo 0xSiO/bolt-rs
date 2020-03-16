@@ -45,7 +45,7 @@ mod tests {
     use super::*;
 
     fn get_point() -> Point2D {
-        Point2D::new(120, 5421394.5693251, 1.9287)
+        Point2D::new(120, 5_421_394.569_325_1, 1.9287)
     }
 
     #[test]
