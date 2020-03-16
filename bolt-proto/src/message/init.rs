@@ -1,7 +1,6 @@
+use bolt_proto_derive::*;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-
-use bolt_proto_derive::*;
 
 use crate::error::*;
 use crate::Message;
@@ -45,41 +44,107 @@ impl TryFrom<Message> for Init {
 
 #[cfg(test)]
 mod tests {
+    use bytes::Bytes;
     use std::collections::HashMap;
     use std::iter::FromIterator;
-
-    use bytes::Bytes;
+    use std::sync::{Arc, Mutex};
 
     use crate::serialization::*;
+    use crate::value::*;
 
     use super::*;
 
     fn new_msg() -> Init {
-        Init {
-            client_name: String::from("MyClient/1.0"),
-            auth_token: HashMap::from_iter(vec![("scheme".to_string(), "basic".to_string())]),
-        }
+        Init::new(
+            "MyClient/1.0".to_string(),
+            HashMap::from_iter(vec![("scheme".to_string(), "basic".to_string())]),
+        )
     }
 
     #[test]
     fn get_marker() {
-        assert_eq!(new_msg().get_marker().unwrap(), 0xB2);
+        assert_eq!(new_msg().get_marker().unwrap(), MARKER);
     }
 
     #[test]
     fn get_signature() {
-        assert_eq!(new_msg().get_signature(), 0x01);
+        assert_eq!(new_msg().get_signature(), SIGNATURE);
     }
 
     #[test]
     fn try_into_bytes() {
+        let msg = new_msg();
         assert_eq!(
-            new_msg().try_into_bytes().unwrap(),
+            msg.try_into_bytes().unwrap(),
             Bytes::from_static(&[
-                0xB2, 0x01, 0x8C, 0x4D, 0x79, 0x43, 0x6C, 0x69, 0x65, 0x6E, 0x74, 0x2F, 0x31, 0x2E,
-                0x30, 0xA1, 0x86, 0x73, 0x63, 0x68, 0x65, 0x6D, 0x65, 0x85, 0x62, 0x61, 0x73, 0x69,
-                0x63,
+                MARKER,
+                SIGNATURE,
+                string::MARKER_TINY | 12,
+                b'M',
+                b'y',
+                b'C',
+                b'l',
+                b'i',
+                b'e',
+                b'n',
+                b't',
+                b'/',
+                b'1',
+                b'.',
+                b'0',
+                map::MARKER_TINY | 1,
+                string::MARKER_TINY | 6,
+                b's',
+                b'c',
+                b'h',
+                b'e',
+                b'm',
+                b'e',
+                string::MARKER_TINY | 5,
+                b'b',
+                b'a',
+                b's',
+                b'i',
+                b'c'
             ])
+        );
+    }
+
+    #[test]
+    fn try_from_bytes() {
+        let msg = new_msg();
+        let msg_bytes = &[
+            string::MARKER_TINY | 12,
+            b'M',
+            b'y',
+            b'C',
+            b'l',
+            b'i',
+            b'e',
+            b'n',
+            b't',
+            b'/',
+            b'1',
+            b'.',
+            b'0',
+            map::MARKER_TINY | 1,
+            string::MARKER_TINY | 6,
+            b's',
+            b'c',
+            b'h',
+            b'e',
+            b'm',
+            b'e',
+            string::MARKER_TINY | 5,
+            b'b',
+            b'a',
+            b's',
+            b'i',
+            b'c',
+        ];
+        assert_eq!(
+            Init::try_from(Arc::new(Mutex::new(Bytes::from_static(msg_bytes)))).unwrap(),
+            msg
         );
     }
 }
