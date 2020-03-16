@@ -7,19 +7,4 @@ pub(crate) const SIGNATURE: u8 = 0x02;
 pub struct Goodbye;
 
 #[cfg(test)]
-mod tests {
-    use std::convert::TryFrom;
-    use std::sync::{Arc, Mutex};
-
-    use bytes::Bytes;
-
-    use super::*;
-
-    #[test]
-    fn try_from_bytes() {
-        // No data needed!
-        let bytes = Bytes::from_static(&[]);
-        let goodbye = Goodbye::try_from(Arc::new(Mutex::new(bytes)));
-        assert!(goodbye.is_ok());
-    }
-}
+crate::impl_empty_message_tests!(Goodbye);
