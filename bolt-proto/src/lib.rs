@@ -23,3 +23,20 @@ macro_rules! impl_try_from_value {
         }
     };
 }
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_try_from_message {
+    ($T:path, $V:ident) => {
+        impl ::std::convert::TryFrom<$crate::Message> for $T {
+            type Error = $crate::error::Error;
+
+            fn try_from(message: $crate::Message) -> $crate::error::Result<Self> {
+                match message {
+                    $crate::Message::$V(inner) => Ok(inner),
+                    _ => Err($crate::error::ConversionError::FromMessage(message).into()),
+                }
+            }
+        }
+    };
+}
