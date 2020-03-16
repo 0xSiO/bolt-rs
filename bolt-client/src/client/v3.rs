@@ -7,6 +7,7 @@ use bolt_proto::{Message, Value};
 use crate::error::*;
 use crate::Client;
 
+// TODO: Test the rest of the new v3 messages to determine request/response behavior
 impl Client {
     #[bolt_version(3, 4)]
     pub async fn hello(&mut self, metadata: HashMap<String, impl Into<Value>>) -> Result<Message> {
@@ -22,7 +23,43 @@ impl Client {
         Ok(())
     }
 
-    // TODO: Implement run_with_metadata, or just modify run if possible
+    #[bolt_version(3, 4)]
+    pub async fn run_with_metadata(
+        &mut self,
+        statement: String,
+        parameters: Option<HashMap<String, Value>>,
+        metadata: Option<HashMap<String, Value>>,
+    ) -> Result<Message> {
+        let run_msg = RunWithMetadata::new(
+            statement,
+            parameters.unwrap_or_default(),
+            metadata.unwrap_or_default(),
+        );
+        self.send_message(Message::RunWithMetadata(run_msg)).await?;
+        self.read_message().await
+    }
+
+    #[bolt_version(3, 4)]
+    pub async fn begin(&mut self, metadata: HashMap<String, impl Into<Value>>) -> Result<Message> {
+        let begin_msg = Begin::new(metadata.into_iter().map(|(k, v)| (k, v.into())).collect());
+        self.send_message(Message::Begin(begin_msg)).await?;
+        // TODO: Is there actually a response?
+        self.read_message().await
+    }
+
+    #[bolt_version(3, 4)]
+    pub async fn commit(&mut self) -> Result<Message> {
+        self.send_message(Message::Commit).await?;
+        // TODO: Is there actually a response?
+        self.read_message().await
+    }
+
+    #[bolt_version(3, 4)]
+    pub async fn rollback(&mut self) -> Result<Message> {
+        self.send_message(Message::Rollback).await?;
+        // TODO: Is there actually a response?
+        self.read_message().await
+    }
 }
 
 #[cfg(test)]

@@ -69,7 +69,6 @@ pub enum Message {
     Hello(Hello),
     Goodbye,
     RunWithMetadata(RunWithMetadata),
-    // DiscardAll, PullAll are kept from v1
     Begin(Begin),
     Commit,
     Rollback,

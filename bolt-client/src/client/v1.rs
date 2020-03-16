@@ -7,6 +7,7 @@ use bolt_proto::{Message, Value};
 use crate::error::*;
 use crate::Client;
 
+// TODO: Test that you can't use new messages with old clients
 impl Client {
     // Documentation for message-related instance methods below is copied from the descriptions given by
     // Neo Technology, Inc. on https://boltprotocol.org/v1/, with minor modifications.
