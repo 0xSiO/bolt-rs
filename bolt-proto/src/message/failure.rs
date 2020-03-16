@@ -27,22 +27,93 @@ impl_try_from_message!(Failure, Failure);
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use std::iter::FromIterator;
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
 
+    use crate::serialization::*;
+    use crate::value::*;
+
     use super::*;
+
+    fn new_msg() -> Failure {
+        Failure::new(HashMap::from_iter(vec![(
+            "failing_since".to_string(),
+            Value::from(Date::new(1985, 6, 26).unwrap()),
+        )]))
+    }
+
+    #[test]
+    fn get_marker() {
+        assert_eq!(new_msg().get_marker().unwrap(), MARKER);
+    }
+
+    #[test]
+    fn get_signature() {
+        assert_eq!(new_msg().get_signature(), SIGNATURE);
+    }
+
+    #[test]
+    fn try_into_bytes() {
+        let msg = new_msg();
+        assert_eq!(
+            msg.try_into_bytes().unwrap(),
+            Bytes::from_static(&[
+                MARKER,
+                SIGNATURE,
+                map::MARKER_TINY | 1,
+                string::MARKER_TINY | 13,
+                b'f',
+                b'a',
+                b'i',
+                b'l',
+                b'i',
+                b'n',
+                b'g',
+                b'_',
+                b's',
+                b'i',
+                b'n',
+                b'c',
+                b'e',
+                date::MARKER,
+                date::SIGNATURE,
+                integer::MARKER_INT_16,
+                0x16,
+                0x17,
+            ])
+        );
+    }
 
     #[test]
     fn try_from_bytes() {
-        let bytes = Bytes::from_static(&[
-            0xA2, 0x84, 0x63, 0x6F, 0x64, 0x65, 0xD0, 0x25, 0x4E, 0x65, 0x6F, 0x2E, 0x43, 0x6C,
-            0x69, 0x65, 0x6E, 0x74, 0x45, 0x72, 0x72, 0x6F, 0x72, 0x2E, 0x53, 0x74, 0x61, 0x74,
-            0x65, 0x6D, 0x65, 0x6E, 0x74, 0x2E, 0x53, 0x79, 0x6E, 0x74, 0x61, 0x78, 0x45, 0x72,
-            0x72, 0x6F, 0x72, 0x87, 0x6D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x8F, 0x49, 0x6E,
-            0x76, 0x61, 0x6C, 0x69, 0x64, 0x20, 0x73, 0x79, 0x6E, 0x74, 0x61, 0x78, 0x2E,
-        ]);
-        let failure = Failure::try_from(Arc::new(Mutex::new(bytes)));
-        assert!(failure.is_ok());
+        let msg = new_msg();
+        let msg_bytes = &[
+            map::MARKER_TINY | 1,
+            string::MARKER_TINY | 13,
+            b'f',
+            b'a',
+            b'i',
+            b'l',
+            b'i',
+            b'n',
+            b'g',
+            b'_',
+            b's',
+            b'i',
+            b'n',
+            b'c',
+            b'e',
+            date::MARKER,
+            date::SIGNATURE,
+            integer::MARKER_INT_16,
+            0x16,
+            0x17,
+        ];
+        assert_eq!(
+            Failure::try_from(Arc::new(Mutex::new(Bytes::from_static(msg_bytes)))).unwrap(),
+            msg
+        );
     }
 }
