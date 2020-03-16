@@ -1,9 +1,6 @@
-use std::convert::TryFrom;
-
 use bolt_proto_derive::*;
 
-use crate::error::*;
-use crate::{Message, Value};
+use crate::{impl_try_from_message, Value};
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x71;
@@ -23,16 +20,7 @@ impl Record {
     }
 }
 
-impl TryFrom<Message> for Record {
-    type Error = Error;
-
-    fn try_from(message: Message) -> Result<Self> {
-        match message {
-            Message::Record(record) => Ok(record),
-            _ => Err(ConversionError::FromMessage(message).into()),
-        }
-    }
-}
+impl_try_from_message!(Record, Record);
 
 #[cfg(test)]
 mod tests {
