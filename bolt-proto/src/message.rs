@@ -48,10 +48,9 @@ mod message_bytes;
 // This is what's used in the protocol spec, but it could technically be any size.
 const CHUNK_SIZE: usize = 16; // TODO: Make this configurable
 
-// TODO: Derive Eq, PartialEq for all messages where possible
 // TODO: Improve tests so they're similar to the value type tests
 // TODO: Move all message conversions to separate modules
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Message {
     // V1-compatible message types
     Init(Init),

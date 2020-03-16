@@ -9,7 +9,7 @@ use crate::Message;
 pub(crate) const MARKER: u8 = 0xB2;
 pub(crate) const SIGNATURE: u8 = 0x01;
 
-#[derive(Debug, Clone, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Init {
     pub(crate) client_name: String,
     pub(crate) auth_token: HashMap<String, String>,
