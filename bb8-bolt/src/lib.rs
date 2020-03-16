@@ -13,7 +13,7 @@ pub struct BoltConnectionManager {
     addr: SocketAddr,
     domain: Option<String>,
     client_name: String,
-    auth_token: HashMap<String, String>,
+    auth_token: HashMap<String, Value>,
 }
 
 impl BoltConnectionManager {
@@ -21,7 +21,7 @@ impl BoltConnectionManager {
         addr: impl ToSocketAddrs,
         domain: Option<String>,
         client_name: String,
-        auth_token: HashMap<String, String>,
+        auth_token: HashMap<String, Value>,
     ) -> Result<Self, Error> {
         Ok(Self {
             addr: addr
@@ -91,14 +91,14 @@ mod tests {
             env::var("BOLT_TEST_DOMAIN").ok(),
             "bolt-client/X.Y.Z".to_string(),
             HashMap::from_iter(vec![
-                (String::from("scheme"), String::from("basic")),
+                (String::from("scheme"), Value::from("basic")),
                 (
                     String::from("principal"),
-                    env::var("BOLT_TEST_USERNAME").unwrap(),
+                    Value::from(env::var("BOLT_TEST_USERNAME").unwrap()),
                 ),
                 (
                     String::from("credentials"),
-                    env::var("BOLT_TEST_PASSWORD").unwrap(),
+                    Value::from(env::var("BOLT_TEST_PASSWORD").unwrap()),
                 ),
             ]),
         )
@@ -137,9 +137,9 @@ mod tests {
             None,
             "bolt-client/X.Y.Z".to_string(),
             HashMap::from_iter(vec![
-                (String::from("scheme"), String::from("basic")),
-                (String::from("principal"), String::from("neo4j")),
-                (String::from("credentials"), String::from("invalid")),
+                (String::from("scheme"), Value::from("basic")),
+                (String::from("principal"), Value::from("neo4j")),
+                (String::from("credentials"), Value::from("invalid")),
             ]),
         )
         .unwrap();

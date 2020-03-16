@@ -7,6 +7,7 @@ use tokio::runtime::Runtime;
 
 use bolt_client::error::Result;
 use bolt_client::*;
+use bolt_proto::Value;
 
 async fn get_initialized_client() -> Result<Client> {
     let mut client = Client::new(
@@ -19,14 +20,14 @@ async fn get_initialized_client() -> Result<Client> {
         .init(
             "bolt-client/X.Y.Z".to_string(),
             HashMap::from_iter(vec![
-                (String::from("scheme"), String::from("basic")),
+                (String::from("scheme"), Value::from("basic")),
                 (
                     String::from("principal"),
-                    env::var("BOLT_TEST_USERNAME").unwrap(),
+                    Value::from(env::var("BOLT_TEST_USERNAME").unwrap()),
                 ),
                 (
                     String::from("credentials"),
-                    env::var("BOLT_TEST_PASSWORD").unwrap(),
+                    Value::from(env::var("BOLT_TEST_PASSWORD").unwrap()),
                 ),
             ]),
         )
