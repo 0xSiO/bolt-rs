@@ -9,7 +9,7 @@ use crate::{Message, Value};
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x01;
 
-#[derive(Debug, Clone, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Hello {
     pub(crate) metadata: HashMap<String, Value>,
 }
