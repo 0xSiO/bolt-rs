@@ -10,7 +10,6 @@
 //!
 //! use tokio::prelude::*;
 //!
-//! # use bolt_client::skip_if_err;
 //! use bolt_client::Client;
 //! use bolt_proto::{Message, Value};
 //! use bolt_proto::message::*;
@@ -26,7 +25,10 @@
 //!                                  env::var("BOLT_TEST_DOMAIN").ok().as_deref()).await?;
 //!     // This example demonstrates usage of the v1 or v2 protocol
 //!     let handshake_result = client.handshake(&[2, 1, 0, 0]).await;
-//!     # skip_if_err!(handshake_result, Ok(())); // Swallow any failures
+//!     # if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
+//!     #     println!("Skipping test: client handshake failed");
+//!     #     return Ok(());
+//!     # }
 //!     
 //!     // Send an INIT message with authorization details to the server to initialize
 //!     // the session.
@@ -84,16 +86,16 @@ mod stream;
 // TODO: This shouldn't really be exposed
 #[doc(hidden)]
 #[macro_export]
-macro_rules! skip_if_err {
+macro_rules! skip_if_handshake_failed {
     ($var:expr) => {
-        if $var.is_err() {
-            println!("Skipping test: client initialization failed, {:?}", $var);
+        if let ::std::result::Result::Err(crate::error::Error::HandshakeFailed) = $var {
+            println!("Skipping test: client handshake failed");
             return;
         }
     };
     ($var:expr, $ret:expr) => {
-        if $var.is_err() {
-            println!("Skipping test: client initialization failed, {:?}", $var);
+        if let ::std::result::Result::Err(crate::error::Error::HandshakeFailed) = $var {
+            println!("Skipping test: client handshake failed");
             return $ret;
         }
     };
