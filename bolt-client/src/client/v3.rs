@@ -67,14 +67,14 @@ mod tests {
     use std::convert::TryFrom;
 
     use crate::client::v1::tests::*;
-    use crate::skip_if_err;
+    use crate::skip_if_handshake_failed;
 
     use super::*;
 
     #[tokio::test]
     async fn hello() {
         let client = new_client(3).await;
-        skip_if_err!(client);
+        skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, true).await.unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -83,7 +83,7 @@ mod tests {
     #[tokio::test]
     async fn hello_fail() {
         let client = new_client(3).await;
-        skip_if_err!(client);
+        skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
@@ -92,7 +92,7 @@ mod tests {
     #[tokio::test]
     async fn goodbye() {
         let client = get_initialized_client(3).await;
-        skip_if_err!(client);
+        skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert!(client.goodbye().await.is_ok());
     }
