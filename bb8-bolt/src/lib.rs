@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::net::{SocketAddr, ToSocketAddrs};
 
 use bb8::ManageConnection;
-use failure::{Error, Fail};
+use thiserror::Error;
 
 use async_trait::async_trait;
 use bolt_client::*;
@@ -27,7 +27,7 @@ impl BoltConnectionManager {
             addr: addr
                 .to_socket_addrs()?
                 .next()
-                .ok_or_else(|| BoltConnectionError::InvalidAddress)?,
+                .ok_or_else(|| Error::InvalidAddress)?,
             domain,
             client_name,
             auth_token,
@@ -35,12 +35,18 @@ impl BoltConnectionManager {
     }
 }
 
-#[derive(Debug, Fail)]
-pub enum BoltConnectionError {
-    #[fail(display = "Failed to connect: invalid host address.")]
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
+    #[error("Invalid host address.")]
     InvalidAddress,
-    #[fail(display = "Initialization of client failed: {}", _0)]
+    #[error("Initialization of client failed: {0}")]
     ClientInitFailed(String),
+    #[error(transparent)]
+    ClientError(#[from] bolt_client::error::Error),
+    #[error(transparent)]
+    ProtocolError(#[from] bolt_proto::error::Error),
 }
 
 #[async_trait]
@@ -57,7 +63,7 @@ impl ManageConnection for BoltConnectionManager {
         if let Message::Success(_) = response {
             Ok(client)
         } else {
-            Err(BoltConnectionError::ClientInitFailed(format!("{:?}", response)).into())
+            Err(Error::ClientInitFailed(format!("{:?}", response)))
         }
     }
 
