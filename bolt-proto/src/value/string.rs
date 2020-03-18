@@ -40,18 +40,17 @@ impl TryInto<Bytes> for String {
 
     fn try_into(self) -> Result<Bytes> {
         let marker = self.get_marker()?;
-        // TODO: Clean up this code
+        let length = self.value.len();
         // Worst case is a large string, with marker byte, 32-bit size value, and length
-        let mut bytes = BytesMut::with_capacity(
-            mem::size_of::<u8>() + mem::size_of::<u32>() + self.value.len(),
-        );
+        let mut bytes =
+            BytesMut::with_capacity(mem::size_of::<u8>() + mem::size_of::<u32>() + length);
         bytes.put_u8(marker);
-        match self.value.len() {
+        match length {
             0..=15 => {}
-            16..=255 => bytes.put_u8(self.value.len() as u8),
-            256..=65_535 => bytes.put_u16(self.value.len() as u16),
-            65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
-            _ => return Err(Error::ValueTooLarge(self.value.len())),
+            16..=255 => bytes.put_u8(length as u8),
+            256..=65_535 => bytes.put_u16(length as u16),
+            65_536..=4_294_967_295 => bytes.put_u32(length as u32),
+            _ => return Err(Error::ValueTooLarge(length)),
         }
         bytes.put_slice(self.value.as_bytes());
         Ok(bytes.freeze())
