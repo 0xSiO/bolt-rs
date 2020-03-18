@@ -179,7 +179,7 @@ impl Client {
     /// # Response
     /// - `SUCCESS {}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting to be cleared
-    #[bolt_version(1, 2)] // TODO: Try this for v3+
+    #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> Result<Message> {
         self.send_message(Message::AckFailure).await?;
         self.read_message().await
