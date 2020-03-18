@@ -279,14 +279,44 @@ pub(crate) mod tests {
         Ok(client)
     }
 
-    // TODO: For run_valid_query and run_invalid_query, call run_with_metadata instead of run for v3 clients
-
     pub(crate) async fn run_invalid_query(client: &mut Client) -> Result<Message> {
-        client.run("".to_string(), None).await
+        if client.version.unwrap() > 2 {
+            client
+                .run_with_metadata(
+                    "RETURN invalid query oof as n;".to_string(),
+                    Some(HashMap::from_iter(vec![(
+                        "some_val".to_string(),
+                        Value::from(25.5432),
+                    )])),
+                    Some(HashMap::from_iter(vec![(
+                        "some_key".to_string(),
+                        Value::from(true),
+                    )])),
+                )
+                .await
+        } else {
+            client.run("".to_string(), None).await
+        }
     }
 
     pub(crate) async fn run_valid_query(client: &mut Client) -> Result<Message> {
-        client.run("RETURN 1 as n;".to_string(), None).await
+        if client.version.unwrap() > 2 {
+            client
+                .run_with_metadata(
+                    "RETURN $some_val as n;".to_string(),
+                    Some(HashMap::from_iter(vec![(
+                        "some_val".to_string(),
+                        Value::from(25.5432),
+                    )])),
+                    Some(HashMap::from_iter(vec![(
+                        "some_key".to_string(),
+                        Value::from(true),
+                    )])),
+                )
+                .await
+        } else {
+            client.run("RETURN 1 as n;".to_string(), None).await
+        }
     }
 
     #[tokio::test]

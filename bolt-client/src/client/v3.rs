@@ -65,7 +65,6 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
-    use std::iter::FromIterator;
 
     use crate::client::v1::tests::*;
     use crate::skip_if_handshake_failed;
@@ -103,20 +102,7 @@ mod tests {
         let client = get_initialized_client(3).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client
-            .run_with_metadata(
-                "RETURN $some_val as n;".to_string(),
-                Some(HashMap::from_iter(vec![(
-                    "some_val".to_string(),
-                    Value::from(25.5432),
-                )])),
-                Some(HashMap::from_iter(vec![(
-                    "some_key".to_string(),
-                    Value::from(true),
-                )])),
-            )
-            .await
-            .unwrap();
-        // TODO: Finish this test
+        let response = run_valid_query(&mut client).await.unwrap();
+        assert!(Success::try_from(response).is_ok())
     }
 }
