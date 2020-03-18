@@ -337,7 +337,23 @@ pub(crate) mod tests {
         assert!(Failure::try_from(response).is_ok());
     }
 
-    // TODO: Test https://github.com/neo4j/neo4j/pull/8050 (ACK_FAILURE on failed INIT)
+    #[tokio::test]
+    // See https://github.com/neo4j/neo4j/pull/8050.
+    // The current behavior is to simply close the connection on a failed INIT.
+    async fn init_with_ack_failure() {
+        let client = new_client(1).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+        let response = initialize_client(&mut client, false).await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
+
+        // Messages now fail to send since connection was closed
+        let response = initialize_client(&mut client, true).await;
+        assert!(match response {
+            Err(Error::ProtocolError(bolt_proto::error::Error::IOError(_))) => true,
+            _ => false,
+        })
+    }
 
     #[tokio::test]
     async fn ack_failure() {
