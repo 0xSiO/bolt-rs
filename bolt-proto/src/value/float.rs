@@ -29,7 +29,7 @@ impl TryInto<Bytes> for Float {
     type Error = Error;
 
     fn try_into(self) -> Result<Bytes> {
-        let mut bytes = BytesMut::with_capacity(mem::size_of::<u8>() * 9);
+        let mut bytes = BytesMut::with_capacity(mem::size_of::<u8>() + mem::size_of::<f64>());
         bytes.put_u8(MARKER);
         bytes.put_f64(self.value);
         Ok(bytes.freeze())

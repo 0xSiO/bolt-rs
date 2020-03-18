@@ -68,6 +68,7 @@ impl TryInto<Bytes> for Map {
 
     fn try_into(self) -> Result<Bytes> {
         let marker = self.get_marker()?;
+        // TODO: Calculate length correctly
         let mut bytes = BytesMut::with_capacity(mem::size_of::<Value>() * 2 * self.value.len());
         bytes.put_u8(marker);
         match self.value.len() {

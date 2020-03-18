@@ -40,17 +40,29 @@ impl TryInto<Bytes> for List {
 
     fn try_into(self) -> Result<Bytes> {
         let marker = self.get_marker()?;
-        let mut bytes = BytesMut::with_capacity(mem::size_of::<Value>() * self.value.len());
-        bytes.put_u8(marker);
-        match self.value.len() {
-            0..=15 => {}
-            16..=255 => bytes.put_u8(self.value.len() as u8),
-            256..=65_535 => bytes.put_u16(self.value.len() as u16),
-            65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
-            _ => return Err(Error::ValueTooLarge(self.value.len())),
-        }
+        let length = self.value.len();
+
+        let mut total_value_bytes: usize = 0;
+        let mut value_bytes_vec: Vec<Bytes> = Vec::with_capacity(length);
         for value in self.value {
-            bytes.put(&mut value.try_into_bytes().unwrap());
+            let value_bytes: Bytes = value.try_into()?;
+            total_value_bytes += value_bytes.len();
+            value_bytes_vec.push(value_bytes);
+        }
+        // Worst case is a large List, with marker byte, 32-bit size value, and all the Value bytes
+        let mut bytes = BytesMut::with_capacity(
+            mem::size_of::<u8>() + mem::size_of::<u32>() + total_value_bytes,
+        );
+        bytes.put_u8(marker);
+        match length {
+            0..=15 => {}
+            16..=255 => bytes.put_u8(length as u8),
+            256..=65_535 => bytes.put_u16(length as u16),
+            65_536..=4_294_967_295 => bytes.put_u32(length as u32),
+            _ => return Err(Error::ValueTooLarge(length)),
+        }
+        for value_bytes in value_bytes_vec {
+            bytes.put(value_bytes);
         }
         Ok(bytes.freeze())
     }

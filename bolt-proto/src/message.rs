@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::mem;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
@@ -49,8 +50,8 @@ pub(crate) mod success;
 mod chunk;
 mod message_bytes;
 
-// This is what's used in the protocol spec, but it could technically be any size.
-const CHUNK_SIZE: usize = 16; // TODO: Make this configurable
+// This is the default maximum chunk size in the official driver, minus header length
+const CHUNK_SIZE: usize = 16383 - mem::size_of::<u16>();
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Message {

@@ -40,6 +40,7 @@ impl TryInto<Bytes> for String {
 
     fn try_into(self) -> Result<Bytes> {
         let marker = self.get_marker()?;
+        // TODO: Clean up this code
         // Worst case is a large string, with marker byte, 32-bit size value, and length
         let mut bytes = BytesMut::with_capacity(
             mem::size_of::<u8>() + mem::size_of::<u32>() + self.value.len(),

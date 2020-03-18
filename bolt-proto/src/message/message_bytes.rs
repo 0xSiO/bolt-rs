@@ -74,9 +74,8 @@ impl TryInto<Bytes> for MessageBytes {
     type Error = Error;
 
     fn try_into(self) -> Result<Bytes> {
-        let mut bytes = BytesMut::with_capacity(
-            mem::size_of::<u8>() * 2 + self.len() + mem::size_of::<u8>() * 2,
-        );
+        let mut bytes =
+            BytesMut::with_capacity(mem::size_of::<u16>() + self.len() + mem::size_of::<u16>());
         bytes.put_u16(self.len() as u16);
         bytes.put(self.bytes);
         bytes.put_u16(0);
