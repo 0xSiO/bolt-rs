@@ -29,7 +29,7 @@ impl Into<Bytes> for Chunk {
     fn into(self) -> Bytes {
         let mut bytes = BytesMut::with_capacity(
             // 16-bit size, chunk data
-            mem::size_of::<u8>() * 2 + self.data.len(),
+            mem::size_of::<u16>() + self.data.len(),
         );
         bytes.put_u16(self.size);
         bytes.put(self.data);
