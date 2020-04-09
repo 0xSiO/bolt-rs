@@ -8,9 +8,9 @@ mod tests {
 
     use bolt_proto::message::*;
     use bolt_proto::value::*;
-    use bolt_proto::{Message, Value};
 
     use crate::client::v1::tests::*;
+    use crate::error::*;
     use crate::skip_if_handshake_failed;
 
     #[tokio::test]
@@ -29,9 +29,16 @@ mod tests {
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
-    }
 
-    // TODO: Test https://github.com/neo4j/neo4j/pull/8050 (ACK_FAILURE on failed INIT)
+        // See https://github.com/neo4j/neo4j/pull/8050.
+        // The current behavior is to simply close the connection on a failed INIT.
+        // Messages now fail to send since connection was closed
+        let response = initialize_client(&mut client, true).await;
+        assert!(match response {
+            Err(Error::ProtocolError(bolt_proto::error::Error::IOError(_))) => true,
+            _ => false,
+        })
+    }
 
     #[tokio::test]
     async fn ack_failure() {
@@ -128,7 +135,7 @@ mod tests {
             records[0].fields(),
             &[Value::from(NaiveDateTime::new(
                 NaiveDate::from_ymd(2010, 3, 5),
-                NaiveTime::from_hms_nano(12, 30, 1, 500)
+                NaiveTime::from_hms_nano(12, 30, 1, 500),
             ))]
         );
 

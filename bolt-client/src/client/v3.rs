@@ -7,7 +7,6 @@ use bolt_proto::{Message, Value};
 use crate::error::*;
 use crate::Client;
 
-// TODO: Test the rest of the new v3 messages to determine request/response behavior
 impl Client {
     #[bolt_version(3, 4)]
     pub async fn hello(&mut self, metadata: HashMap<String, impl Into<Value>>) -> Result<Message> {
