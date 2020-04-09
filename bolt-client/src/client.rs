@@ -56,6 +56,7 @@ impl Client {
         })
     }
 
+    /// Get the current version of this client.
     pub fn version(&self) -> &Option<u32> {
         &self.version
     }

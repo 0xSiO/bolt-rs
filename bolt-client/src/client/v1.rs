@@ -11,13 +11,13 @@ impl Client {
     /// Send an `INIT` message to the server.
     ///
     /// # Description
-    /// The `INIT` message is a client message used once to initialize the session. This message is always the first
-    /// message the client sends after negotiating protocol version via the initial handshake. Sending any message
+    /// The `INIT` message is a Bolt v1 client message used once to initialize the session. This message is always the
+    /// first message the client sends after negotiating protocol version via the initial handshake. Sending any message
     /// other than `INIT` as the first message to the server will result in a `FAILURE`. The client must acknowledge
     /// failures using `ACK_FAILURE`, after which `INIT` may be reattempted.
     ///
     /// # Response
-    /// - `SUCCESS {}` if initialization has completed successfully
+    /// - `SUCCESS {…}` if initialization has completed successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if initialization
     ///     cannot be performed at this time, or if the authorization failed.
     #[bolt_version(1, 2)]
@@ -54,7 +54,7 @@ impl Client {
     /// single `IGNORED` message and take no further action.
     ///
     /// # Response
-    /// - `SUCCESS {"fields": …​, "result_available_after"}` if the statement has been accepted for execution
+    /// - `SUCCESS {…}` if the statement has been accepted for execution
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or if a statement may not be executed at this
     ///     time
     #[bolt_version(1, 2)]
@@ -81,7 +81,7 @@ impl Client {
     /// single `IGNORED` message and take no further action.
     ///
     /// # Response
-    /// - `SUCCESS {}` if the result stream has been successfully discarded
+    /// - `SUCCESS {…}` if the result stream has been successfully discarded
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
     #[bolt_version(1, 2, 3)]
     pub async fn discard_all(&mut self) -> Result<Message> {
