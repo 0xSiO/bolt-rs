@@ -8,13 +8,6 @@ use crate::error::*;
 use crate::Client;
 
 impl Client {
-    // Documentation for message-related instance methods below is copied from the descriptions given by
-    // Neo Technology, Inc. on https://boltprotocol.org/v1/, with minor modifications.
-    //
-    // The below documentation comments are licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported
-    // License. To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to
-    // Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
-
     /// Send an `INIT` message to the server.
     ///
     /// # Description
@@ -73,46 +66,6 @@ impl Client {
         let run_msg = Run::new(statement, parameters.unwrap_or_default());
         self.send_message(Message::Run(run_msg)).await?;
         self.read_message().await
-    }
-
-    /// Send multiple messages to the server without waiting for a response. Returns a Vec containing the server's
-    /// response messages for each of the sent messages, in the order they were provided.
-    ///
-    /// # Description
-    /// The client is not required to wait for a response before sending more messages. Sending multiple messages
-    /// together like this is called pipelining. For performance reasons, it is recommended that clients use pipelining
-    /// as much as possible. Through pipelining, multiple messages can be transmitted together in the same network
-    /// package, significantly reducing latency and increasing throughput.
-    ///
-    /// A common technique is to buffer outgoing messages on the client until the last possible moment, such as when a
-    /// commit is issued or a result is read by the application, and then sending all messages in the buffer together.
-    ///
-    /// # Failure Handling
-    /// Because the protocol leverages pipelining, the client and the server need to agree on what happens when a
-    /// failure occurs, otherwise messages that were sent assuming no failure would occur might have unintended effects.
-    ///
-    /// When requests fail on the server, the server will send the client a `FAILURE` message. The client must
-    /// acknowledge the `FAILURE` message by sending an `ACK_FAILURE` message to the server. Until the server receives
-    /// the `ACK_FAILURE` message, it will send an `IGNORED` message in response to any other message from the client,
-    /// including messages that were sent in a pipeline.
-    #[bolt_version(1, 2, 3)] // TODO: Test pipelining on v4
-    pub async fn run_pipelined(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
-        // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
-        let mut responses = Vec::with_capacity(messages.len());
-
-        for message in messages {
-            self.send_message(message).await?;
-        }
-
-        for _ in 0..responses.capacity() {
-            let mut response = self.read_message().await?;
-            while let Message::Record(_) = response {
-                responses.push(response);
-                response = self.read_message().await?;
-            }
-            responses.push(response);
-        }
-        Ok(responses)
     }
 
     /// Send a `DISCARD_ALL` message to the server.
@@ -413,7 +366,7 @@ pub(crate) mod tests {
                 Default::default())),
             Message::PullAll,
         ];
-        for response in client.run_pipelined(messages).await.unwrap() {
+        for response in client.pipeline(messages).await.unwrap() {
             assert!(match response {
                 Message::Success(_) => true,
                 Message::Record(record) => {

@@ -131,7 +131,7 @@ mod tests {
                 Default::default(), Default::default())),
             Message::PullAll,
         ];
-        for response in client.run_pipelined(messages).await.unwrap() {
+        for response in client.pipeline(messages).await.unwrap() {
             assert!(match response {
                 Message::Success(_) => true,
                 Message::Record(record) => {
