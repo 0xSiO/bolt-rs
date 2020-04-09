@@ -9,19 +9,20 @@ use async_trait::async_trait;
 use bolt_client::*;
 use bolt_proto::*;
 
+// TODO: Support Bolt v4
+const SUPPORTED_VERSIONS: &[u32; 4] = &[3, 2, 1, 0];
+
 pub struct BoltConnectionManager {
     addr: SocketAddr,
     domain: Option<String>,
-    client_name: String,
-    auth_token: HashMap<String, Value>,
+    metadata: HashMap<String, Value>,
 }
 
 impl BoltConnectionManager {
     pub fn new(
         addr: impl ToSocketAddrs,
         domain: Option<String>,
-        client_name: String,
-        auth_token: HashMap<String, Value>,
+        metadata: HashMap<String, impl Into<Value>>,
     ) -> Result<Self, Error> {
         Ok(Self {
             addr: addr
@@ -29,8 +30,7 @@ impl BoltConnectionManager {
                 .next()
                 .ok_or_else(|| Error::InvalidAddress)?,
             domain,
-            client_name,
-            auth_token,
+            metadata: metadata.into_iter().map(|(k, v)| (k, v.into())).collect(),
         })
     }
 }
@@ -41,6 +41,8 @@ pub enum Error {
     IOError(#[from] std::io::Error),
     #[error("Invalid host address.")]
     InvalidAddress,
+    #[error("Invalid client version: {0}")]
+    InvalidClientVersion(u32),
     #[error("Initialization of client failed: {0}")]
     ClientInitFailed(String),
     #[error(transparent)]
@@ -56,14 +58,23 @@ impl ManageConnection for BoltConnectionManager {
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
         let mut client = Client::new(self.addr, self.domain.as_deref()).await?;
-        client.handshake(&[1, 0, 0, 0]).await?; // TODO: Update this to use higher versions when implemented
-        let response = client
-            .init(self.client_name.clone(), self.auth_token.clone())
-            .await?;
-        if let Message::Success(_) = response {
-            Ok(client)
-        } else {
-            Err(Error::ClientInitFailed(format!("{:?}", response)))
+        client.handshake(SUPPORTED_VERSIONS).await?;
+        let version = client.version().unwrap(); // ok to unwrap if handshake succeeds
+        let response = match version {
+            1 | 2 => {
+                let mut metadata = self.metadata.clone();
+                let user_agent = metadata.remove("user_agent").ok_or_else(|| {
+                    Error::ClientInitFailed("metadata must contain a user_agent".to_string())
+                })?;
+                client.init(String::try_from(user_agent)?, metadata).await?
+            }
+            3 => client.hello(self.metadata.clone()).await?,
+            _ => return Err(Error::InvalidClientVersion(version)),
+        };
+
+        match response {
+            Message::Success(_) => Ok(client),
+            _ => Err(Error::ClientInitFailed(format!("{:?}", response))),
         }
     }
 
@@ -95,16 +106,16 @@ mod tests {
         BoltConnectionManager::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok(),
-            "bolt-client/X.Y.Z".to_string(),
             HashMap::from_iter(vec![
-                (String::from("scheme"), Value::from("basic")),
+                ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
+                ("scheme".to_string(), "basic".to_string()),
                 (
-                    String::from("principal"),
-                    Value::from(env::var("BOLT_TEST_USERNAME").unwrap()),
+                    "principal".to_string(),
+                    env::var("BOLT_TEST_USERNAME").unwrap(),
                 ),
                 (
-                    String::from("credentials"),
-                    Value::from(env::var("BOLT_TEST_PASSWORD").unwrap()),
+                    "credentials".to_string(),
+                    env::var("BOLT_TEST_PASSWORD").unwrap(),
                 ),
             ]),
         )
@@ -112,12 +123,8 @@ mod tests {
     }
 
     #[tokio::test]
-    #[allow(unreachable_code)]
+    // TODO: This really only tests Bolt v3 clients, in practice. Find a way to test pools of specific client versions!
     async fn basic_pool() {
-        // TODO: Support the newer client versions
-        println!("Skipping test: need to support newer client versions.");
-        return;
-
         let manager = get_connection_manager();
         let pool = Pool::builder().max_size(15).build(manager).await.unwrap();
 
@@ -125,10 +132,23 @@ mod tests {
         for i in 1..=tasks.capacity() {
             let pool = pool.clone();
             tasks.push(tokio::spawn(async move {
-                let mut conn = pool.get().await.unwrap();
+                let mut client = pool.get().await.unwrap();
                 let statement = format!("RETURN {} as num;", i);
-                conn.run(statement, None).await.unwrap();
-                let (response, records) = conn.pull_all().await.unwrap();
+                let version = client.version().unwrap();
+                let (response, records) = match version {
+                    1 | 2 => {
+                        client.run(statement, None).await.unwrap();
+                        client.pull_all().await.unwrap()
+                    }
+                    3 => {
+                        client
+                            .run_with_metadata(statement, None, None)
+                            .await
+                            .unwrap();
+                        client.pull_all().await.unwrap()
+                    }
+                    _ => panic!("Unsupported client version: {}", version),
+                };
                 assert!(message::Success::try_from(response).is_ok());
                 assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
             }));
@@ -141,11 +161,11 @@ mod tests {
         let invalid_manager = BoltConnectionManager::new(
             "127.0.0.1:7687",
             None,
-            "bolt-client/X.Y.Z".to_string(),
             HashMap::from_iter(vec![
-                (String::from("scheme"), Value::from("basic")),
-                (String::from("principal"), Value::from("neo4j")),
-                (String::from("credentials"), Value::from("invalid")),
+                ("user_agent".to_string(), "bolt-client/X.Y.Z"),
+                ("scheme".to_string(), "basic"),
+                ("principal".to_string(), "neo4j"),
+                ("credentials".to_string(), "invalid"),
             ]),
         )
         .unwrap();

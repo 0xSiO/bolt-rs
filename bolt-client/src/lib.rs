@@ -83,7 +83,6 @@ pub mod client;
 pub mod error;
 mod stream;
 
-// TODO: This shouldn't really be exposed
 #[doc(hidden)]
 #[macro_export]
 macro_rules! skip_if_handshake_failed {

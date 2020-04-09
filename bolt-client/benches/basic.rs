@@ -15,7 +15,7 @@ async fn get_initialized_client() -> Result<Client> {
         env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
     )
     .await?;
-    client.handshake(&[1, 0, 0, 0]).await?; // TODO: Update this to use higher versions when implemented
+    client.handshake(&[3, 2, 1, 0]).await?; // TODO: Should we benchmark multiple client versions?
     client
         .init(
             "bolt-client/X.Y.Z".to_string(),
