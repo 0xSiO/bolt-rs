@@ -549,4 +549,28 @@ pub(crate) mod tests {
             _ => false,
         });
     }
+
+    #[tokio::test]
+    async fn v3_method_with_v1_client_fails() {
+        let client = get_initialized_client(1).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+        assert!(match client.commit().await {
+            Err(Error::UnsupportedOperation(Some(1))) => true,
+            _ => false,
+        });
+    }
+
+    #[tokio::test]
+    async fn v3_message_with_v1_client_fails() {
+        let client = get_initialized_client(1).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+        client.send_message(Message::Commit).await.unwrap();
+        assert!(match client.read_message().await {
+            // Local server just closes connection, but GrapheneDB sends a FAILURE message
+            Err(Error::ProtocolError(_)) | Ok(Message::Failure(_)) => true,
+            _ => false,
+        });
+    }
 }
