@@ -7,7 +7,6 @@ use bolt_proto::{Message, Value};
 use crate::error::*;
 use crate::Client;
 
-// TODO: Test that you can't use new messages with old clients
 impl Client {
     // Documentation for message-related instance methods below is copied from the descriptions given by
     // Neo Technology, Inc. on https://boltprotocol.org/v1/, with minor modifications.
@@ -96,7 +95,7 @@ impl Client {
     /// acknowledge the `FAILURE` message by sending an `ACK_FAILURE` message to the server. Until the server receives
     /// the `ACK_FAILURE` message, it will send an `IGNORED` message in response to any other message from the client,
     /// including messages that were sent in a pipeline.
-    #[bolt_version(1, 2)]
+    #[bolt_version(1, 2, 3)] // TODO: Test pipelining on v4
     pub async fn run_pipelined(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());

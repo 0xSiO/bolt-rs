@@ -66,6 +66,8 @@ impl Client {
 mod tests {
     use std::convert::TryFrom;
 
+    use bolt_proto::value::*;
+
     use crate::client::v1::tests::*;
     use crate::skip_if_handshake_failed;
 
@@ -104,5 +106,43 @@ mod tests {
         let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok())
+    }
+
+    #[tokio::test]
+    async fn run_with_metadata_pipelined() {
+        let client = get_initialized_client(3).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+        let messages = vec![
+            Message::RunWithMetadata(RunWithMetadata::new(
+                "MATCH (n {test: 'v3-pipelined'}) DETACH DELETE n;".to_string(), 
+                Default::default(), Default::default())),
+            Message::PullAll,
+            Message::RunWithMetadata(RunWithMetadata::new(
+                "CREATE (:Database {name: 'neo4j', v1_release: date('2010-02-16'), test: 'v3-pipelined'});".to_string(), 
+                Default::default(), Default::default())),
+            Message::PullAll,
+            Message::RunWithMetadata(RunWithMetadata::new(
+                "MATCH (neo4j:Database {name: 'neo4j', test: 'v3-pipelined'}) CREATE (:Library {name: 'bolt-client', v1_release: date('2019-12-23'), test: 'v3-pipelined'})-[:CLIENT_FOR]->(neo4j);".to_string(),
+                Default::default(), Default::default())),
+            Message::PullAll,
+            Message::RunWithMetadata(RunWithMetadata::new(
+                "MATCH (neo4j:Database {name: 'neo4j', test: 'v3-pipelined'}), (bolt_client:Library {name: 'bolt-client', test: 'v3-pipelined'}) RETURN duration.between(neo4j.v1_release, bolt_client.v1_release);".to_string(),
+                Default::default(), Default::default())),
+            Message::PullAll,
+        ];
+        for response in client.run_pipelined(messages).await.unwrap() {
+            assert!(match response {
+                Message::Success(_) => true,
+                Message::Record(record) => {
+                    assert_eq!(
+                        Record::try_from(record).unwrap().fields()[0],
+                        Value::from(Duration::new(118, 7, 0, 0))
+                    );
+                    true
+                }
+                _ => false,
+            });
+        }
     }
 }
