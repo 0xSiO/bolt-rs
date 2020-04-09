@@ -56,6 +56,10 @@ impl Client {
         })
     }
 
+    pub fn version(&self) -> &Option<u32> {
+        &self.version
+    }
+
     fn configure_tls_connector(root_certs: &webpki::TLSServerTrustAnchors) -> TlsConnector {
         let mut config = ClientConfig::new();
         config.root_store.add_server_trust_anchors(root_certs);
