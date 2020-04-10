@@ -5,11 +5,9 @@ use std::iter::FromIterator;
 use criterion::*;
 use tokio::runtime::Runtime;
 
-use bolt_client::error::Result;
 use bolt_client::*;
-use bolt_proto::Value;
 
-async fn get_initialized_client() -> Result<Client> {
+async fn get_initialized_client() -> Result<Client, Box<dyn std::error::Error>> {
     let mut client = Client::new(
         env::var("BOLT_TEST_ADDR").unwrap(),
         env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
@@ -45,7 +43,7 @@ fn simple_query_bench(c: &mut Criterion) {
             runtime.block_on(async {
                 let mut client = get_initialized_client().await.unwrap();
                 client
-                    .run("RETURN 1 as num;".to_string(), None)
+                    .run_with_metadata("RETURN 1 as num;".to_string(), None, None)
                     .await
                     .unwrap();
                 client.pull_all().await.unwrap();
