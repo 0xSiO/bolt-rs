@@ -38,17 +38,13 @@ impl MessageBytes {
         buf_stream: &mut BufStream<T>,
     ) -> Result<MessageBytes> {
         let mut message = MessageBytes::new();
-        loop {
-            let size = buf_stream.read_u16().await? as usize;
-            if size == 0 {
-                // We've reached the end of the message
-                // Note that after this point we will have consumed the last two 0 bytes
-                break;
-            }
-            let mut buf = BytesMut::with_capacity(size);
-            buf_stream.read_buf(&mut buf).await?;
-            debug_assert!(buf.len() == size);
-            message.add_chunk(Chunk::try_from(buf.freeze())?)
+        let mut remaining_bytes = buf_stream.read_u16().await? as usize;
+        // Messages end in a 0_u16
+        while remaining_bytes > 0 {
+            let mut buf = vec![0; remaining_bytes];
+            buf_stream.read_exact(&mut buf).await?;
+            message.add_chunk(Chunk::try_from(Bytes::from(buf))?);
+            remaining_bytes = buf_stream.read_u16().await? as usize;
         }
         Ok(message)
     }
