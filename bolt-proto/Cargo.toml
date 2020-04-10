@@ -16,5 +16,5 @@ bolt-proto-derive = { path = "../bolt-proto-derive", version = "0.3.0" }
 bytes = "0.5.4"
 chrono = "0.4.11"
 chrono-tz = "0.5.1"
-thiserror = "1.0.11"
-tokio = { version = "0.2.13", features = ["rt-core", "rt-threaded", "io-util", "macros"] }
+thiserror = "1.0.14"
+tokio = { version = "0.2.17", features = ["rt-core", "rt-threaded", "io-util", "macros"] }
