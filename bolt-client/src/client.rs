@@ -17,7 +17,6 @@ use tokio_rustls::webpki::DNSNameRef;
 use tokio_rustls::{webpki, TlsConnector};
 use webpki_roots::TLS_SERVER_ROOTS;
 
-use bolt_client_macros::*;
 use bolt_proto::Message;
 
 use crate::error::*;
@@ -124,17 +123,24 @@ impl Client {
     /// failure occurs, otherwise messages that were sent assuming no failure would occur might have unintended effects.
     ///
     /// When requests fail on the server, the server will send the client a `FAILURE` message. The client must
-    /// acknowledge the `FAILURE` message by sending an `ACK_FAILURE` message to the server. Until the server receives
-    /// the `ACK_FAILURE` message, it will send an `IGNORED` message in response to any other message from the client,
-    /// including messages that were sent in a pipeline.
-    #[bolt_version(1, 2, 3)] // TODO: Test pipelining on v4
+    /// acknowledge the `FAILURE` message by sending a `RESET` (Bolt v3+) or `ACK_FAILURE` (Bolt v1-2) message to the
+    /// server. Until the server receives the `RESET`/`ACK_FAILURE` message, it will send an `IGNORED` message in
+    /// response to any other message from the client, including messages that were sent in a pipeline.
+    // TODO: Test pipelining on v4
     pub async fn pipeline(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
 
         for message in messages {
-            self.send_message(message).await?;
+            #[cfg(test)]
+            println!(">>> {:?}", message);
+
+            let chunks: Vec<Bytes> = message.try_into()?;
+            for mut chunk in chunks {
+                self.stream.write_buf(&mut chunk).await?;
+            }
         }
+        self.stream.flush().await?;
 
         for _ in 0..responses.capacity() {
             let mut response = self.read_message().await?;
