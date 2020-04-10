@@ -24,9 +24,12 @@ impl Client {
     pub async fn init(
         &mut self,
         client_name: String,
-        auth_token: HashMap<String, Value>,
+        auth_token: HashMap<String, impl Into<Value>>,
     ) -> Result<Message> {
-        let init_msg = Init::new(client_name, auth_token);
+        let init_msg = Init::new(
+            client_name,
+            auth_token.into_iter().map(|(k, v)| (k, v.into())).collect(),
+        );
         self.send_message(Message::Init(init_msg)).await?;
         self.read_message().await
     }
@@ -171,7 +174,6 @@ pub(crate) mod tests {
     use std::convert::TryFrom;
     use std::env;
     use std::iter::FromIterator;
-    use std::string::String;
 
     use bolt_proto::message::*;
     use bolt_proto::value::*;
@@ -204,22 +206,19 @@ pub(crate) mod tests {
                 .init(
                     "bolt-client/X.Y.Z".to_string(),
                     HashMap::from_iter(vec![
-                        (String::from("scheme"), Value::from("basic")),
-                        (String::from("principal"), Value::from(username)),
-                        (String::from("credentials"), Value::from(password)),
+                        ("scheme".to_string(), "basic".to_string()),
+                        ("principal".to_string(), username),
+                        ("credentials".to_string(), password),
                     ]),
                 )
                 .await
         } else {
             client
                 .hello(HashMap::from_iter(vec![
-                    (
-                        String::from("user_agent"),
-                        String::from("bolt-client/X.Y.Z"),
-                    ),
-                    (String::from("scheme"), String::from("basic")),
-                    (String::from("principal"), username),
-                    (String::from("credentials"), password),
+                    ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
+                    ("scheme".to_string(), "basic".to_string()),
+                    ("principal".to_string(), username),
+                    ("credentials".to_string(), password),
                 ]))
                 .await
         }
