@@ -10,13 +10,13 @@ license = "MIT"
 edition = "2018"
 
 [dev-dependencies]
-tokio = { version = "0.2.13", features = ["rt-core", "rt-threaded", "macros"] }
+tokio = { version = "0.2.17", features = ["rt-core", "rt-threaded", "macros"] }
 futures = { version = "0.3.4", features = [] }
 
 [dependencies]
 bolt-client = { path = "../bolt-client", version = "0.5.0" }
 bolt-proto = { path = "../bolt-proto", version = "0.6.0" }
 
-async-trait = "0.1.24"
+async-trait = "0.1.30"
 bb8 = "0.4.0"
-thiserror = "1.0.11"
+thiserror = "1.0.14"
