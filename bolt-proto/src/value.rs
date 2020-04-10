@@ -69,7 +69,7 @@ pub enum Value {
     Path(Path),
     UnboundRelationship(UnboundRelationship),
 
-    // V2-compatible value types
+    // V2+-compatible value types
     Date(Date),                     // A date without a time zone, a.k.a. LocalDate
     Time(Time),                     // A time with a UTC offset, a.k.a. OffsetTime
     DateTimeOffset(DateTimeOffset), // A date-time with a UTC offset, a.k.a. OffsetDateTime

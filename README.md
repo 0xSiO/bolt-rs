@@ -2,15 +2,14 @@
 [![Build Status](https://travis-ci.org/lucis-fluxum/bolt-rs.svg?branch=master)](https://travis-ci.org/lucis-fluxum/bolt-rs)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-NOTE: This project is under construction, and the public API is unstable.
+NOTE: This project is still under development and is not yet recommended for use in production.
 
 ## Overview
 
 This project aims to provide a comprehensive set of libraries that allow for interaction with graph database servers that
-support the [Bolt v1](https://boltprotocol.org/v1/) protocol, namely, [Neo4j](https://neo4j.com). Since there is
-currently no good documentation for Bolt v2, v3, or v4, this set of libraries allows interacting with Neo4j versions up
-to 3.5.14, which is the last version supporting Bolt v1. Development to support the newer versions of the protocol is
-ongoing.
+support the [Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29) protocol, namely, [Neo4j](https://neo4j.com).
+This set of libraries allows interacting with servers supporting versions 1 through 3 of the protocol, which includes 
+Neo4j 4.0. Development to support the newer versions of the protocol is ongoing.
 
 ### bolt-client
 [![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)
@@ -20,6 +19,8 @@ Contains an asynchronous client for Bolt-compatible servers, using a TCP stream 
 TLS.
 
 ### bolt-client-macros
+[![crates.io](https://img.shields.io/crates/v/bolt-client-macros.svg)](https://crates.io/crates/bolt-client-macros)
+[![Released API docs](https://docs.rs/bolt-client-macros/badge.svg)](https://docs.rs/bolt-client-macros)
 
 Procedural macros used in bolt-client for client version requirements and smarter tests.
 
@@ -51,8 +52,6 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/lucis-
 These crates are available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT), with
 portions of the documentation licensed under the 
 [Creative Commons Attribution-ShareAlike 3.0 License](https://creativecommons.org/licenses/by-sa/3.0/).
-
-### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in `bolt-rs` by you shall
 be licensed as MIT, without any additional terms or conditions.

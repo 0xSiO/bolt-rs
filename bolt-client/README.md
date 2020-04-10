@@ -1,5 +1,5 @@
 This crate contains an asynchronous tokio-based client for servers implementing the 
-[Bolt v1](https://boltprotocol.org/v1/) protocol.
+[Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29) protocol.
 
 The main feature of this library is the [`Client`](https://docs.rs/bolt-client/*/bolt_client/struct.Client.html) 
 struct, which provides methods that correspond to Bolt messages that may be sent to a compatible server.
