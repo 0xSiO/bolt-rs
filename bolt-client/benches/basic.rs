@@ -17,20 +17,12 @@ async fn get_initialized_client() -> Result<Client> {
     .await?;
     client.handshake(&[3, 2, 1, 0]).await?; // TODO: Should we benchmark multiple client versions?
     client
-        .init(
-            "bolt-client/X.Y.Z".to_string(),
-            HashMap::from_iter(vec![
-                (String::from("scheme"), Value::from("basic")),
-                (
-                    String::from("principal"),
-                    Value::from(env::var("BOLT_TEST_USERNAME").unwrap()),
-                ),
-                (
-                    String::from("credentials"),
-                    Value::from(env::var("BOLT_TEST_PASSWORD").unwrap()),
-                ),
-            ]),
-        )
+        .hello(HashMap::from_iter(vec![
+            ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
+            ("scheme".to_string(), "basic".to_string()),
+            ("principal".to_string(), env::var("BOLT_TEST_USERNAME")?),
+            ("credentials".to_string(), env::var("BOLT_TEST_PASSWORD")?),
+        ]))
         .await?;
     Ok(client)
 }
