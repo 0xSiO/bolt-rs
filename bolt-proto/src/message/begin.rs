@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
-use crate::{impl_try_from_message, Value};
+use crate::{impl_message_with_metadata, impl_try_from_message, Value};
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x11;
@@ -12,16 +12,7 @@ pub struct Begin {
     pub(crate) metadata: HashMap<String, Value>,
 }
 
-impl Begin {
-    pub fn new(metadata: HashMap<String, Value>) -> Self {
-        Self { metadata }
-    }
-
-    pub fn metadata(&self) -> &HashMap<String, Value> {
-        &self.metadata
-    }
-}
-
+impl_message_with_metadata!(Begin);
 impl_try_from_message!(Begin, Begin);
 
 #[cfg(test)]
