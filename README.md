@@ -6,8 +6,8 @@
 
 This project aims to provide a comprehensive set of libraries that allow for interaction with graph database servers that
 support the [Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29) protocol, namely, [Neo4j](https://neo4j.com).
-This set of libraries allows interacting with servers supporting versions 1 through 3 of the protocol, which includes 
-Neo4j 4.0. Development to support the newer versions of the protocol is ongoing. The project roadmap is shown below:
+This set of libraries allows interacting with servers supporting versions 1 through 4 of the protocol, which includes
+Neo4j 4.0. The project roadmap is shown below:
 - [x] Bolt v1 protocol
     - [x] Messaging and serialization
 - [x] Bolt v2 protocol
