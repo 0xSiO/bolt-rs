@@ -7,7 +7,6 @@ use bytes::Bytes;
 use tokio::io::BufStream;
 use tokio::prelude::*;
 
-// TODO: Do these need to be pub used?
 pub use ack_failure::AckFailure;
 pub use begin::Begin;
 pub(crate) use chunk::Chunk;
