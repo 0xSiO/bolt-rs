@@ -19,6 +19,7 @@ pub use hello::Hello;
 pub use ignored::Ignored;
 pub use init::Init;
 pub(crate) use message_bytes::MessageBytes;
+pub use pull::Pull;
 pub use pull_all::PullAll;
 pub use record::Record;
 pub use reset::Reset;
@@ -39,6 +40,7 @@ pub(crate) mod goodbye;
 pub(crate) mod hello;
 pub(crate) mod ignored;
 pub(crate) mod init;
+pub(crate) mod pull;
 pub(crate) mod pull_all;
 pub(crate) mod record;
 pub(crate) mod reset;
@@ -73,6 +75,9 @@ pub enum Message {
     Begin(Begin),
     Commit,
     Rollback,
+    // V4+-compatible message types
+    // Discard,
+    Pull(Pull),
 }
 
 impl Message {
@@ -102,6 +107,7 @@ impl Marker for Message {
             Message::Begin(begin) => begin.get_marker(),
             Message::Commit => Commit.get_marker(),
             Message::Rollback => Rollback.get_marker(),
+            Message::Pull(pull) => pull.get_marker(),
         }
     }
 }
@@ -125,6 +131,7 @@ impl Signature for Message {
             Message::Begin(begin) => begin.get_signature(),
             Message::Commit => Commit.get_signature(),
             Message::Rollback => Rollback.get_signature(),
+            Message::Pull(pull) => pull.get_signature(),
         }
     }
 }
@@ -152,6 +159,7 @@ impl TryInto<Bytes> for Message {
             Message::Begin(begin) => begin.try_into(),
             Message::Commit => Commit.try_into(),
             Message::Rollback => Rollback.try_into(),
+            Message::Pull(pull) => pull.try_into(),
         }
     }
 }
@@ -198,7 +206,15 @@ impl TryFrom<MessageBytes> for Message {
                     }
                 }
                 discard_all::SIGNATURE => Ok(Message::DiscardAll),
-                pull_all::SIGNATURE => Ok(Message::PullAll),
+                pull_all::SIGNATURE => {
+                    // Equal to pull::SIGNATURE, so we have to check for metadata.
+                    // PULL_ALL has 0 fields, while PULL has 1.
+                    if marker == pull_all::MARKER {
+                        Ok(Message::PullAll)
+                    } else {
+                        Ok(Message::Pull(Pull::try_from(remaining_bytes_arc)?))
+                    }
+                }
                 ack_failure::SIGNATURE => Ok(Message::AckFailure),
                 reset::SIGNATURE => Ok(Message::Reset),
                 record::SIGNATURE => Ok(Message::Record(Record::try_from(remaining_bytes_arc)?)),
