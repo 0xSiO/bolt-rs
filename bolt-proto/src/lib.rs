@@ -9,6 +9,24 @@ pub mod value;
 
 #[doc(hidden)]
 #[macro_export]
+macro_rules! impl_message_with_metadata {
+    ($T:path) => {
+        impl $T {
+            pub fn new(metadata: HashMap<String, impl Into<Value>>) -> Self {
+                Self {
+                    metadata: metadata.into_iter().map(|(k, v)| (k, v.into())).collect(),
+                }
+            }
+
+            pub fn metadata(&self) -> &HashMap<String, Value> {
+                &self.metadata
+            }
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
 macro_rules! impl_try_from_value {
     ($T:path, $V:ident) => {
         impl ::std::convert::TryFrom<$crate::Value> for $T {
