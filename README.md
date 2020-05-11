@@ -2,14 +2,26 @@
 [![Build Status](https://travis-ci.org/lucis-fluxum/bolt-rs.svg?branch=master)](https://travis-ci.org/lucis-fluxum/bolt-rs)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-NOTE: This project is still under development and is not yet recommended for use in production.
-
 ## Overview
 
 This project aims to provide a comprehensive set of libraries that allow for interaction with graph database servers that
 support the [Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29) protocol, namely, [Neo4j](https://neo4j.com).
 This set of libraries allows interacting with servers supporting versions 1 through 3 of the protocol, which includes 
-Neo4j 4.0. Development to support the newer versions of the protocol is ongoing.
+Neo4j 4.0. Development to support the newer versions of the protocol is ongoing. The project roadmap is shown below:
+- [x] Bolt v1
+    - [x] Messaging and serialization
+- [x] Bolt v2
+    - [x] New data types (dates, times, durations, points)
+- [x] Bolt v3
+    - [x] New message types (Hello, Goodbye, RunWithMetadata, Begin, Commit, Rollback)
+- [ ] Bolt v4
+    - [ ] New message types (Pull, Discard)
+- [ ] Client and connection pool adaptor
+    - [x] v1-v3 client behavior
+    - [ ] v4 client behavior
+    - [ ] Implement transaction handling/retries (or leave it to a higher-level library)
+    - [ ] Benchmarks?
+- [ ] Address TODOs scattered throughout codebase
 
 ### bolt-client
 [![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)
