@@ -11,7 +11,7 @@ impl Client {
     /// Send a `HELLO` message to the server.
     ///
     /// # Description
-    /// This message is the equivalent of `INIT` for Bolt v3 clients, but the client name and auth token are merged into
+    /// This message is the equivalent of `INIT` for Bolt v3+ clients, but the client name and auth token are merged into
     /// a single metadata object.
     ///
     /// # Response
@@ -28,7 +28,7 @@ impl Client {
     /// Send a `GOODBYE` message to the server.
     ///
     /// # Description
-    /// The `GOODBYE` message is a Bolt v3 client message used to end the session. The server will end the connection
+    /// The `GOODBYE` message is a Bolt v3+ client message used to end the session. The server will end the connection
     /// upon receipt of this message.
     #[bolt_version(3, 4)]
     pub async fn goodbye(&mut self) -> Result<()> {
@@ -39,8 +39,8 @@ impl Client {
     /// Send a `RUN_WITH_METADATA` message to the server.
     ///
     /// # Description
-    /// This message is the equivalent of `RUN` for Bolt v3 clients, but allows passing an arbitrary metadata hash along
-    /// with the request.
+    /// This message is the equivalent of `RUN` for Bolt v3+ clients, but allows passing an arbitrary metadata hash
+    /// along with the request.
     ///
     /// # Response
     /// - `SUCCESS {…​}` if the statement has been accepted for execution
@@ -65,7 +65,7 @@ impl Client {
     /// Send a `BEGIN` message to the server.
     ///
     /// # Description
-    /// This Bolt v3 message begins a transaction. A hash of arbitrary metadata can be passed along with the request.
+    /// This Bolt v3+ message begins a transaction. A hash of arbitrary metadata can be passed along with the request.
     ///
     /// # Response
     /// - `SUCCESS {}` if transaction has started successfully
@@ -81,8 +81,8 @@ impl Client {
     /// Send a `COMMIT` message to the server.
     ///
     /// # Description
-    /// This Bolt v3 message commits a transaction. Any changes made since the transaction was started will be persisted
-    /// to the database. To instead cancel pending changes, send a `ROLLBACK` message.
+    /// This Bolt v3+ message commits a transaction. Any changes made since the transaction was started will be
+    /// persisted to the database. To instead cancel pending changes, send a `ROLLBACK` message.
     ///
     /// # Response
     /// - `SUCCESS {…}` if transaction has been committed successfully
@@ -96,7 +96,7 @@ impl Client {
     /// Send a `ROLLBACK` message to the server.
     ///
     /// # Description
-    /// This Bolt v3 message cancels a transaction. Any changes made since the transaction was started will be undone.
+    /// This Bolt v3+ message cancels a transaction. Any changes made since the transaction was started will be undone.
     /// To instead keep pending changes, send a `COMMIT` message.
     ///
     /// # Response
