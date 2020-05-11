@@ -12,6 +12,7 @@ pub use ack_failure::AckFailure;
 pub use begin::Begin;
 pub(crate) use chunk::Chunk;
 pub use commit::Commit;
+pub use discard::Discard;
 pub use discard_all::DiscardAll;
 pub use failure::Failure;
 pub use goodbye::Goodbye;
@@ -34,6 +35,7 @@ use crate::serialization::*;
 pub(crate) mod ack_failure;
 pub(crate) mod begin;
 pub(crate) mod commit;
+pub(crate) mod discard;
 pub(crate) mod discard_all;
 pub(crate) mod failure;
 pub(crate) mod goodbye;
@@ -76,7 +78,7 @@ pub enum Message {
     Commit,
     Rollback,
     // V4+-compatible message types
-    // Discard,
+    Discard(Discard),
     Pull(Pull),
 }
 
@@ -107,6 +109,7 @@ impl Marker for Message {
             Message::Begin(begin) => begin.get_marker(),
             Message::Commit => Commit.get_marker(),
             Message::Rollback => Rollback.get_marker(),
+            Message::Discard(discard) => discard.get_marker(),
             Message::Pull(pull) => pull.get_marker(),
         }
     }
@@ -131,6 +134,7 @@ impl Signature for Message {
             Message::Begin(begin) => begin.get_signature(),
             Message::Commit => Commit.get_signature(),
             Message::Rollback => Rollback.get_signature(),
+            Message::Discard(discard) => discard.get_signature(),
             Message::Pull(pull) => pull.get_signature(),
         }
     }
@@ -159,6 +163,7 @@ impl TryInto<Bytes> for Message {
             Message::Begin(begin) => begin.try_into(),
             Message::Commit => Commit.try_into(),
             Message::Rollback => Rollback.try_into(),
+            Message::Discard(discard) => discard.try_into(),
             Message::Pull(pull) => pull.try_into(),
         }
     }
@@ -205,7 +210,15 @@ impl TryFrom<MessageBytes> for Message {
                         )?))
                     }
                 }
-                discard_all::SIGNATURE => Ok(Message::DiscardAll),
+                discard_all::SIGNATURE => {
+                    // Equal to discard::SIGNATURE, so we have to check for metadata.
+                    // DISCARD_ALL has 0 fields, while DISCARD has 1.
+                    if marker == discard_all::MARKER {
+                        Ok(Message::DiscardAll)
+                    } else {
+                        Ok(Message::Discard(Discard::try_from(remaining_bytes_arc)?))
+                    }
+                }
                 pull_all::SIGNATURE => {
                     // Equal to pull::SIGNATURE, so we have to check for metadata.
                     // PULL_ALL has 0 fields, while PULL has 1.
