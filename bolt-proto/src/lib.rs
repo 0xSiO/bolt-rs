@@ -12,10 +12,8 @@ pub mod value;
 macro_rules! impl_message_with_metadata {
     ($T:path) => {
         impl $T {
-            pub fn new(metadata: HashMap<String, impl Into<Value>>) -> Self {
-                Self {
-                    metadata: metadata.into_iter().map(|(k, v)| (k, v.into())).collect(),
-                }
+            pub fn new(metadata: HashMap<String, Value>) -> Self {
+                Self { metadata }
             }
 
             pub fn metadata(&self) -> &HashMap<String, Value> {
