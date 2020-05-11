@@ -72,6 +72,9 @@ impl Client {
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be started
     #[bolt_version(3, 4)]
     // TODO: The impl Into<Value> is nice, but makes empty maps tricky. Maybe wrap the HashMap in a Metadata type
+    // TODO: Decide whether to make the metadata HashMaps in these client methods optional or not.
+    //     On the plus side, it's easy to leave out metadata by giving a 'None', but rustc complains that it can't
+    //     determine the type of the HashMap<String, impl Into<Value>> inside the async block
     pub async fn begin(&mut self, metadata: HashMap<String, impl Into<Value>>) -> Result<Message> {
         let begin_msg = Begin::new(metadata.into_iter().map(|(k, v)| (k, v.into())).collect());
         self.send_message(Message::Begin(begin_msg)).await?;
