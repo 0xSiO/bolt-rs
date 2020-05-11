@@ -18,7 +18,7 @@ Neo4j 4.0. The project roadmap is shown below:
     - [x] New message types (Pull, Discard)
 - [ ] Client and connection pool adaptor
     - [x] v1-v3 client behavior
-    - [x] v4 client behavior (untested)
+    - [x] v4 client behavior
     - [ ] Implement transaction handling/retries (or leave it to a higher-level library)
     - [ ] Benchmarks?
 - [ ] Address TODOs scattered throughout codebase
