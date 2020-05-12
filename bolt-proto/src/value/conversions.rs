@@ -56,12 +56,18 @@ where
 
 impl From<&str> for Value {
     fn from(value: &str) -> Self {
-        Value::String(std::string::String::from(value))
+        Value::String(String::from(value))
     }
 }
 
 impl From<std::string::String> for Value {
     fn from(value: std::string::String) -> Self {
+        Value::String(String::from(value))
+    }
+}
+
+impl From<String> for Value {
+    fn from(value: String) -> Self {
         Value::String(value)
     }
 }

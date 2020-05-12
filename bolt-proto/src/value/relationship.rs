@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use bolt_proto_derive::*;
 
 use crate::impl_try_from_value;
+use crate::value::String;
 use crate::Value;
 
 pub(crate) const MARKER: u8 = 0xB5;
@@ -22,15 +23,18 @@ impl Relationship {
         rel_identity: i64,
         start_node_identity: i64,
         end_node_identity: i64,
-        rel_type: String,
-        properties: HashMap<String, impl Into<Value>>,
+        rel_type: std::string::String,
+        properties: HashMap<std::string::String, impl Into<Value>>,
     ) -> Self {
         Self {
             rel_identity,
             start_node_identity,
             end_node_identity,
-            rel_type,
-            properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
+            rel_type: rel_type.into(),
+            properties: properties
+                .into_iter()
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
         }
     }
 
@@ -47,7 +51,7 @@ impl Relationship {
     }
 
     pub fn rel_type(&self) -> &str {
-        &self.rel_type
+        &self.rel_type.value
     }
 
     pub fn properties(&self) -> &HashMap<String, Value> {

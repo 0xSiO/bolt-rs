@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
+use crate::value::String;
 use crate::{impl_try_from_message, Value};
 
 pub(crate) const MARKER: u8 = 0xB2;
@@ -14,15 +15,21 @@ pub struct Run {
 }
 
 impl Run {
-    pub fn new(statement: String, parameters: HashMap<String, Value>) -> Self {
+    pub fn new(
+        statement: std::string::String,
+        parameters: HashMap<std::string::String, Value>,
+    ) -> Self {
         Self {
-            statement,
-            parameters,
+            statement: String::from(statement),
+            parameters: parameters
+                .into_iter()
+                .map(|(k, v)| (String::from(k), v))
+                .collect(),
         }
     }
 
     pub fn statement(&self) -> &str {
-        &self.statement
+        &self.statement.value
     }
 
     pub fn parameters(&self) -> &HashMap<String, Value> {

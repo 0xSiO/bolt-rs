@@ -12,11 +12,20 @@ pub mod value;
 macro_rules! impl_message_with_metadata {
     ($T:path) => {
         impl $T {
-            pub fn new(metadata: HashMap<String, Value>) -> Self {
-                Self { metadata }
+            pub fn new(
+                metadata: ::std::collections::HashMap<::std::string::String, $crate::value::Value>,
+            ) -> Self {
+                Self {
+                    metadata: metadata
+                        .into_iter()
+                        .map(|(k, v)| ($crate::value::String::from(k), v))
+                        .collect(),
+                }
             }
 
-            pub fn metadata(&self) -> &HashMap<String, Value> {
+            pub fn metadata(
+                &self,
+            ) -> &::std::collections::HashMap<$crate::value::String, $crate::value::Value> {
                 &self.metadata
             }
         }

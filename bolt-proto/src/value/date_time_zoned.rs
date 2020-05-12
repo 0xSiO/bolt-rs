@@ -4,6 +4,7 @@ use chrono_tz::Tz;
 use bolt_proto_derive::*;
 
 use crate::error::*;
+use crate::value::String;
 
 mod conversions;
 
@@ -27,7 +28,7 @@ impl DateTimeZoned {
         minute: u32,
         second: u32,
         nanosecond: u32,
-        zone_id: String,
+        zone_id: std::string::String,
     ) -> Result<Self> {
         let date_time = NaiveDateTime::new(
             NaiveDate::from_ymd_opt(year, month, day)
@@ -41,7 +42,7 @@ impl DateTimeZoned {
         Ok(Self {
             epoch_seconds: date_time.timestamp(),
             nanos: date_time.nanosecond() as i64,
-            zone_id: timezone.name().to_string(),
+            zone_id: String::from(timezone.name().to_string()),
         })
     }
 }

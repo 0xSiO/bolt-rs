@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
+use crate::value::String;
 use crate::{impl_try_from_message, Value};
 
 pub(crate) const MARKER: u8 = 0xB2;
@@ -14,15 +15,21 @@ pub struct Init {
 }
 
 impl Init {
-    pub fn new(client_name: String, auth_token: HashMap<String, Value>) -> Self {
+    pub fn new(
+        client_name: std::string::String,
+        auth_token: HashMap<std::string::String, Value>,
+    ) -> Self {
         Self {
-            client_name,
-            auth_token,
+            client_name: client_name.into(),
+            auth_token: auth_token
+                .into_iter()
+                .map(|(k, v)| (String::from(k), v))
+                .collect(),
         }
     }
 
     pub fn client_name(&self) -> &str {
-        &self.client_name
+        &self.client_name.value
     }
 
     pub fn auth_token(&self) -> &HashMap<String, Value> {
