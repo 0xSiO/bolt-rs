@@ -126,7 +126,6 @@ impl Client {
     /// acknowledge the `FAILURE` message by sending a `RESET` (Bolt v3+) or `ACK_FAILURE` (Bolt v1-2) message to the
     /// server. Until the server receives the `RESET`/`ACK_FAILURE` message, it will send an `IGNORED` message in
     /// response to any other message from the client, including messages that were sent in a pipeline.
-    // TODO: Test pipelining on v4
     pub async fn pipeline(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
