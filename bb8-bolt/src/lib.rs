@@ -9,8 +9,7 @@ use async_trait::async_trait;
 use bolt_client::*;
 use bolt_proto::*;
 
-// TODO: Support Bolt v4
-const SUPPORTED_VERSIONS: &[u32; 4] = &[3, 2, 1, 0];
+const SUPPORTED_VERSIONS: &[u32; 4] = &[4, 3, 2, 1];
 
 pub struct BoltConnectionManager {
     addr: SocketAddr,
@@ -68,7 +67,7 @@ impl ManageConnection for BoltConnectionManager {
                 })?;
                 client.init(String::try_from(user_agent)?, metadata).await?
             }
-            3 => client.hello(self.metadata.clone()).await?,
+            3 | 4 => client.hello(self.metadata.clone()).await?,
             _ => return Err(Error::InvalidClientVersion(version)),
         };
 
@@ -123,7 +122,8 @@ mod tests {
     }
 
     #[tokio::test]
-    // TODO: This really only tests Bolt v3 clients, in practice. Find a way to test pools of specific client versions!
+    // TODO: Because Neo4j picks the highest possible protocol version, this really only tests v3 or v4 clients. Find a
+    //     way to test specific client versions. This may require refactoring that constant SUPPORTED_VERSIONS
     async fn basic_pool() {
         let manager = get_connection_manager();
         let pool = Pool::builder().max_size(15).build(manager).await.unwrap();
@@ -146,6 +146,16 @@ mod tests {
                             .await
                             .unwrap();
                         client.pull_all().await.unwrap()
+                    }
+                    4 => {
+                        client
+                            .run_with_metadata(statement, None, None)
+                            .await
+                            .unwrap();
+                        client
+                            .pull(HashMap::from_iter(vec![("n".to_string(), 1)]))
+                            .await
+                            .unwrap()
                     }
                     _ => panic!("Unsupported client version: {}", version),
                 };
