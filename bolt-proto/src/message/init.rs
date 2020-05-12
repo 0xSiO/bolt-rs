@@ -32,8 +32,11 @@ impl Init {
         &self.client_name.value
     }
 
-    pub fn auth_token(&self) -> &HashMap<String, Value> {
-        &self.auth_token
+    pub fn auth_token(&self) -> HashMap<&str, &Value> {
+        self.auth_token
+            .iter()
+            .map(|(k, v)| (k.value.as_str(), v))
+            .collect()
     }
 }
 

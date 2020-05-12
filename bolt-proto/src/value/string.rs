@@ -17,7 +17,7 @@ pub(crate) const MARKER_MEDIUM: u8 = 0xD1;
 pub(crate) const MARKER_LARGE: u8 = 0xD2;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub(crate) struct String {
+pub struct String {
     pub(crate) value: std::string::String,
 }
 
