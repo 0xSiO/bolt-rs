@@ -15,9 +15,6 @@ where
     }
 }
 
-// We don't need TryFrom<Value> for List since it can be converted directly into a Vec
-// impl_try_from_value!(List, List);
-
 impl<T> TryInto<Vec<T>> for List
 where
     T: TryFrom<Value, Error = Error>,
@@ -34,5 +31,33 @@ impl TryInto<Vec<Value>> for List {
 
     fn try_into(self) -> Result<Vec<Value>> {
         Ok(self.value)
+    }
+}
+
+// We don't need TryFrom<Value> for List since it can be converted directly into a Vec
+// impl_try_from_value!(List, List);
+
+impl<T> TryFrom<Value> for Vec<T>
+where
+    T: TryFrom<Value, Error = Error>,
+{
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::List(list) => list.try_into(),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl TryFrom<Value> for Vec<Value> {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::List(list) => Ok(list.value),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
     }
 }

@@ -1,14 +1,9 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-use std::hash::Hash;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
-use crate::error::*;
 use crate::value::*;
-
-// ----------------------- FROM -----------------------
 
 impl From<bool> for Value {
     fn from(value: bool) -> Self {
@@ -32,6 +27,18 @@ impl_from_int!(i8, i16, i32, i64);
 impl From<f64> for Value {
     fn from(value: f64) -> Self {
         Value::Float(value)
+    }
+}
+
+impl From<&[u8]> for Value {
+    fn from(value: &[u8]) -> Self {
+        Value::Bytes(ByteArray::from(value))
+    }
+}
+
+impl From<Vec<u8>> for Value {
+    fn from(value: Vec<u8>) -> Self {
+        Value::Bytes(ByteArray::from(value))
     }
 }
 
@@ -182,72 +189,5 @@ impl From<Point2D> for Value {
 impl From<Point3D> for Value {
     fn from(value: Point3D) -> Self {
         Value::Point3D(value)
-    }
-}
-
-// ----------------------- INTO -----------------------
-
-impl<T> TryInto<Vec<T>> for Value
-where
-    T: TryFrom<Value, Error = Error>,
-{
-    type Error = Error;
-
-    fn try_into(self) -> Result<Vec<T>> {
-        match self {
-            Value::List(list) => list.try_into(),
-            _ => Err(ConversionError::FromValue(self).into()),
-        }
-    }
-}
-
-impl TryInto<Vec<u8>> for Value {
-    type Error = Error;
-
-    fn try_into(self) -> Result<Vec<u8>> {
-        match self {
-            Value::Bytes(byte_array) => Ok(byte_array.into()),
-            _ => Err(ConversionError::FromValue(self).into()),
-        }
-    }
-}
-
-impl TryInto<Vec<Value>> for Value {
-    type Error = Error;
-
-    fn try_into(self) -> Result<Vec<Value>> {
-        match self {
-            Value::List(list) => list.try_into(),
-            _ => Err(ConversionError::FromValue(self).into()),
-        }
-    }
-}
-
-impl<K, V> TryInto<HashMap<K, V>> for Value
-where
-    K: Hash + Eq + TryFrom<Value, Error = Error>,
-    V: TryFrom<Value, Error = Error>,
-{
-    type Error = Error;
-
-    fn try_into(self) -> Result<HashMap<K, V>> {
-        match self {
-            Value::Map(map) => Ok(map.try_into()?),
-            _ => Err(ConversionError::FromValue(self).into()),
-        }
-    }
-}
-
-impl<K> TryInto<HashMap<K, Value>> for Value
-where
-    K: Hash + Eq + TryFrom<Value, Error = Error>,
-{
-    type Error = Error;
-
-    fn try_into(self) -> Result<HashMap<K, Value>> {
-        match self {
-            Value::Map(map) => Ok(map.try_into()?),
-            _ => Err(ConversionError::FromValue(self).into()),
-        }
     }
 }

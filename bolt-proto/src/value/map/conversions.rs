@@ -39,3 +39,32 @@ where
 
 // We don't need TryFrom<Value> for Map since it can be converted directly into a HashMap
 // impl_try_from_value!(Map, Map);
+
+impl<K, V> TryFrom<Value> for HashMap<K, V>
+where
+    K: Hash + Eq + TryFrom<Value, Error = Error>,
+    V: TryFrom<Value, Error = Error>,
+{
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::Map(map) => map.try_into(),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl<K> TryFrom<Value> for HashMap<K, Value>
+where
+    K: Hash + Eq + TryFrom<Value, Error = Error>,
+{
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::Map(map) => map.try_into(),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
