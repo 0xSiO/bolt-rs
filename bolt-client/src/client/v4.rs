@@ -108,4 +108,42 @@ mod tests {
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].fields(), &[Value::from(3_458_376)]);
     }
+
+    #[tokio::test]
+    async fn run_with_metadata_pipelined() {
+        let client = get_initialized_client(4).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+        let messages = vec![
+            Message::RunWithMetadata(RunWithMetadata::new(
+                "MATCH (n {test: 'v4-pipelined'}) DETACH DELETE n;".to_string(),
+                Default::default(), Default::default())),
+            Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
+            Message::RunWithMetadata(RunWithMetadata::new(
+                "CREATE (:Database {name: 'neo4j', v1_release: date('2010-02-16'), test: 'v4-pipelined'});".to_string(),
+                Default::default(), Default::default())),
+            Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
+            Message::RunWithMetadata(RunWithMetadata::new(
+                "MATCH (neo4j:Database {name: 'neo4j', test: 'v4-pipelined'}) CREATE (:Library {name: 'bolt-client', v1_release: date('2019-12-23'), test: 'v4-pipelined'})-[:CLIENT_FOR]->(neo4j);".to_string(),
+                Default::default(), Default::default())),
+            Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
+            Message::RunWithMetadata(RunWithMetadata::new(
+                "MATCH (neo4j:Database {name: 'neo4j', test: 'v4-pipelined'}), (bolt_client:Library {name: 'bolt-client', test: 'v4-pipelined'}) RETURN duration.between(neo4j.v1_release, bolt_client.v1_release);".to_string(),
+                Default::default(), Default::default())),
+            Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
+        ];
+        for response in client.pipeline(messages).await.unwrap() {
+            assert!(match response {
+                Message::Success(_) => true,
+                Message::Record(record) => {
+                    assert_eq!(
+                        Record::try_from(record).unwrap().fields()[0],
+                        Value::from(Duration::new(118, 7, 0, 0))
+                    );
+                    true
+                }
+                _ => false,
+            });
+        }
+    }
 }
