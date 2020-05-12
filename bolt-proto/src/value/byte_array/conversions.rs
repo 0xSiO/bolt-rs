@@ -21,12 +21,6 @@ impl From<Vec<u8>> for ByteArray {
 // We don't need TryFrom<Value> for ByteArray since it can be converted directly into a Vec
 // impl_try_from_value!(ByteArray, Bytes);
 
-impl From<ByteArray> for Vec<u8> {
-    fn from(byte_array: ByteArray) -> Self {
-        byte_array.value
-    }
-}
-
 impl TryFrom<Value> for Vec<u8> {
     type Error = Error;
 
