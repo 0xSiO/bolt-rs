@@ -63,7 +63,7 @@ pub enum Value {
     List(List),
     Map(Map),
     Null,
-    String(std::string::String),
+    String(String),
     Node(Node),
     Relationship(Relationship),
     Path(Path),
@@ -129,8 +129,7 @@ impl Marker for Value {
             Value::List(list) => list.get_marker(),
             Value::Map(map) => map.get_marker(),
             Value::Null => Null.get_marker(),
-            // TODO: This could incur a large runtime cost since we copy the whole thing
-            Value::String(string) => String::from(string.as_str()).get_marker(),
+            Value::String(string) => string.get_marker(),
             Value::Node(node) => node.get_marker(),
             Value::Relationship(rel) => rel.get_marker(),
             Value::Path(path) => path.get_marker(),
@@ -162,7 +161,7 @@ impl TryInto<Bytes> for Value {
             Value::List(list) => list.try_into(),
             Value::Map(map) => map.try_into(),
             Value::Null => Null.try_into(),
-            Value::String(string) => String::from(string).try_into(),
+            Value::String(string) => string.try_into(),
             Value::Node(node) => node.try_into(),
             Value::Relationship(rel) => rel.try_into(),
             Value::Path(path) => path.try_into(),
@@ -220,10 +219,10 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 marker
                     if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
                 {
-                    Ok(Value::String(String::try_from(input_arc)?.value))
+                    Ok(Value::String(String::try_from(input_arc)?))
                 }
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
-                    Ok(Value::String(String::try_from(input_arc)?.value))
+                    Ok(Value::String(String::try_from(input_arc)?))
                 }
                 // Tiny list
                 marker if (list::MARKER_TINY..=(list::MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -414,19 +413,19 @@ mod tests {
         let large_bytes = large.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
-            Value::String(tiny.value)
+            Value::String(tiny)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
-            Value::String(small.value)
+            Value::String(small)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
-            Value::String(medium.value)
+            Value::String(medium)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
-            Value::String(large.value)
+            Value::String(large)
         );
     }
 

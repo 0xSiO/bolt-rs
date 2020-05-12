@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
+use crate::value::String;
 use crate::{impl_try_from_message, Value};
 
 pub(crate) const MARKER: u8 = 0xB3;
@@ -16,19 +17,25 @@ pub struct RunWithMetadata {
 
 impl RunWithMetadata {
     pub fn new(
-        statement: String,
-        parameters: HashMap<String, Value>,
-        metadata: HashMap<String, Value>,
+        statement: std::string::String,
+        parameters: HashMap<std::string::String, Value>,
+        metadata: HashMap<std::string::String, Value>,
     ) -> Self {
         Self {
-            statement,
-            parameters,
-            metadata,
+            statement: String::from(statement),
+            parameters: parameters
+                .into_iter()
+                .map(|(k, v)| (String::from(k), v))
+                .collect(),
+            metadata: metadata
+                .into_iter()
+                .map(|(k, v)| (String::from(k), v))
+                .collect(),
         }
     }
 
     pub fn statement(&self) -> &str {
-        &self.statement
+        &self.statement.value
     }
 
     pub fn parameters(&self) -> &HashMap<String, Value> {

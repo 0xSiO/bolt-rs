@@ -9,7 +9,7 @@ use crate::value::DateTimeZoned;
 impl From<DateTimeZoned> for DateTime<FixedOffset> {
     fn from(date_time_zoned: DateTimeZoned) -> Self {
         // Time zone guaranteed to be valid in existing objects, ok to unwrap
-        let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
+        let timezone: Tz = date_time_zoned.zone_id.value.parse().unwrap();
         let timezone: FixedOffset = timezone
             // Get the fixed offset (e.g. Pacific Daylight vs. Pacific Standard) for the given point in time
             .offset_from_utc_datetime(
@@ -48,7 +48,7 @@ impl From<DateTime<Tz>> for DateTimeZoned {
 impl From<DateTimeZoned> for DateTime<Tz> {
     fn from(date_time_zoned: DateTimeZoned) -> Self {
         // Time zone guaranteed to be valid in existing objects, ok to unwrap
-        let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
+        let timezone: Tz = date_time_zoned.zone_id.value.parse().unwrap();
         timezone
             .timestamp_opt(date_time_zoned.epoch_seconds, date_time_zoned.nanos as u32)
             // epoch_seconds and nanos are guaranteed to be valid in existing objects, ok to unwrap
