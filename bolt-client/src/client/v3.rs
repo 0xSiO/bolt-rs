@@ -7,6 +7,10 @@ use bolt_proto::{Message, Value};
 use crate::error::*;
 use crate::Client;
 
+// TODO: Using HashMap with impl Into<Value> is useful if the HashMap is required, but empty HashMaps are ugly to
+//     construct. Technically the metadata is optional, but Neo4j often requires it in order to do anything useful.
+//     Maybe switch to using Option<HashMap<String, Value>> for all client methods that accept HashMaps and make the
+//     caller use Value::from for the values as a trade-off. This would also enable HashMaps with multiple value types.
 impl Client {
     /// Send a `HELLO` message to the server.
     ///
@@ -71,10 +75,6 @@ impl Client {
     /// - `SUCCESS {}` if transaction has started successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be started
     #[bolt_version(3, 4)]
-    // TODO: The impl Into<Value> is nice, but makes empty maps tricky. Maybe wrap the HashMap in a Metadata type
-    // TODO: Decide whether to make the metadata HashMaps in these client methods optional or not.
-    //     On the plus side, it's easy to leave out metadata by giving a 'None', but rustc complains that it can't
-    //     determine the type of the HashMap<String, impl Into<Value>> inside the async block
     pub async fn begin(&mut self, metadata: HashMap<String, impl Into<Value>>) -> Result<Message> {
         let begin_msg = Begin::new(metadata.into_iter().map(|(k, v)| (k, v.into())).collect());
         self.send_message(Message::Begin(begin_msg)).await?;
