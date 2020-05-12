@@ -23,10 +23,11 @@ macro_rules! impl_message_with_metadata {
                 }
             }
 
-            pub fn metadata(
-                &self,
-            ) -> &::std::collections::HashMap<$crate::value::String, $crate::value::Value> {
-                &self.metadata
+            pub fn metadata(&self) -> ::std::collections::HashMap<&str, &$crate::value::Value> {
+                self.metadata
+                    .iter()
+                    .map(|(k, v)| (k.value.as_str(), v))
+                    .collect()
             }
         }
     };
