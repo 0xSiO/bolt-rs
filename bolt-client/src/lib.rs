@@ -74,7 +74,7 @@
 //!     // Access properties from returned values
 //!     assert_eq!(node.labels(), &["Language".to_string()]);
 //!     assert_eq!(node.properties(),
-//!                &HashMap::from_iter(vec![("name".to_string(), Value::from("Rust"))]));
+//!                HashMap::from_iter(vec![("name", &Value::from("Rust"))]));
 //!
 //!     // End the connection with the server
 //!     client.goodbye().await?;
@@ -140,7 +140,7 @@
 //!     # let node = Node::try_from(records[0].fields()[0].clone())?;
 //!     # assert_eq!(node.labels(), &["Language".to_string()]);
 //!     # assert_eq!(node.properties(),
-//!     #            &HashMap::from_iter(vec![("name".to_string(), Value::from("Rust"))]));
+//!     #            HashMap::from_iter(vec![("name", &Value::from("Rust"))]));
 //!
 //! // There is no call to `goodbye`
 //!     # Ok(())
