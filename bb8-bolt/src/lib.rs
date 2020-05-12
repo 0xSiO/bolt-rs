@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::net::{SocketAddr, ToSocketAddrs};
 
 use bb8::ManageConnection;
@@ -65,7 +65,7 @@ impl ManageConnection for BoltConnectionManager {
                 let user_agent = metadata.remove("user_agent").ok_or_else(|| {
                     Error::ClientInitFailed("metadata must contain a user_agent".to_string())
                 })?;
-                client.init(String::try_from(user_agent)?, metadata).await?
+                client.init(user_agent.try_into()?, metadata).await?
             }
             3 | 4 => client.hello(self.metadata.clone()).await?,
             _ => return Err(Error::InvalidClientVersion(version)),

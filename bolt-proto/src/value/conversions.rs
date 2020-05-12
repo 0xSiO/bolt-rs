@@ -251,3 +251,14 @@ where
         }
     }
 }
+
+impl TryInto<std::string::String> for Value {
+    type Error = Error;
+
+    fn try_into(self) -> Result<std::string::String> {
+        match self {
+            Value::String(string) => Ok(string.into()),
+            _ => Err(ConversionError::FromValue(self).into()),
+        }
+    }
+}
