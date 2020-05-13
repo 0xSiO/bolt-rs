@@ -243,7 +243,7 @@ mod tests {
             if let Message::Record(record) = response {
                 let node =
                     Node::try_from(Record::try_from(record).unwrap().fields()[0].clone()).unwrap();
-                assert_eq!(node.labels(), &["Database".to_string()]);
+                assert_eq!(node.labels(), &["Database"]);
                 node_exists = true;
                 break;
             }
