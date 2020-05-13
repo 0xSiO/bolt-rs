@@ -24,11 +24,14 @@ impl Client {
     pub async fn init(
         &mut self,
         client_name: String,
-        auth_token: HashMap<String, impl Into<Value>>,
+        auth_token: HashMap<impl Into<String>, impl Into<Value>>,
     ) -> Result<Message> {
         let init_msg = Init::new(
             client_name,
-            auth_token.into_iter().map(|(k, v)| (k, v.into())).collect(),
+            auth_token
+                .into_iter()
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
         );
         self.send_message(Message::Init(init_msg)).await?;
         self.read_message().await
@@ -206,9 +209,9 @@ pub(crate) mod tests {
                 .init(
                     "bolt-client/X.Y.Z".to_string(),
                     HashMap::from_iter(vec![
-                        ("scheme".to_string(), "basic".to_string()),
-                        ("principal".to_string(), username),
-                        ("credentials".to_string(), password),
+                        ("scheme", "basic"),
+                        ("principal", &username),
+                        ("credentials", &password),
                     ]),
                 )
                 .await
