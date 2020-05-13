@@ -21,7 +21,7 @@ impl BoltConnectionManager {
         addr: impl ToSocketAddrs,
         domain: Option<String>,
         supported_versions: [u32; 4],
-        metadata: HashMap<String, impl Into<Value>>,
+        metadata: HashMap<impl Into<String>, impl Into<Value>>,
     ) -> Result<Self, Error> {
         Ok(Self {
             addr: addr
@@ -29,8 +29,11 @@ impl BoltConnectionManager {
                 .next()
                 .ok_or_else(|| Error::InvalidAddress)?,
             domain,
-            supported_versions: supported_versions,
-            metadata: metadata.into_iter().map(|(k, v)| (k, v.into())).collect(),
+            supported_versions,
+            metadata: metadata
+                .into_iter()
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
         })
     }
 }
@@ -63,10 +66,13 @@ impl ManageConnection for BoltConnectionManager {
         let response = match version {
             1 | 2 => {
                 let mut metadata = self.metadata.clone();
-                let user_agent = metadata.remove("user_agent").ok_or_else(|| {
-                    Error::ClientInitFailed("metadata must contain a user_agent".to_string())
-                })?;
-                client.init(String::try_from(user_agent)?, metadata).await?
+                let user_agent: String = metadata
+                    .remove("user_agent")
+                    .ok_or_else(|| {
+                        Error::ClientInitFailed("metadata must contain a user_agent".to_string())
+                    })
+                    .map(String::try_from)??;
+                client.init(user_agent, metadata).await?
             }
             3 | 4 => {
                 client
@@ -112,16 +118,10 @@ mod tests {
             env::var("BOLT_TEST_DOMAIN").ok(),
             supported_versions,
             HashMap::from_iter(vec![
-                ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
-                ("scheme".to_string(), "basic".to_string()),
-                (
-                    "principal".to_string(),
-                    env::var("BOLT_TEST_USERNAME").unwrap(),
-                ),
-                (
-                    "credentials".to_string(),
-                    env::var("BOLT_TEST_PASSWORD").unwrap(),
-                ),
+                ("user_agent", "bolt-client/X.Y.Z"),
+                ("scheme", "basic"),
+                ("principal", &env::var("BOLT_TEST_USERNAME").unwrap()),
+                ("credentials", &env::var("BOLT_TEST_PASSWORD").unwrap()),
             ]),
         )
         .unwrap()
@@ -197,10 +197,10 @@ mod tests {
             None,
             [4, 3, 2, 1],
             HashMap::from_iter(vec![
-                ("user_agent".to_string(), "bolt-client/X.Y.Z"),
-                ("scheme".to_string(), "basic"),
-                ("principal".to_string(), "neo4j"),
-                ("credentials".to_string(), "invalid"),
+                ("user_agent", "bolt-client/X.Y.Z"),
+                ("scheme", "basic"),
+                ("principal", "neo4j"),
+                ("credentials", "invalid"),
             ]),
         )
         .unwrap();
