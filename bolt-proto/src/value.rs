@@ -677,4 +677,35 @@ mod tests {
             Value::Point3D(point3d)
         );
     }
+
+    #[test]
+    #[ignore]
+    fn value_size() {
+        use std::mem::size_of;
+        println!("Boolean: {} bytes", size_of::<Boolean>());
+        println!("ByteArray: {} bytes", size_of::<ByteArray>());
+        println!("Date: {} bytes", size_of::<Date>());
+        println!("DateTimeOffset: {} bytes", size_of::<DateTimeOffset>());
+        println!("DateTimeZoned: {} bytes", size_of::<DateTimeZoned>());
+        println!("Duration: {} bytes", size_of::<Duration>());
+        println!("Float: {} bytes", size_of::<Float>());
+        println!("Integer: {} bytes", size_of::<Integer>());
+        println!("List: {} bytes", size_of::<List>());
+        println!("LocalDateTime: {} bytes", size_of::<LocalDateTime>());
+        println!("LocalTime: {} bytes", size_of::<LocalTime>());
+        println!("Map: {} bytes", size_of::<Map>());
+        println!("Node: {} bytes", size_of::<Node>());
+        println!("Null: {} bytes", size_of::<Null>());
+        println!("Path: {} bytes", size_of::<Path>());
+        println!("Point2D: {} bytes", size_of::<Point2D>());
+        println!("Point3D: {} bytes", size_of::<Point3D>());
+        println!("Relationship: {} bytes", size_of::<Relationship>());
+        println!("String: {} bytes", size_of::<String>());
+        println!("Time: {} bytes", size_of::<Time>());
+        println!(
+            "UnboundRelationship: {} bytes",
+            size_of::<UnboundRelationship>()
+        );
+        println!("Value: {} bytes", size_of::<Value>())
+    }
 }
