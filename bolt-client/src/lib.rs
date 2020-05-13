@@ -152,6 +152,7 @@ pub use self::client::Client;
 
 pub mod client;
 pub mod error;
+pub mod metadata;
 mod stream;
 
 #[doc(hidden)]
