@@ -16,6 +16,7 @@ pub enum Message {
     Success(Success),
     Failure(Failure),
     Ignored,
+
     // V3+-compatible message types
     Hello(Hello),
     Goodbye,
@@ -23,9 +24,13 @@ pub enum Message {
     Begin(Begin),
     Commit,
     Rollback,
+
+    // V4+-compatible message types
+    Discard(Discard),
+    Pull(Pull)
 }
 ```
-See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/enum.Message.html) for more details.
+See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/message/enum.Message.html) for more details.
 
 The `Value` enum encapsulates all possible values that can be stored in data from each kind of `Message`. 
 Structures like `List` and `Map` allow `Value`s to be nested with arbitrary complexity.
@@ -39,7 +44,7 @@ pub enum Value {
     List(List),
     Map(Map),
     Null,
-    String(std::string::String),
+    String(String),
     Node(Node),
     Relationship(Relationship),
     Path(Path),
@@ -59,7 +64,7 @@ pub enum Value {
 ```
 You should rarely ever have to construct variants directly (with the exception of `Value::Null`). Instead, you should
 typically use `Value::from` for the type you wish to convert.
-See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/enum.Value.html) for more details.
+See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/value/enum.Value.html) for more details.
 
 The `Serialize` and `Deserialize` traits provide interfaces for converting `Message` and `Value` types to and from 
 streams of bytes, to be consumed by a compatible Bolt server.
