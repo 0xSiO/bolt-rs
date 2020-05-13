@@ -155,7 +155,7 @@ mod tests {
                             .await
                             .unwrap();
                         client
-                            .pull(HashMap::from_iter(vec![("n".to_string(), 1)]))
+                            .pull(Metadata::from_iter(vec![("n".to_string(), 1)]))
                             .await
                             .unwrap()
                     }
