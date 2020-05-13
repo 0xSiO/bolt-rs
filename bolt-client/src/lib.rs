@@ -1,4 +1,4 @@
-// TODO: Clean up formatting of the doc tests
+// TODO: Update doc test example to Bolt v4
 //! An asynchronous client for Bolt-compatible servers.
 //!
 //! # Example
@@ -12,9 +12,7 @@
 //! use tokio::prelude::*;
 //!
 //! use bolt_client::*;
-//! use bolt_proto::{Message, Value};
-//! use bolt_proto::message::*;
-//! use bolt_proto::value::*;
+//! use bolt_proto::{message::*, value::*, Message, Value};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -43,9 +41,8 @@
 //!     assert!(Success::try_from(response).is_ok());
 //!
 //!     // Run a query on the server and retrieve the results
-//!     let response = client.run_with_metadata(
-//!         "RETURN 1 as num;", None, None
-//!     ).await?;
+//!     let response = client.run_with_metadata("RETURN 1 as num;", None, None).await?;
+//!
 //!     // Successful responses will include a SUCCESS message with related metadata
 //!     // Consuming these messages is optional and will be skipped for the rest of the example
 //!     assert!(Success::try_from(response).is_ok());
@@ -68,8 +65,7 @@
 //!     client.pull_all().await?;
 //!
 //!     // Grab a node from the database and convert it to a native type
-//!     client.run_with_metadata("MATCH (rust:Language) RETURN rust;",
-//!         None, None).await?;
+//!     client.run_with_metadata("MATCH (rust:Language) RETURN rust;", None, None).await?;
 //!     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     let node = Node::try_from(records[0].fields()[0].clone())?;
@@ -96,9 +92,7 @@
 //! # use tokio::prelude::*;
 //! #
 //! # use bolt_client::*;
-//! # use bolt_proto::{Message, Value};
-//! # use bolt_proto::message::*;
-//! # use bolt_proto::value::*;
+//! # use bolt_proto::{message::*, value::*, Message, Value};
 //! #
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -113,7 +107,7 @@
 //!     
 //! // Instead of `hello`, we call `init`, and the user agent string is provided separately.
 //! let response: Message = client.init(
-//!     "my-client-name/1.0".to_string(),
+//!     "my-client-name/1.0",
 //!     HashMap::from_iter(vec![
 //!         ("scheme", "basic"),
 //!         ("principal", &env::var("BOLT_TEST_USERNAME")?),
