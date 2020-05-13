@@ -147,7 +147,7 @@ mod tests {
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = client
-            .discard(Some(Metadata::from_iter(vec![("n".to_string(), -1)])))
+            .discard(Some(Metadata::from_iter(vec![("n", -1)])))
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -167,7 +167,7 @@ mod tests {
         assert!(Success::try_from(response).is_ok());
 
         let (response, records) = client
-            .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
+            .pull(Some(Metadata::from_iter(vec![("n", 1)])))
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -231,7 +231,7 @@ mod tests {
             if let Message::Record(record) = response {
                 let node =
                     Node::try_from(Record::try_from(record).unwrap().fields()[0].clone()).unwrap();
-                assert_eq!(node.labels(), &["Database".to_string()]);
+                assert_eq!(node.labels(), &["Database"]);
                 node_exists = true;
                 break;
             }
