@@ -9,11 +9,10 @@ use async_trait::async_trait;
 use bolt_client::*;
 use bolt_proto::*;
 
-const SUPPORTED_VERSIONS: &[u32; 4] = &[4, 3, 2, 1];
-
 pub struct BoltConnectionManager {
     addr: SocketAddr,
     domain: Option<String>,
+    supported_versions: [u32; 4],
     metadata: HashMap<String, Value>,
 }
 
@@ -21,6 +20,7 @@ impl BoltConnectionManager {
     pub fn new(
         addr: impl ToSocketAddrs,
         domain: Option<String>,
+        supported_versions: [u32; 4],
         metadata: HashMap<String, impl Into<Value>>,
     ) -> Result<Self, Error> {
         Ok(Self {
@@ -29,6 +29,7 @@ impl BoltConnectionManager {
                 .next()
                 .ok_or_else(|| Error::InvalidAddress)?,
             domain,
+            supported_versions: supported_versions,
             metadata: metadata.into_iter().map(|(k, v)| (k, v.into())).collect(),
         })
     }
@@ -57,7 +58,7 @@ impl ManageConnection for BoltConnectionManager {
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
         let mut client = Client::new(self.addr, self.domain.as_ref()).await?;
-        client.handshake(SUPPORTED_VERSIONS).await?;
+        client.handshake(&self.supported_versions).await?;
         let version = client.version().unwrap(); // ok to unwrap if handshake succeeds
         let response = match version {
             1 | 2 => {
@@ -105,10 +106,11 @@ mod tests {
 
     use super::*;
 
-    fn get_connection_manager() -> BoltConnectionManager {
+    fn get_connection_manager(supported_versions: [u32; 4]) -> BoltConnectionManager {
         BoltConnectionManager::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok(),
+            supported_versions,
             HashMap::from_iter(vec![
                 ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
                 ("scheme".to_string(), "basic".to_string()),
@@ -125,49 +127,67 @@ mod tests {
         .unwrap()
     }
 
-    #[tokio::test]
-    // TODO: Because Neo4j picks the highest possible protocol version, this really only tests v3 or v4 clients. Find a
-    //     way to test specific client versions. This may require refactoring that constant SUPPORTED_VERSIONS
-    async fn basic_pool() {
-        let manager = get_connection_manager();
-        let pool = Pool::builder().max_size(15).build(manager).await.unwrap();
+    async fn is_server_compatible(bolt_version: u32) -> Result<bool, Error> {
+        let mut client = Client::new(
+            env::var("BOLT_TEST_ADDR").unwrap(),
+            env::var("BOLT_TEST_DOMAIN").ok(),
+        )
+        .await?;
+        Ok(client.handshake(&[bolt_version, 0, 0, 0]).await.is_ok())
+    }
 
-        let mut tasks = Vec::with_capacity(50);
-        for i in 1..=tasks.capacity() {
-            let pool = pool.clone();
-            tasks.push(tokio::spawn(async move {
-                let mut client = pool.get().await.unwrap();
-                let statement = format!("RETURN {} as num;", i);
-                let version = client.version().unwrap();
-                let (response, records) = match version {
-                    1 | 2 => {
-                        client.run(statement, None).await.unwrap();
-                        client.pull_all().await.unwrap()
-                    }
-                    3 => {
-                        client
-                            .run_with_metadata(statement, None, None)
-                            .await
-                            .unwrap();
-                        client.pull_all().await.unwrap()
-                    }
-                    4 => {
-                        client
-                            .run_with_metadata(statement, None, None)
-                            .await
-                            .unwrap();
-                        client
-                            .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
-                            .await
-                            .unwrap()
-                    }
-                    _ => panic!("Unsupported client version: {}", version),
-                };
-                assert!(message::Success::try_from(response).is_ok());
-                assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
-            }));
+    #[tokio::test]
+    async fn basic_pool() {
+        for bolt_version in 1..=4 {
+            // Don't even test connection pool if server doesn't support this Bolt version
+            if !is_server_compatible(bolt_version).await.unwrap() {
+                println!(
+                    "Skipping test: server doesn't support Bolt v{}.",
+                    bolt_version
+                );
+                return;
+            }
+
+            let manager = get_connection_manager([bolt_version, 0, 0, 0]);
+            let pool = Pool::builder().max_size(15).build(manager).await.unwrap();
+
+            let mut tasks = Vec::with_capacity(50);
+            for i in 1..=tasks.capacity() {
+                let pool = pool.clone();
+                tasks.push(tokio::spawn(async move {
+                    let mut client = pool.get().await.unwrap();
+                    let statement = format!("RETURN {} as num;", i);
+                    let version = client.version().unwrap();
+                    let (response, records) = match version {
+                        1 | 2 => {
+                            client.run(statement, None).await.unwrap();
+                            client.pull_all().await.unwrap()
+                        }
+                        3 => {
+                            client
+                                .run_with_metadata(statement, None, None)
+                                .await
+                                .unwrap();
+                            client.pull_all().await.unwrap()
+                        }
+                        4 => {
+                            client
+                                .run_with_metadata(statement, None, None)
+                                .await
+                                .unwrap();
+                            client
+                                .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
+                                .await
+                                .unwrap()
+                        }
+                        _ => panic!("Unsupported client version: {}", version),
+                    };
+                    assert!(message::Success::try_from(response).is_ok());
+                    assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
+                }));
+            }
+            tokio::join!(futures::future::join_all(tasks));
         }
-        tokio::join!(futures::future::join_all(tasks));
     }
 
     #[tokio::test]
@@ -175,6 +195,7 @@ mod tests {
         let invalid_manager = BoltConnectionManager::new(
             "127.0.0.1:7687",
             None,
+            [4, 3, 2, 1],
             HashMap::from_iter(vec![
                 ("user_agent".to_string(), "bolt-client/X.Y.Z"),
                 ("scheme".to_string(), "basic"),
