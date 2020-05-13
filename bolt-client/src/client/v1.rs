@@ -68,9 +68,9 @@ impl Client {
     pub async fn run(
         &mut self,
         statement: impl Into<String>,
-        parameters: Params,
+        parameters: Option<Params>,
     ) -> Result<Message> {
-        let run_msg = Run::new(statement.into(), parameters.value);
+        let run_msg = Run::new(statement.into(), parameters.unwrap_or_default().value);
         self.send_message(Message::Run(run_msg)).await?;
         self.read_message().await
     }
@@ -244,7 +244,7 @@ pub(crate) mod tests {
                 )
                 .await
         } else {
-            client.run("", Default::default()).await
+            client.run("", None).await
         }
     }
 
@@ -258,7 +258,7 @@ pub(crate) mod tests {
                 )
                 .await
         } else {
-            client.run("RETURN 1 as n;", Default::default()).await
+            client.run("RETURN 1 as n;", None).await
         }
     }
 
@@ -368,10 +368,7 @@ pub(crate) mod tests {
         let client = get_initialized_client(1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client
-            .run("RETURN 3458376 as n;", Default::default())
-            .await
-            .unwrap();
+        let response = client.run("RETURN 3458376 as n;", None).await.unwrap();
         assert!(Success::try_from(response).is_ok());
 
         let (response, records) = client.pull_all().await.unwrap();
@@ -386,17 +383,17 @@ pub(crate) mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let statement = "MATCH (n {test: 'v1-node-rel'}) DETACH DELETE n;".to_string();
-        client.run(statement, Default::default()).await.unwrap();
+        client.run(statement, None).await.unwrap();
         client.pull_all().await.unwrap();
 
         let statement =
             "CREATE (:Client {name: 'bolt-client', test: 'v1-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v1-node-rel'});"
                 .to_string();
-        client.run(statement, Default::default()).await.unwrap();
+        client.run(statement, None).await.unwrap();
         client.pull_all().await.unwrap();
         let statement =
             "MATCH (c {test: 'v1-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;".to_string();
-        client.run(statement, Default::default()).await.unwrap();
+        client.run(statement, None).await.unwrap();
         let (_response, records) = client.pull_all().await.unwrap();
 
         let c = Node::try_from(records[0].fields()[0].clone()).unwrap();

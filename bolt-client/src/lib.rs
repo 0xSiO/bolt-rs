@@ -121,21 +121,21 @@
 //!     # assert!(Success::try_from(response).is_ok());
 //!
 //! // Instead of `run_with_metadata`, we call `run`, and there is no third parameter for metadata.
-//! let response = client.run("RETURN 1 as num;", Default::default()).await?;
+//! let response = client.run("RETURN 1 as num;", None).await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     # let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     # assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //!     #
-//!     # client.run("MATCH (n) DETACH DELETE n;", Default::default()).await?;
+//!     # client.run("MATCH (n) DETACH DELETE n;", None).await?;
 //!     # client.pull_all().await?;
 //!     #
 //!     # client.run("CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});".to_string(),
-//!     #            Params::from_iter(
+//!     #            Some(Params::from_iter(
 //!     #                vec![("name".to_string(), Value::from("Rust"))]
-//!     #            )).await?;
+//!     #            ))).await?;
 //!     # client.pull_all().await?;
-//!     # client.run("MATCH (rust:Language) RETURN rust;", Default::default()).await?;
+//!     # client.run("MATCH (rust:Language) RETURN rust;", None).await?;
 //!     # let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     #
