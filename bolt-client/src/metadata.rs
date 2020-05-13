@@ -3,16 +3,9 @@ use std::collections::HashMap;
 
 use bolt_proto::Value;
 
+#[derive(Default)]
 pub struct Metadata {
-    value: HashMap<String, Value>,
-}
-
-impl Metadata {
-    pub fn new() -> Self {
-        Metadata {
-            value: Default::default(),
-        }
-    }
+    pub(crate) value: HashMap<String, Value>,
 }
 
 impl<K, V> From<HashMap<K, V>> for Metadata
@@ -34,7 +27,7 @@ mod tests {
 
     #[test]
     fn create_metadata() {
-        let empty_metadata = Metadata::new();
+        let empty_metadata: Metadata = Default::default();
         assert!(empty_metadata.value.is_empty());
         let metadata = Metadata::from(HashMap::from_iter(vec![("key", "value")]));
         assert_eq!(
