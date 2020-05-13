@@ -24,11 +24,11 @@ impl Client {
     #[bolt_version(1, 2)]
     pub async fn init(
         &mut self,
-        client_name: String,
+        client_name: impl Into<String>,
         auth_token: HashMap<impl Into<String>, impl Into<Value>>,
     ) -> Result<Message> {
         let init_msg = Init::new(
-            client_name,
+            client_name.into(),
             auth_token
                 .into_iter()
                 .map(|(k, v)| (k.into(), v.into()))
@@ -201,14 +201,14 @@ pub(crate) mod tests {
         let password = if succeed {
             env::var("BOLT_TEST_PASSWORD").unwrap()
         } else {
-            "invalid".to_string()
+            String::from("invalid")
         };
 
         let version = client.version.unwrap();
         if [1_u32, 2_u32].contains(&version) {
             client
                 .init(
-                    "bolt-client/X.Y.Z".to_string(),
+                    "bolt-client/X.Y.Z",
                     HashMap::from_iter(vec![
                         ("scheme", "basic"),
                         ("principal", &username),
@@ -219,10 +219,10 @@ pub(crate) mod tests {
         } else {
             client
                 .hello(Some(Metadata::from_iter(vec![
-                    ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
-                    ("scheme".to_string(), "basic".to_string()),
-                    ("principal".to_string(), username),
-                    ("credentials".to_string(), password),
+                    ("user_agent", "bolt-client/X.Y.Z"),
+                    ("scheme", "basic"),
+                    ("principal", &username),
+                    ("credentials", &password),
                 ])))
                 .await
         }
@@ -238,7 +238,7 @@ pub(crate) mod tests {
         if client.version.unwrap() > 2 {
             client
                 .run_with_metadata(
-                    "RETURN invalid query oof as n;".to_string(),
+                    "RETURN invalid query oof as n;",
                     Some(Params::from_iter(vec![("some_val", 25.5432)])),
                     Some(Metadata::from_iter(vec![("some_key", true)])),
                 )
@@ -382,18 +382,21 @@ pub(crate) mod tests {
         let client = get_initialized_client(1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let statement = "MATCH (n {test: 'v1-node-rel'}) DETACH DELETE n;".to_string();
-        client.run(statement, None).await.unwrap();
+        client
+            .run("MATCH (n {test: 'v1-node-rel'}) DETACH DELETE n;", None)
+            .await
+            .unwrap();
         client.pull_all().await.unwrap();
 
-        let statement =
-            "CREATE (:Client {name: 'bolt-client', test: 'v1-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v1-node-rel'});"
-                .to_string();
-        client.run(statement, None).await.unwrap();
+        client.run("CREATE (:Client {name: 'bolt-client', test: 'v1-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v1-node-rel'});", None).await.unwrap();
         client.pull_all().await.unwrap();
-        let statement =
-            "MATCH (c {test: 'v1-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;".to_string();
-        client.run(statement, None).await.unwrap();
+        client
+            .run(
+                "MATCH (c {test: 'v1-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;",
+                None,
+            )
+            .await
+            .unwrap();
         let (_response, records) = client.pull_all().await.unwrap();
 
         let c = Node::try_from(records[0].fields()[0].clone()).unwrap();
