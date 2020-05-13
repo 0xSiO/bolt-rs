@@ -19,7 +19,7 @@ Neo4j 4.0. The project roadmap is shown below:
 - [ ] Client and connection pool adaptor
     - [x] v1-v3 client behavior
     - [x] v4 client behavior
-    - [ ] Implement transaction handling/retries (or leave it to a higher-level library)
+    - [ ] Test connection pool with all (or mixed) client versions
     - [x] Benchmarks!
 - [ ] Address TODOs scattered throughout codebase
 
