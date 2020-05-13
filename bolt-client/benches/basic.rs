@@ -9,7 +9,7 @@ use bolt_client::*;
 async fn get_initialized_client() -> Result<Client, Box<dyn std::error::Error>> {
     let mut client = Client::new(
         env::var("BOLT_TEST_ADDR").unwrap(),
-        env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
+        env::var("BOLT_TEST_DOMAIN").ok(),
     )
     .await?;
     client.handshake(&[3, 2, 1, 0]).await?; // TODO: Should we benchmark multiple client versions?

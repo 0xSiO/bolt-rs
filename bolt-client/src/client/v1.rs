@@ -189,7 +189,7 @@ pub(crate) mod tests {
     pub(crate) async fn new_client(version: u32) -> Result<Client> {
         let mut client = Client::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
-            env::var("BOLT_TEST_DOMAIN").ok().as_deref(),
+            env::var("BOLT_TEST_DOMAIN").ok(),
         )
         .await?;
         client.handshake(&[version, 0, 0, 0]).await?;
