@@ -67,7 +67,11 @@ impl ManageConnection for BoltConnectionManager {
                 })?;
                 client.init(String::try_from(user_agent)?, metadata).await?
             }
-            3 | 4 => client.hello(Metadata::from(self.metadata.clone())).await?,
+            3 | 4 => {
+                client
+                    .hello(Some(Metadata::from(self.metadata.clone())))
+                    .await?
+            }
             _ => return Err(Error::InvalidClientVersion(version)),
         };
 
