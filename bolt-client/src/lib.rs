@@ -152,8 +152,11 @@ pub use self::client::Client;
 
 pub mod client;
 pub mod error;
-pub mod metadata;
 mod stream;
+mod value_map;
+
+pub type Metadata = value_map::ValueMap;
+pub type Params = value_map::ValueMap;
 
 #[doc(hidden)]
 #[macro_export]

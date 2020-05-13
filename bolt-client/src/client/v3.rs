@@ -1,16 +1,10 @@
-use std::collections::HashMap;
-
 use bolt_client_macros::*;
 use bolt_proto::message::*;
-use bolt_proto::{Message, Value};
+use bolt_proto::Message;
 
 use crate::error::*;
-use crate::Client;
+use crate::{Client, Metadata, Params};
 
-// TODO: Using HashMap with impl Into<Value> is useful if the HashMap is required, but empty HashMaps are ugly to
-//     construct. Technically the metadata is optional, but Neo4j often requires it in order to do anything useful.
-//     Maybe switch to using Option<HashMap<String, Value>> for all client methods that accept HashMaps and make the
-//     caller use Value::from for the values as a trade-off. This would also enable HashMaps with multiple value types.
 impl Client {
     /// Send a `HELLO` message to the server.
     ///
@@ -23,8 +17,8 @@ impl Client {
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if initialization
     ///     cannot be performed at this time, or if the authorization failed.
     #[bolt_version(3, 4)]
-    pub async fn hello(&mut self, metadata: HashMap<String, impl Into<Value>>) -> Result<Message> {
-        let hello_msg = Hello::new(metadata.into_iter().map(|(k, v)| (k, v.into())).collect());
+    pub async fn hello(&mut self, metadata: Metadata) -> Result<Message> {
+        let hello_msg = Hello::new(metadata.value);
         self.send_message(Message::Hello(hello_msg)).await?;
         self.read_message().await
     }
@@ -53,15 +47,11 @@ impl Client {
     #[bolt_version(3, 4)]
     pub async fn run_with_metadata(
         &mut self,
-        statement: String,
-        parameters: Option<HashMap<String, Value>>,
-        metadata: Option<HashMap<String, Value>>,
+        statement: impl Into<String>,
+        parameters: Params,
+        metadata: Metadata,
     ) -> Result<Message> {
-        let run_msg = RunWithMetadata::new(
-            statement,
-            parameters.unwrap_or_default(),
-            metadata.unwrap_or_default(),
-        );
+        let run_msg = RunWithMetadata::new(statement.into(), parameters.value, metadata.value);
         self.send_message(Message::RunWithMetadata(run_msg)).await?;
         self.read_message().await
     }
@@ -75,8 +65,8 @@ impl Client {
     /// - `SUCCESS {}` if transaction has started successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be started
     #[bolt_version(3, 4)]
-    pub async fn begin(&mut self, metadata: HashMap<String, impl Into<Value>>) -> Result<Message> {
-        let begin_msg = Begin::new(metadata.into_iter().map(|(k, v)| (k, v.into())).collect());
+    pub async fn begin(&mut self, metadata: Metadata) -> Result<Message> {
+        let begin_msg = Begin::new(metadata.value);
         self.send_message(Message::Begin(begin_msg)).await?;
         self.read_message().await
     }
@@ -201,8 +191,7 @@ mod tests {
         let client = get_initialized_client(3).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let metadata = HashMap::<std::string::String, bool>::new(); // dummy empty metadata
-        let response = client.begin(metadata).await.unwrap();
+        let response = client.begin(Default::default()).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
@@ -211,8 +200,7 @@ mod tests {
         let client = get_initialized_client(3).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let metadata = HashMap::<std::string::String, bool>::new(); // dummy empty metadata
-        client.begin(metadata).await.unwrap();
+        client.begin(Default::default()).await.unwrap();
         let response = client.commit().await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
@@ -222,8 +210,7 @@ mod tests {
         let client = get_initialized_client(3).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let metadata = HashMap::<std::string::String, bool>::new(); // dummy empty metadata
-        client.begin(metadata).await.unwrap();
+        client.begin(Default::default()).await.unwrap();
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
@@ -274,8 +261,7 @@ mod tests {
         let client = get_initialized_client(3).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let metadata = HashMap::<std::string::String, bool>::new(); // dummy empty metadata
-        client.begin(metadata).await.unwrap();
+        client.begin(Default::default()).await.unwrap();
         let response = client.rollback().await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
@@ -285,8 +271,7 @@ mod tests {
         let client = get_initialized_client(3).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let metadata = HashMap::<std::string::String, bool>::new(); // dummy empty metadata
-        client.begin(metadata).await.unwrap();
+        client.begin(Default::default()).await.unwrap();
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
                 "MATCH (n {test: 'v3-rollback'}) DETACH DELETE n;".to_string(),

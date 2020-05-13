@@ -5,7 +5,7 @@ use bolt_proto::message::*;
 use bolt_proto::{Message, Value};
 
 use crate::error::*;
-use crate::Client;
+use crate::{Client, Params};
 
 impl Client {
     /// Send an `INIT` message to the server.
@@ -66,10 +66,10 @@ impl Client {
     #[bolt_version(1, 2)]
     pub async fn run(
         &mut self,
-        statement: String,
-        parameters: Option<HashMap<String, Value>>,
+        statement: impl Into<String>,
+        parameters: Params,
     ) -> Result<Message> {
-        let run_msg = Run::new(statement, parameters.unwrap_or_default());
+        let run_msg = Run::new(statement.into(), parameters.value);
         self.send_message(Message::Run(run_msg)).await?;
         self.read_message().await
     }
@@ -181,7 +181,7 @@ pub(crate) mod tests {
     use bolt_proto::message::*;
     use bolt_proto::value::*;
 
-    use crate::skip_if_handshake_failed;
+    use crate::{skip_if_handshake_failed, Metadata};
 
     use super::*;
 
@@ -217,7 +217,7 @@ pub(crate) mod tests {
                 .await
         } else {
             client
-                .hello(HashMap::from_iter(vec![
+                .hello(Metadata::from_iter(vec![
                     ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
                     ("scheme".to_string(), "basic".to_string()),
                     ("principal".to_string(), username),
@@ -238,18 +238,12 @@ pub(crate) mod tests {
             client
                 .run_with_metadata(
                     "RETURN invalid query oof as n;".to_string(),
-                    Some(HashMap::from_iter(vec![(
-                        "some_val".to_string(),
-                        Value::from(25.5432),
-                    )])),
-                    Some(HashMap::from_iter(vec![(
-                        "some_key".to_string(),
-                        Value::from(true),
-                    )])),
+                    Params::from_iter(vec![("some_val", 25.5432)]),
+                    Metadata::from_iter(vec![("some_key", true)]),
                 )
                 .await
         } else {
-            client.run("".to_string(), None).await
+            client.run("", Default::default()).await
         }
     }
 
@@ -257,19 +251,13 @@ pub(crate) mod tests {
         if client.version.unwrap() > 2 {
             client
                 .run_with_metadata(
-                    "RETURN $some_val as n;".to_string(),
-                    Some(HashMap::from_iter(vec![(
-                        "some_val".to_string(),
-                        Value::from(25.5432),
-                    )])),
-                    Some(HashMap::from_iter(vec![(
-                        "some_key".to_string(),
-                        Value::from(true),
-                    )])),
+                    "RETURN $some_val as n;",
+                    Params::from_iter(vec![("some_val", 25.5432)]),
+                    Metadata::from_iter(vec![("some_key", true)]),
                 )
                 .await
         } else {
-            client.run("RETURN 1 as n;".to_string(), None).await
+            client.run("RETURN 1 as n;", Default::default()).await
         }
     }
 
@@ -380,7 +368,7 @@ pub(crate) mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client
-            .run("RETURN 3458376 as n;".to_string(), None)
+            .run("RETURN 3458376 as n;", Default::default())
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -397,17 +385,17 @@ pub(crate) mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let statement = "MATCH (n {test: 'v1-node-rel'}) DETACH DELETE n;".to_string();
-        client.run(statement, None).await.unwrap();
+        client.run(statement, Default::default()).await.unwrap();
         client.pull_all().await.unwrap();
 
         let statement =
             "CREATE (:Client {name: 'bolt-client', test: 'v1-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v1-node-rel'});"
                 .to_string();
-        client.run(statement, None).await.unwrap();
+        client.run(statement, Default::default()).await.unwrap();
         client.pull_all().await.unwrap();
         let statement =
             "MATCH (c {test: 'v1-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;".to_string();
-        client.run(statement, None).await.unwrap();
+        client.run(statement, Default::default()).await.unwrap();
         let (_response, records) = client.pull_all().await.unwrap();
 
         let c = Node::try_from(records[0].fields()[0].clone()).unwrap();
