@@ -42,7 +42,7 @@ fn simple_query_bench(c: &mut Criterion) {
             runtime.block_on(async {
                 let mut client = get_initialized_client().await.unwrap();
                 client
-                    .run_with_metadata("RETURN 1 as num;", Default::default(), Default::default())
+                    .run_with_metadata("RETURN 1 as num;", None, None)
                     .await
                     .unwrap();
                 client.pull_all().await.unwrap();

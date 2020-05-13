@@ -161,11 +161,7 @@ mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client
-            .run_with_metadata(
-                "RETURN 3458376 as n;",
-                Default::default(),
-                Default::default(),
-            )
+            .run_with_metadata("RETURN 3458376 as n;", None, None)
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -184,7 +180,7 @@ mod tests {
         let client = get_initialized_client(4).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client.begin(Default::default()).await.unwrap();
+        let response = client.begin(None).await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
 
@@ -193,7 +189,7 @@ mod tests {
         let client = get_initialized_client(4).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        client.begin(Default::default()).await.unwrap();
+        client.begin(None).await.unwrap();
         let response = client.commit().await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
@@ -203,7 +199,7 @@ mod tests {
         let client = get_initialized_client(4).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        client.begin(Default::default()).await.unwrap();
+        client.begin(None).await.unwrap();
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
@@ -257,7 +253,7 @@ mod tests {
         let client = get_initialized_client(4).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        client.begin(Default::default()).await.unwrap();
+        client.begin(None).await.unwrap();
         let response = client.rollback().await.unwrap();
         assert!(Success::try_from(response).is_ok());
     }
@@ -267,7 +263,7 @@ mod tests {
         let client = get_initialized_client(4).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        client.begin(Default::default()).await.unwrap();
+        client.begin(None).await.unwrap();
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
                 "MATCH (n {test: 'v4-rollback'}) DETACH DELETE n;".to_string(),
