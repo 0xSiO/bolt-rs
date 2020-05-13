@@ -69,6 +69,7 @@ pub enum Message {
     Success(Success),
     Failure(Failure),
     Ignored,
+
     // V3+-compatible message types
     Hello(Hello),
     Goodbye,
@@ -76,6 +77,7 @@ pub enum Message {
     Begin(Begin),
     Commit,
     Rollback,
+
     // V4+-compatible message types
     Discard(Discard),
     Pull(Pull),
