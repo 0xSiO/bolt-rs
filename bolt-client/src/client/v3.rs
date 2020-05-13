@@ -66,7 +66,7 @@ impl Client {
     /// This Bolt v3+ message begins a transaction. A hash of arbitrary metadata can be passed along with the request.
     ///
     /// # Response
-    /// - `SUCCESS {}` if transaction has started successfully
+    /// - `SUCCESS {…}` if transaction has started successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be started
     #[bolt_version(3, 4)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> Result<Message> {
@@ -97,7 +97,7 @@ impl Client {
     /// To instead keep pending changes, send a `COMMIT` message.
     ///
     /// # Response
-    /// - `SUCCESS {}` if transaction has been rolled back successfully
+    /// - `SUCCESS {…}` if transaction has been rolled back successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be rolled back
     #[bolt_version(3, 4)]
     pub async fn rollback(&mut self) -> Result<Message> {
