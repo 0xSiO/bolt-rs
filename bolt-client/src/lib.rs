@@ -1,3 +1,4 @@
+// TODO: Clean up formatting of the doc tests
 //! An asynchronous client for Bolt-compatible servers.
 //!
 //! # Example
@@ -33,17 +34,17 @@
 //!     // Send a HELLO message with authorization details to the server to initialize
 //!     // the session.
 //!     let response: Message = client.hello(
-//!         Metadata::from_iter(vec![
+//!         Some(Metadata::from_iter(vec![
 //!             ("user_agent", "my-client-name/1.0"),
 //!             ("scheme", "basic"),
 //!             ("principal", &env::var("BOLT_TEST_USERNAME")?),
 //!             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
-//!         ])).await?;
+//!         ]))).await?;
 //!     assert!(Success::try_from(response).is_ok());
 //!
 //!     // Run a query on the server and retrieve the results
 //!     let response = client.run_with_metadata(
-//!         "RETURN 1 as num;", Default::default(), Default::default()
+//!         "RETURN 1 as num;", None, None
 //!     ).await?;
 //!     // Successful responses will include a SUCCESS message with related metadata
 //!     // Consuming these messages is optional and will be skipped for the rest of the example
@@ -56,19 +57,19 @@
 //!     // Integers are automatically packed into the smallest possible byte representation
 //!     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //!     #
-//!     # client.run_with_metadata("MATCH (n) DETACH DELETE n;", Default::default(), Default::default()).await?;
+//!     # client.run_with_metadata("MATCH (n) DETACH DELETE n;", None, None).await?;
 //!     # client.pull_all().await?;
 //!
 //!     // Run a more complex query with parameters
 //!     let params = Params::from_iter(vec![("name", "Rust")]);
 //!     client.run_with_metadata(
 //!         "CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});",
-//!         params, Default::default()).await?;
+//!         Some(params), None).await?;
 //!     client.pull_all().await?;
 //!
 //!     // Grab a node from the database and convert it to a native type
 //!     client.run_with_metadata("MATCH (rust:Language) RETURN rust;",
-//!         Default::default(), Default::default()).await?;
+//!         None, None).await?;
 //!     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     let node = Node::try_from(records[0].fields()[0].clone())?;

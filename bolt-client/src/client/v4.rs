@@ -16,8 +16,8 @@ impl Client {
     /// - `SUCCESS {…}` if the result stream has been successfully discarded
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
     #[bolt_version(4)]
-    pub async fn discard(&mut self, metadata: Metadata) -> Result<Message> {
-        let discard_msg = Discard::new(metadata.value);
+    pub async fn discard(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+        let discard_msg = Discard::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Discard(discard_msg)).await?;
         self.read_message().await
     }
@@ -32,8 +32,8 @@ impl Client {
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available or if retrieval fails
     #[bolt_version(4)]
-    pub async fn pull(&mut self, metadata: Metadata) -> Result<(Message, Vec<Record>)> {
-        let pull_msg = Pull::new(metadata.value);
+    pub async fn pull(&mut self, metadata: Option<Metadata>) -> Result<(Message, Vec<Record>)> {
+        let pull_msg = Pull::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Pull(pull_msg)).await?;
         let mut records = vec![];
         loop {
@@ -147,7 +147,7 @@ mod tests {
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = client
-            .discard(Metadata::from_iter(vec![("n".to_string(), -1)]))
+            .discard(Some(Metadata::from_iter(vec![("n".to_string(), -1)])))
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -171,7 +171,7 @@ mod tests {
         assert!(Success::try_from(response).is_ok());
 
         let (response, records) = client
-            .pull(Metadata::from_iter(vec![("n".to_string(), 1)]))
+            .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());

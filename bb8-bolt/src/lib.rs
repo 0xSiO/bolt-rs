@@ -82,9 +82,7 @@ impl ManageConnection for BoltConnectionManager {
     }
 
     async fn is_valid(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
-        let response = conn
-            .run("RETURN 1;".to_string(), Default::default())
-            .await?;
+        let response = conn.run("RETURN 1;".to_string(), None).await?;
         message::Success::try_from(response)?;
         let (response, _records) = conn.pull_all().await?;
         message::Success::try_from(response)?;
@@ -143,23 +141,23 @@ mod tests {
                 let version = client.version().unwrap();
                 let (response, records) = match version {
                     1 | 2 => {
-                        client.run(statement, Default::default()).await.unwrap();
+                        client.run(statement, None).await.unwrap();
                         client.pull_all().await.unwrap()
                     }
                     3 => {
                         client
-                            .run_with_metadata(statement, Default::default(), Default::default())
+                            .run_with_metadata(statement, None, None)
                             .await
                             .unwrap();
                         client.pull_all().await.unwrap()
                     }
                     4 => {
                         client
-                            .run_with_metadata(statement, Default::default(), Default::default())
+                            .run_with_metadata(statement, None, None)
                             .await
                             .unwrap();
                         client
-                            .pull(Metadata::from_iter(vec![("n".to_string(), 1)]))
+                            .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
                             .await
                             .unwrap()
                     }
