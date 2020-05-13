@@ -150,13 +150,13 @@
 #[doc(inline)]
 pub use self::client::Client;
 
-pub mod client;
+mod client;
+mod define_value_map;
 pub mod error;
 mod stream;
-mod value_map;
 
-pub type Metadata = value_map::ValueMap;
-pub type Params = value_map::ValueMap;
+define_value_map!(Metadata);
+define_value_map!(Params);
 
 #[doc(hidden)]
 #[macro_export]
