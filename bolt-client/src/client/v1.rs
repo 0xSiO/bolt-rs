@@ -218,12 +218,12 @@ pub(crate) mod tests {
                 .await
         } else {
             client
-                .hello(Metadata::from_iter(vec![
+                .hello(Some(Metadata::from_iter(vec![
                     ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
                     ("scheme".to_string(), "basic".to_string()),
                     ("principal".to_string(), username),
                     ("credentials".to_string(), password),
-                ]))
+                ])))
                 .await
         }
     }
@@ -239,8 +239,8 @@ pub(crate) mod tests {
             client
                 .run_with_metadata(
                     "RETURN invalid query oof as n;".to_string(),
-                    Params::from_iter(vec![("some_val", 25.5432)]),
-                    Metadata::from_iter(vec![("some_key", true)]),
+                    Some(Params::from_iter(vec![("some_val", 25.5432)])),
+                    Some(Metadata::from_iter(vec![("some_key", true)])),
                 )
                 .await
         } else {
@@ -253,8 +253,8 @@ pub(crate) mod tests {
             client
                 .run_with_metadata(
                     "RETURN $some_val as n;",
-                    Params::from_iter(vec![("some_val", 25.5432)]),
-                    Metadata::from_iter(vec![("some_key", true)]),
+                    Some(Params::from_iter(vec![("some_val", 25.5432)])),
+                    Some(Metadata::from_iter(vec![("some_key", true)])),
                 )
                 .await
         } else {

@@ -17,8 +17,8 @@ impl Client {
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if initialization
     ///     cannot be performed at this time, or if the authorization failed.
     #[bolt_version(3, 4)]
-    pub async fn hello(&mut self, metadata: Metadata) -> Result<Message> {
-        let hello_msg = Hello::new(metadata.value);
+    pub async fn hello(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+        let hello_msg = Hello::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Hello(hello_msg)).await?;
         self.read_message().await
     }
@@ -48,10 +48,14 @@ impl Client {
     pub async fn run_with_metadata(
         &mut self,
         statement: impl Into<String>,
-        parameters: Params,
-        metadata: Metadata,
+        parameters: Option<Params>,
+        metadata: Option<Metadata>,
     ) -> Result<Message> {
-        let run_msg = RunWithMetadata::new(statement.into(), parameters.value, metadata.value);
+        let run_msg = RunWithMetadata::new(
+            statement.into(),
+            parameters.unwrap_or_default().value,
+            metadata.unwrap_or_default().value,
+        );
         self.send_message(Message::RunWithMetadata(run_msg)).await?;
         self.read_message().await
     }
@@ -65,8 +69,8 @@ impl Client {
     /// - `SUCCESS {}` if transaction has started successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be started
     #[bolt_version(3, 4)]
-    pub async fn begin(&mut self, metadata: Metadata) -> Result<Message> {
-        let begin_msg = Begin::new(metadata.value);
+    pub async fn begin(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+        let begin_msg = Begin::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Begin(begin_msg)).await?;
         self.read_message().await
     }
