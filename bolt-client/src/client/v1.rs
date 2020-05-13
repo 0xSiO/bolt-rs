@@ -7,7 +7,6 @@ use bolt_proto::{Message, Value};
 use crate::error::*;
 use crate::{Client, Params};
 
-// TODO: Go through all the tests and look for unneeded uses of .to_string() or Value::from()
 impl Client {
     /// Send an `INIT` message to the server.
     ///
@@ -136,7 +135,7 @@ impl Client {
     /// In some cases, it may be preferable to use `RESET` after a failure, to clear the entire state of the connection.
     ///
     /// # Response
-    /// - `SUCCESS {}` if the session was successfully reset
+    /// - `SUCCESS {…}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting to be cleared
     #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> Result<Message> {
@@ -163,7 +162,7 @@ impl Client {
     /// See [`ack_failure`](Client::ack_failure) for sending a message that only clears `FAILURE` state.
     ///
     /// # Response
-    /// - `SUCCESS {}` if the session was successfully reset
+    /// - `SUCCESS {…}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently possible
     #[bolt_version(1, 2, 3, 4)]
     pub async fn reset(&mut self) -> Result<Message> {
