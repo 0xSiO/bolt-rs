@@ -16,10 +16,10 @@ Neo4j 4.0. The project roadmap is shown below:
     - [x] New message types (Hello, Goodbye, RunWithMetadata, Begin, Commit, Rollback)
 - [x] Bolt v4 protocol
     - [x] New message types (Pull, Discard)
-- [ ] Client and connection pool adaptor
+- [x] Client and connection pool adaptor
     - [x] v1-v3 client behavior
     - [x] v4 client behavior
-    - [ ] Test connection pool with all (or mixed) client versions
+    - [x] Test connection pool with all client versions
     - [x] Benchmarks!
 - [ ] Address TODOs scattered throughout codebase
 
