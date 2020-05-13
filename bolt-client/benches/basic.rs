@@ -38,18 +38,51 @@ fn simple_query_bench(c: &mut Criterion) {
     let mut runtime = Runtime::new().unwrap();
 
     c.bench_function("simple query", |b| {
+        let mut client = runtime.block_on(get_initialized_client()).unwrap();
         b.iter(|| {
             runtime.block_on(async {
-                let mut client = get_initialized_client().await.unwrap();
                 client
                     .run_with_metadata("RETURN 1 as num;", None, None)
                     .await
                     .unwrap();
                 client.pull_all().await.unwrap();
             });
-        })
+        });
     });
 }
 
-criterion_group!(benches, initialize_client_bench, simple_query_bench,);
-criterion_main!(benches);
+fn complex_query_bench(c: &mut Criterion) {
+    let mut runtime = Runtime::new().unwrap();
+
+    c.bench_function("complex query", |b| {
+        let mut client = runtime.block_on(get_initialized_client()).unwrap();
+        // Set up
+        runtime.block_on(async {
+            client.run_with_metadata(
+                "CREATE (:Client {name: 'bolt-client', starting: datetime('2019-12-19T16:08:04-08:00'), test: 'bench-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'bench-node-rel'});",
+                None, None).await.unwrap();
+            client.pull_all().await.unwrap();
+        });
+
+        b.iter(|| {
+            runtime.block_on(async {
+                client.run_with_metadata("MATCH (c {test: 'bench-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;", None, None).await.unwrap();
+                let (_response, _records) = client.pull_all().await.unwrap();
+            });
+        });
+
+        // Clean up
+        runtime.block_on(async {
+            client.run_with_metadata("MATCH (n {test: 'bench-node-rel'}) DETACH DELETE n;", None, None).await.unwrap();
+            client.pull_all().await.unwrap();
+        });
+    });
+}
+
+criterion_group!(
+    basic_benches,
+    initialize_client_bench,
+    simple_query_bench,
+    complex_query_bench,
+);
+criterion_main!(basic_benches);
