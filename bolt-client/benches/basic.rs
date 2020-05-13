@@ -12,7 +12,7 @@ async fn get_initialized_client() -> Result<Client, Box<dyn std::error::Error>> 
         env::var("BOLT_TEST_DOMAIN").ok(),
     )
     .await?;
-    client.handshake(&[3, 2, 1, 0]).await?; // TODO: Should we benchmark multiple client versions?
+    client.handshake(&[3, 0, 0, 0]).await?;
     client
         .hello(Some(Metadata::from_iter(vec![
             ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
