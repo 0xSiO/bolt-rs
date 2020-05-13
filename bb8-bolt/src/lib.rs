@@ -67,7 +67,7 @@ impl ManageConnection for BoltConnectionManager {
                 })?;
                 client.init(String::try_from(user_agent)?, metadata).await?
             }
-            3 | 4 => client.hello(self.metadata.clone()).await?,
+            3 | 4 => client.hello(Metadata::from(self.metadata.clone())).await?,
             _ => return Err(Error::InvalidClientVersion(version)),
         };
 
@@ -78,7 +78,9 @@ impl ManageConnection for BoltConnectionManager {
     }
 
     async fn is_valid(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
-        let response = conn.run("RETURN 1;".to_string(), None).await?;
+        let response = conn
+            .run("RETURN 1;".to_string(), Default::default())
+            .await?;
         message::Success::try_from(response)?;
         let (response, _records) = conn.pull_all().await?;
         message::Success::try_from(response)?;
@@ -137,19 +139,19 @@ mod tests {
                 let version = client.version().unwrap();
                 let (response, records) = match version {
                     1 | 2 => {
-                        client.run(statement, None).await.unwrap();
+                        client.run(statement, Default::default()).await.unwrap();
                         client.pull_all().await.unwrap()
                     }
                     3 => {
                         client
-                            .run_with_metadata(statement, None, None)
+                            .run_with_metadata(statement, Default::default(), Default::default())
                             .await
                             .unwrap();
                         client.pull_all().await.unwrap()
                     }
                     4 => {
                         client
-                            .run_with_metadata(statement, None, None)
+                            .run_with_metadata(statement, Default::default(), Default::default())
                             .await
                             .unwrap();
                         client

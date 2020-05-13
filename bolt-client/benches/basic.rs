@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::env;
 use std::iter::FromIterator;
 
@@ -15,7 +14,7 @@ async fn get_initialized_client() -> Result<Client, Box<dyn std::error::Error>> 
     .await?;
     client.handshake(&[3, 2, 1, 0]).await?; // TODO: Should we benchmark multiple client versions?
     client
-        .hello(HashMap::from_iter(vec![
+        .hello(Metadata::from_iter(vec![
             ("user_agent".to_string(), "bolt-client/X.Y.Z".to_string()),
             ("scheme".to_string(), "basic".to_string()),
             ("principal".to_string(), env::var("BOLT_TEST_USERNAME")?),
@@ -43,7 +42,7 @@ fn simple_query_bench(c: &mut Criterion) {
             runtime.block_on(async {
                 let mut client = get_initialized_client().await.unwrap();
                 client
-                    .run_with_metadata("RETURN 1 as num;".to_string(), None, None)
+                    .run_with_metadata("RETURN 1 as num;", Default::default(), Default::default())
                     .await
                     .unwrap();
                 client.pull_all().await.unwrap();
