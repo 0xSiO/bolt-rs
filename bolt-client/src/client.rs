@@ -38,12 +38,13 @@ pub struct Client {
 impl Client {
     /// Create a new client pointing to the provided server address. If a server domain is provided, the Client will
     /// attempt to connect to the server over a connection secured with TLS.
-    pub async fn new(addr: impl ToSocketAddrs, domain: Option<&str>) -> Result<Self> {
+    pub async fn new(addr: impl ToSocketAddrs, domain: Option<impl Into<String>>) -> Result<Self> {
         let stream = match domain {
             Some(domain) => {
+                let domain = domain.into();
                 let tls_connector = Client::configure_tls_connector(&TLS_SERVER_ROOTS);
                 let dns_name_ref = DNSNameRef::try_from_ascii_str(&domain)
-                    .map_err(|_| Error::InvalidDNSName(domain.to_string()))?;
+                    .map_err(|_| Error::InvalidDNSName(domain.clone()))?;
                 let stream = TcpStream::connect(addr).await?;
                 Stream::SecureTcp(Box::new(tls_connector.connect(dns_name_ref, stream).await?))
             }

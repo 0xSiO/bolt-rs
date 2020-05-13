@@ -23,7 +23,7 @@
 //!     // stored in environment variables. A domain is optional - including it will
 //!     // create a client that uses a TLS-secured connection.
 //!     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
-//!                                  env::var("BOLT_TEST_DOMAIN").ok().as_deref()).await?;
+//!                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
 //!     // This example demonstrates usage of the v3 protocol
 //!     let handshake_result = client.handshake(&[3, 0, 0, 0]).await;
 //!     # if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
@@ -103,7 +103,7 @@
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! #     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
-//! #                                  env::var("BOLT_TEST_DOMAIN").ok().as_deref()).await?;
+//! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
 //! // For the handshake we want to support versions 1 and 2 only, preferring version 2.
 //! let handshake_result = client.handshake(&[2, 1, 0, 0]).await;
 //!     # if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {

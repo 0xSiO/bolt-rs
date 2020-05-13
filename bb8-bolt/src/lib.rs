@@ -56,7 +56,7 @@ impl ManageConnection for BoltConnectionManager {
     type Error = Error;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        let mut client = Client::new(self.addr, self.domain.as_deref()).await?;
+        let mut client = Client::new(self.addr, self.domain.as_ref()).await?;
         client.handshake(SUPPORTED_VERSIONS).await?;
         let version = client.version().unwrap(); // ok to unwrap if handshake succeeds
         let response = match version {
