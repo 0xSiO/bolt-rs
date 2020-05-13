@@ -10,7 +10,7 @@
 //!
 //! use tokio::prelude::*;
 //!
-//! use bolt_client::Client;
+//! use bolt_client::*;
 //! use bolt_proto::{Message, Value};
 //! use bolt_proto::message::*;
 //! use bolt_proto::value::*;
@@ -33,16 +33,18 @@
 //!     // Send a HELLO message with authorization details to the server to initialize
 //!     // the session.
 //!     let response: Message = client.hello(
-//!         HashMap::from_iter(vec![
-//!             ("user_agent".to_string(), "my-client-name/1.0".to_string()),
-//!             ("scheme".to_string(), "basic".to_string()),
-//!             ("principal".to_string(), env::var("BOLT_TEST_USERNAME")?),
-//!             ("credentials".to_string(), env::var("BOLT_TEST_PASSWORD")?),
+//!         Metadata::from_iter(vec![
+//!             ("user_agent", "my-client-name/1.0"),
+//!             ("scheme", "basic"),
+//!             ("principal", &env::var("BOLT_TEST_USERNAME")?),
+//!             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
 //!         ])).await?;
 //!     assert!(Success::try_from(response).is_ok());
 //!
 //!     // Run a query on the server and retrieve the results
-//!     let response = client.run_with_metadata("RETURN 1 as num;".to_string(), None, None).await?;
+//!     let response = client.run_with_metadata(
+//!         "RETURN 1 as num;", Default::default(), Default::default()
+//!     ).await?;
 //!     // Successful responses will include a SUCCESS message with related metadata
 //!     // Consuming these messages is optional and will be skipped for the rest of the example
 //!     assert!(Success::try_from(response).is_ok());
@@ -54,25 +56,25 @@
 //!     // Integers are automatically packed into the smallest possible byte representation
 //!     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //!     #
-//!     # client.run_with_metadata("MATCH (n) DETACH DELETE n;".to_string(), None, None).await?;
+//!     # client.run_with_metadata("MATCH (n) DETACH DELETE n;", Default::default(), Default::default()).await?;
 //!     # client.pull_all().await?;
 //!
 //!     // Run a more complex query with parameters
-//!     let params = HashMap::from_iter(vec![("name".to_string(), Value::from("Rust"))]);
+//!     let params = Params::from_iter(vec![("name", "Rust")]);
 //!     client.run_with_metadata(
-//!         "CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});".to_string(),
-//!         Some(params), None).await?;
+//!         "CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});",
+//!         params, Default::default()).await?;
 //!     client.pull_all().await?;
 //!
 //!     // Grab a node from the database and convert it to a native type
-//!     client.run_with_metadata(
-//!         "MATCH (rust:Language) RETURN rust;".to_string(), None, None).await?;
+//!     client.run_with_metadata("MATCH (rust:Language) RETURN rust;",
+//!         Default::default(), Default::default()).await?;
 //!     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     let node = Node::try_from(records[0].fields()[0].clone())?;
 //!
 //!     // Access properties from returned values
-//!     assert_eq!(node.labels(), &["Language".to_string()]);
+//!     assert_eq!(node.labels(), vec!["Language"]);
 //!     assert_eq!(node.properties(),
 //!                HashMap::from_iter(vec![("name", &Value::from("Rust"))]));
 //!
@@ -92,7 +94,7 @@
 //! #
 //! # use tokio::prelude::*;
 //! #
-//! # use bolt_client::Client;
+//! # use bolt_client::*;
 //! # use bolt_proto::{Message, Value};
 //! # use bolt_proto::message::*;
 //! # use bolt_proto::value::*;
@@ -119,21 +121,21 @@
 //!     # assert!(Success::try_from(response).is_ok());
 //!
 //! // Instead of `run_with_metadata`, we call `run`, and there is no third parameter for metadata.
-//! let response = client.run("RETURN 1 as num;".to_string(), None).await?;
+//! let response = client.run("RETURN 1 as num;", Default::default()).await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     # let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     # assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //!     #
-//!     # client.run("MATCH (n) DETACH DELETE n;".to_string(), None).await?;
+//!     # client.run("MATCH (n) DETACH DELETE n;", Default::default()).await?;
 //!     # client.pull_all().await?;
 //!     #
 //!     # client.run("CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});".to_string(),
-//!     #            Some(HashMap::from_iter(
+//!     #            Params::from_iter(
 //!     #                vec![("name".to_string(), Value::from("Rust"))]
-//!     #            ))).await?;
+//!     #            )).await?;
 //!     # client.pull_all().await?;
-//!     # client.run("MATCH (rust:Language) RETURN rust;".to_string(), None).await?;
+//!     # client.run("MATCH (rust:Language) RETURN rust;", Default::default()).await?;
 //!     # let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //!     # assert!(Success::try_from(response).is_ok());
 //!     #
