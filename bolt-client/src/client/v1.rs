@@ -7,6 +7,7 @@ use bolt_proto::{Message, Value};
 use crate::error::*;
 use crate::{Client, Params};
 
+// TODO: Go through all the tests and look for unneeded uses of .to_string() or Value::from()
 impl Client {
     /// Send an `INIT` message to the server.
     ///
