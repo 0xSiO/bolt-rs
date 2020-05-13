@@ -121,7 +121,7 @@ mod tests {
         let mut client = client.unwrap();
         let response = client
             .run(
-                "RETURN localdatetime('2010-03-05T12:30:01.000000500');".to_string(),
+                "RETURN localdatetime('2010-03-05T12:30:01.000000500');",
                 None,
             )
             .await
@@ -140,10 +140,7 @@ mod tests {
         );
 
         let response = client
-            .run(
-                "RETURN point({x: 42.5123, y: 1.123, z: 3214});".to_string(),
-                None,
-            )
+            .run("RETURN point({x: 42.5123, y: 1.123, z: 3214});", None)
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -162,18 +159,21 @@ mod tests {
         let client = get_initialized_client(2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let statement = "MATCH (n {test: 'v2-node-rel'}) DETACH DELETE n;".to_string();
-        client.run(statement, None).await.unwrap();
+        client
+            .run("MATCH (n {test: 'v2-node-rel'}) DETACH DELETE n;", None)
+            .await
+            .unwrap();
         client.pull_all().await.unwrap();
 
-        let statement =
-            "CREATE (:Client {name: 'bolt-client', starting: datetime('2019-12-19T16:08:04-08:00'), test: 'v2-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v2-node-rel'});"
-                .to_string();
-        client.run(statement, None).await.unwrap();
+        client.run("CREATE (:Client {name: 'bolt-client', starting: datetime('2019-12-19T16:08:04-08:00'), test: 'v2-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v2-node-rel'});", None).await.unwrap();
         client.pull_all().await.unwrap();
-        let statement =
-            "MATCH (c {test: 'v2-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;".to_string();
-        client.run(statement, None).await.unwrap();
+        client
+            .run(
+                "MATCH (c {test: 'v2-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;",
+                None,
+            )
+            .await
+            .unwrap();
         let (_response, records) = client.pull_all().await.unwrap();
 
         let c = Node::try_from(records[0].fields()[0].clone()).unwrap();
