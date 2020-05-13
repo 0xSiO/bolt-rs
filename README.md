@@ -20,7 +20,7 @@ Neo4j 4.0. The project roadmap is shown below:
     - [x] v1-v3 client behavior
     - [x] v4 client behavior
     - [ ] Implement transaction handling/retries (or leave it to a higher-level library)
-    - [ ] Benchmarks?
+    - [x] Benchmarks!
 - [ ] Address TODOs scattered throughout codebase
 
 ### bolt-client
@@ -54,6 +54,61 @@ Ugly procedural macros used in bolt-proto to derive serialization-related traits
 [![Released API docs](https://docs.rs/bb8-bolt/badge.svg)](https://docs.rs/bb8-bolt)
 
 A bolt-client adapter crate for the [bb8](https://crates.io/crates/bb8) connection pool.
+
+## Benchmarks
+
+Disclaimer: I'm not a benchmark guru, I just did some quick analysis with [criterion](https://crates.io/crates/criterion).
+
+The following results were obtained using bolt-client, with a Neo4j 4.0 server running in a docker container on the same
+machine (a laptop running 64-bit Linux). The client communicated with the server using version 3 of the Bolt protocol.
+
+### Basic client initialization
+
+This measured the time it took to initialize a new client instance: performing a handshake to establish a protocol 
+version, sending a HELLO message to the server, and receiving a SUCCESS message.
+
+![init_client](images/init_client_bench.svg)
+
+Here are some statistics from criterion:
+
+|           | Lower bound | Estimate  | Upper bound |
+|-----------|-------------|-----------|-------------|
+| Mean      | 869.41 us   | 874.76 us | 880.61 us   |
+| Std. Dev. | 21.156 us   | 28.821 us | 35.426 us   |
+| Median    | 864.63 us   | 868.97 us | 873.53 us   |
+| MAD       | 13.386 us   | 17.213 us | 22.078 us   ||
+
+### Simple query execution
+
+This measured the time it took to execute a simple query (`RETURN 1 as num;`) using a pre-initialized client. This
+involved sending a RUN_WITH_METADATA message, then a PULL_ALL message, and fetching/deserializing the response.
+
+![simple_query](images/simple_query_bench.svg)
+
+Here are some statistics from criterion:
+
+|           | Lower bound | Estimate  | Upper bound |
+|-----------|-------------|-----------|-------------|
+| Mean      | 239.39 us   | 242.61 us | 246.00 us   |
+| Std. Dev. | 13.189 us   | 16.885 us | 20.167 us   |
+| Median    | 236.79 us   | 238.03 us | 240.63 us   |
+| MAD       | 6.7203 us   | 10.142 us | 13.585 us   |
+
+### Complex query execution
+
+This measured the time it took to execute a more complex query (a `MATCH` between 2 nodes and 1 relationship) using a
+pre-initialized client. It involved deserializing more messages and complex nested data structures.
+
+![complex_query](images/complex_query_bench.svg)
+
+Here are some statistics from criterion:
+
+|           | Lower bound | Estimate  | Upper bound |
+|-----------|-------------|-----------|-------------|
+| Mean      | 418.30 us   | 445.29 us | 474.45 us   |
+| Std. Dev. | 111.01 us   | 144.67 us | 172.97 us   |
+| Median    | 378.30 us   | 396.89 us | 411.14 us   |
+| MAD       | 52.691 us   | 75.039 us | 100.26 us   |
 
 ## Contributing
 
