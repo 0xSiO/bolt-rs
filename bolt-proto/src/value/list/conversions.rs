@@ -1,4 +1,4 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use crate::error::*;
 use crate::value::List;
@@ -15,28 +15,6 @@ where
     }
 }
 
-impl<T> TryInto<Vec<T>> for List
-where
-    T: TryFrom<Value, Error = Error>,
-{
-    type Error = Error;
-
-    fn try_into(self) -> Result<Vec<T>> {
-        self.value.into_iter().map(T::try_from).collect()
-    }
-}
-
-impl TryInto<Vec<Value>> for List {
-    type Error = Error;
-
-    fn try_into(self) -> Result<Vec<Value>> {
-        Ok(self.value)
-    }
-}
-
-// We don't need TryFrom<Value> for List since it can be converted directly into a Vec
-// impl_try_from_value!(List, List);
-
 impl<T> TryFrom<Value> for Vec<T>
 where
     T: TryFrom<Value, Error = Error>,
@@ -45,7 +23,7 @@ where
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::List(list) => list.try_into(),
+            Value::List(list) => list.value.into_iter().map(T::try_from).collect(),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }
