@@ -1,44 +1,26 @@
+use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::hash::Hash;
 
 use crate::error::*;
 use crate::value::Map;
 use crate::Value;
 
-impl<K, V> TryInto<HashMap<K, V>> for Map
+impl<K, V> From<HashMap<K, V>> for Map
 where
-    K: Hash + Eq + TryFrom<Value, Error = Error>,
-    V: TryFrom<Value, Error = Error>,
+    K: Into<Value>,
+    V: Into<Value>,
 {
-    type Error = Error;
-
-    fn try_into(self) -> Result<HashMap<K, V>> {
-        let mut map = HashMap::with_capacity(self.value.len());
-        for (k, v) in self.value {
-            map.insert(K::try_from(k)?, V::try_from(v)?);
+    fn from(value: HashMap<K, V, RandomState>) -> Self {
+        Self {
+            value: value
+                .into_iter()
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
         }
-        Ok(map)
     }
 }
-
-impl<K> TryInto<HashMap<K, Value>> for Map
-where
-    K: Hash + Eq + TryFrom<Value, Error = Error>,
-{
-    type Error = Error;
-
-    fn try_into(self) -> Result<HashMap<K, Value>> {
-        let mut map = HashMap::with_capacity(self.value.len());
-        for (k, v) in self.value {
-            map.insert(K::try_from(k)?, v);
-        }
-        Ok(map)
-    }
-}
-
-// We don't need TryFrom<Value> for Map since it can be converted directly into a HashMap
-// impl_try_from_value!(Map, Map);
 
 impl<K, V> TryFrom<Value> for HashMap<K, V>
 where
@@ -49,7 +31,13 @@ where
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Map(map) => map.try_into(),
+            Value::Map(map) => {
+                let mut new_map = HashMap::with_capacity(map.value.len());
+                for (k, v) in map.value {
+                    new_map.insert(K::try_from(k)?, V::try_from(v)?);
+                }
+                Ok(new_map)
+            }
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }
@@ -63,7 +51,13 @@ where
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Map(map) => map.try_into(),
+            Value::Map(map) => {
+                let mut new_map = HashMap::with_capacity(map.value.len());
+                for (k, v) in map.value {
+                    new_map.insert(K::try_from(k)?, v);
+                }
+                Ok(new_map)
+            }
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }

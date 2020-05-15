@@ -1,4 +1,3 @@
-use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::mem;
@@ -21,32 +20,6 @@ pub(crate) const MARKER_LARGE: u8 = 0xDA;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Map {
     pub(crate) value: HashMap<Value, Value>,
-}
-
-impl<K, V> From<HashMap<K, V>> for Map
-where
-    K: Into<Value>,
-    V: Into<Value>,
-{
-    fn from(value: HashMap<K, V, RandomState>) -> Self {
-        Self {
-            value: value
-                .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect(),
-        }
-    }
-}
-
-impl TryFrom<Value> for Map {
-    type Error = Error;
-
-    fn try_from(value: Value) -> Result<Self> {
-        match value {
-            Value::Map(map) => Ok(map),
-            _ => Err(ConversionError::FromValue(value).into()),
-        }
-    }
 }
 
 impl Marker for Map {
