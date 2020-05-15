@@ -58,7 +58,7 @@ pub enum Value {
     // V1-compatible value types
     Boolean(bool),
     Integer(Integer),
-    Float(f64),
+    Float(Float),
     Bytes(ByteArray), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
     List(List),
     Map(Map),
@@ -124,7 +124,7 @@ impl Marker for Value {
         match self {
             Value::Boolean(boolean) => Boolean::from(*boolean).get_marker(),
             Value::Integer(integer) => integer.get_marker(),
-            Value::Float(float) => Float::from(*float).get_marker(),
+            Value::Float(float) => float.get_marker(),
             Value::Bytes(byte_array) => byte_array.get_marker(),
             Value::List(list) => list.get_marker(),
             Value::Map(map) => map.get_marker(),
@@ -156,7 +156,7 @@ impl TryInto<Bytes> for Value {
         match self {
             Value::Boolean(boolean) => Boolean::from(boolean).try_into(),
             Value::Integer(integer) => integer.try_into(),
-            Value::Float(float) => Float::from(float).try_into(),
+            Value::Float(float) => float.try_into(),
             Value::Bytes(byte_array) => byte_array.try_into(),
             Value::List(list) => list.try_into(),
             Value::Map(map) => map.try_into(),
@@ -211,7 +211,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 | integer::MARKER_INT_16
                 | integer::MARKER_INT_32
                 | integer::MARKER_INT_64 => Ok(Value::Integer(Integer::try_from(input_arc)?)),
-                float::MARKER => Ok(Value::Float(Float::try_from(input_arc)?.value)),
+                float::MARKER => Ok(Value::Float(Float::try_from(input_arc)?)),
                 byte_array::MARKER_SMALL | byte_array::MARKER_MEDIUM | byte_array::MARKER_LARGE => {
                     Ok(Value::Bytes(ByteArray::try_from(input_arc)?))
                 }
@@ -357,19 +357,19 @@ mod tests {
         let pi_bytes = pi.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(min_bytes))).unwrap(),
-            Value::Float(min.value)
+            Value::Float(min)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(max_bytes))).unwrap(),
-            Value::Float(max.value)
+            Value::Float(max)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(e_bytes))).unwrap(),
-            Value::Float(e.value)
+            Value::Float(e)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(pi_bytes))).unwrap(),
-            Value::Float(pi.value)
+            Value::Float(pi)
         );
     }
 

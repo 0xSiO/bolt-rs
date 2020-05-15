@@ -1,7 +1,6 @@
 use std::convert::TryFrom;
 
 use crate::error::*;
-use crate::impl_try_from_value;
 use crate::value::Float;
 use crate::Value;
 
@@ -11,18 +10,13 @@ impl From<f64> for Float {
     }
 }
 
-impl From<Float> for f64 {
-    fn from(float: Float) -> Self {
-        float.value
-    }
-}
-
-impl TryFrom<Value> for Float {
+impl TryFrom<Value> for f64 {
     type Error = Error;
 
     fn try_from(value: Value) -> Result<Self> {
-        Ok(Float::from(f64::try_from(value)?))
+        match value {
+            Value::Float(float) => Ok(float.value),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
     }
 }
-
-impl_try_from_value!(f64, Float);
