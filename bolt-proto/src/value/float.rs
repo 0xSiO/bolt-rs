@@ -13,7 +13,7 @@ mod conversions;
 pub(crate) const MARKER: u8 = 0xC1;
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Float {
+pub struct Float {
     pub(crate) value: f64,
 }
 
@@ -85,13 +85,17 @@ mod tests {
     fn try_from_bytes() {
         let pi = Float::from(std::f64::consts::PI);
         assert_eq!(
-            Float::try_from(Arc::new(Mutex::new(pi.clone().try_into_bytes().unwrap()))).unwrap(),
-            pi
+            Float::try_from(Arc::new(Mutex::new(pi.clone().try_into_bytes().unwrap())))
+                .unwrap()
+                .value,
+            pi.value
         );
         let max = Float::from(std::f64::MAX);
         assert_eq!(
-            Float::try_from(Arc::new(Mutex::new(max.clone().try_into_bytes().unwrap()))).unwrap(),
-            max
+            Float::try_from(Arc::new(Mutex::new(max.clone().try_into_bytes().unwrap())))
+                .unwrap()
+                .value,
+            max.value
         );
         assert!(Float::try_from(Arc::new(Mutex::new(Bytes::from_static(&[0x01])))).is_err());
     }

@@ -26,7 +26,7 @@ impl_from_int!(i8, i16, i32, i64);
 
 impl From<f64> for Value {
     fn from(value: f64) -> Self {
-        Value::Float(value)
+        Value::Float(Float::from(value))
     }
 }
 
