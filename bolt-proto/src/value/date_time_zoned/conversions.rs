@@ -36,7 +36,7 @@ impl TryFrom<Value> for DateTime<Tz> {
         match value {
             Value::DateTimeZoned(date_time_zoned) => {
                 // Time zone guaranteed to be valid in existing objects, ok to unwrap
-                let timezone: Tz = date_time_zoned.zone_id.value.parse().unwrap();
+                let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
                 Ok(timezone
                     .timestamp_opt(date_time_zoned.epoch_seconds, date_time_zoned.nanos as u32)
                     // epoch_seconds and nanos are guaranteed to be valid in existing objects, ok to unwrap

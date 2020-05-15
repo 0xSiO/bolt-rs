@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use bolt_proto_derive::*;
 
 use crate::impl_try_from_value;
-use crate::value::String;
 use crate::Value;
 
 pub(crate) const MARKER: u8 = 0xB3;
@@ -24,11 +23,8 @@ impl Node {
     ) -> Self {
         Self {
             node_identity,
-            labels: labels.into_iter().map(|v| v.into()).collect(),
-            properties: properties
-                .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect(),
+            labels,
+            properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
         }
     }
 
@@ -37,13 +33,13 @@ impl Node {
     }
 
     pub fn labels(&self) -> Vec<&str> {
-        self.labels.iter().map(|v| v.value.as_str()).collect()
+        self.labels.iter().map(|v| v.as_str()).collect()
     }
 
     pub fn properties(&self) -> HashMap<&str, &Value> {
         self.properties
             .iter()
-            .map(|(k, v)| (k.value.as_str(), v))
+            .map(|(k, v)| (k.as_str(), v))
             .collect()
     }
 }

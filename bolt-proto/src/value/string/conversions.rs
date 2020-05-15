@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use crate::error::*;
 use crate::value::String;
-use crate::{impl_try_from_value, Value};
+use crate::Value;
 
 impl From<&str> for String {
     fn from(value: &str) -> Self {
@@ -15,14 +15,6 @@ impl From<&str> for String {
 impl From<std::string::String> for String {
     fn from(value: std::string::String) -> Self {
         Self { value }
-    }
-}
-
-impl_try_from_value!(String, String);
-
-impl From<String> for std::string::String {
-    fn from(string: String) -> Self {
-        string.value
     }
 }
 

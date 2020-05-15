@@ -4,7 +4,6 @@ use chrono_tz::Tz;
 use bolt_proto_derive::*;
 
 use crate::error::*;
-use crate::value::String;
 
 mod conversions;
 
@@ -42,7 +41,7 @@ impl DateTimeZoned {
         Ok(Self {
             epoch_seconds: date_time.timestamp(),
             nanos: date_time.nanosecond() as i64,
-            zone_id: String::from(timezone.name().to_string()),
+            zone_id: timezone.name().to_string(),
         })
     }
 }
