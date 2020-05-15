@@ -7,7 +7,7 @@ use crate::value::*;
 
 impl From<bool> for Value {
     fn from(value: bool) -> Self {
-        Value::Boolean(value)
+        Value::Boolean(Boolean::from(value))
     }
 }
 
