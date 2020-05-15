@@ -56,7 +56,7 @@ pub(crate) mod unbound_relationship;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     // V1-compatible value types
-    Boolean(bool),
+    Boolean(Boolean),
     Integer(Integer),
     Float(Float),
     Bytes(ByteArray), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
@@ -122,7 +122,7 @@ impl Eq for Value {
 impl Marker for Value {
     fn get_marker(&self) -> Result<u8> {
         match self {
-            Value::Boolean(boolean) => Boolean::from(*boolean).get_marker(),
+            Value::Boolean(boolean) => boolean.get_marker(),
             Value::Integer(integer) => integer.get_marker(),
             Value::Float(float) => float.get_marker(),
             Value::Bytes(byte_array) => byte_array.get_marker(),
@@ -154,7 +154,7 @@ impl TryInto<Bytes> for Value {
 
     fn try_into(self) -> Result<Bytes> {
         match self {
-            Value::Boolean(boolean) => Boolean::from(boolean).try_into(),
+            Value::Boolean(boolean) => boolean.try_into(),
             Value::Integer(integer) => integer.try_into(),
             Value::Float(float) => float.try_into(),
             Value::Bytes(byte_array) => byte_array.try_into(),
@@ -195,11 +195,11 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 }
                 boolean::MARKER_FALSE => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Boolean(false))
+                    Ok(Value::Boolean(Boolean::from(false)))
                 }
                 boolean::MARKER_TRUE => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Boolean(true))
+                    Ok(Value::Boolean(Boolean::from(true)))
                 }
                 // Tiny int
                 marker if (-16..=127).contains(&(marker as i8)) => {
@@ -297,11 +297,11 @@ mod tests {
         let false_bytes = Boolean::from(false).try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(true_bytes))).unwrap(),
-            Value::Boolean(true)
+            Value::Boolean(Boolean::from(true))
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(false_bytes))).unwrap(),
-            Value::Boolean(false)
+            Value::Boolean(Boolean::from(false))
         );
     }
 
