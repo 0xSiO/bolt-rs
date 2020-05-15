@@ -69,11 +69,11 @@ impl TryFrom<Arc<Mutex<Bytes>>> for ByteArray {
                     return Err(DeserializationError::InvalidMarkerByte(marker).into());
                 }
             };
-            let mut byte_arr = BytesMut::with_capacity(size);
+            let mut byte_arr = Vec::with_capacity(size);
             // We resize here so that the length of byte_arr is nonzero, which allows us to use copy_to_slice
             byte_arr.resize(size, 0);
             input_bytes.copy_to_slice(&mut byte_arr);
-            Ok(ByteArray::from(byte_arr.as_ref()))
+            Ok(ByteArray::from(byte_arr))
         })
         .map_err(|_| DeserializationError::Panicked)?
     }
