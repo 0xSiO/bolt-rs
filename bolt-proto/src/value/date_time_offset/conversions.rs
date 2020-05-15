@@ -1,7 +1,10 @@
+use std::convert::TryFrom;
+
 use chrono::{DateTime, FixedOffset, Offset, TimeZone, Timelike};
 
-use crate::impl_try_from_value;
+use crate::error::*;
 use crate::value::DateTimeOffset;
+use crate::Value;
 
 impl<T: TimeZone> From<DateTime<T>> for DateTimeOffset {
     fn from(date_time: DateTime<T>) -> Self {
@@ -13,13 +16,19 @@ impl<T: TimeZone> From<DateTime<T>> for DateTimeOffset {
     }
 }
 
-impl From<DateTimeOffset> for DateTime<FixedOffset> {
-    fn from(date_time_offset: DateTimeOffset) -> Self {
-        FixedOffset::east(date_time_offset.offset_seconds).timestamp(
-            date_time_offset.epoch_seconds,
-            date_time_offset.nanos as u32,
-        )
+impl TryFrom<Value> for DateTime<FixedOffset> {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::DateTimeOffset(date_time_offset) => Ok(FixedOffset::east(
+                date_time_offset.offset_seconds,
+            )
+            .timestamp(
+                date_time_offset.epoch_seconds,
+                date_time_offset.nanos as u32,
+            )),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
     }
 }
-
-impl_try_from_value!(DateTimeOffset, DateTimeOffset);
