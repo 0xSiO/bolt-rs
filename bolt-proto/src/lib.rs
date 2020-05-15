@@ -7,6 +7,9 @@ pub mod message;
 mod serialization;
 pub mod value;
 
+// TODO: Check for extraneous uses of String::from in message/value tests, since I removed some conversions from the
+//   String wrapper type and now String::from refers to std::string::String::from instead of crate::value::String::from
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_message_with_metadata {
@@ -15,19 +18,11 @@ macro_rules! impl_message_with_metadata {
             pub fn new(
                 metadata: ::std::collections::HashMap<::std::string::String, $crate::value::Value>,
             ) -> Self {
-                Self {
-                    metadata: metadata
-                        .into_iter()
-                        .map(|(k, v)| ($crate::value::String::from(k), v))
-                        .collect(),
-                }
+                Self { metadata }
             }
 
             pub fn metadata(&self) -> ::std::collections::HashMap<&str, &$crate::value::Value> {
-                self.metadata
-                    .iter()
-                    .map(|(k, v)| (k.value.as_str(), v))
-                    .collect()
+                self.metadata.iter().map(|(k, v)| (k.as_str(), v)).collect()
             }
         }
     };

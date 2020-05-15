@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use bolt_proto_derive::*;
 
 use crate::impl_try_from_value;
-use crate::value::String;
 use crate::Value;
 
 pub(crate) const MARKER: u8 = 0xB3;
@@ -24,11 +23,8 @@ impl UnboundRelationship {
     ) -> Self {
         Self {
             rel_identity,
-            rel_type: rel_type.into(),
-            properties: properties
-                .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect(),
+            rel_type: rel_type,
+            properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
         }
     }
 
@@ -37,13 +33,13 @@ impl UnboundRelationship {
     }
 
     pub fn rel_type(&self) -> &str {
-        &self.rel_type.value
+        &self.rel_type
     }
 
     pub fn properties(&self) -> HashMap<&str, &Value> {
         self.properties
             .iter()
-            .map(|(k, v)| (k.value.as_str(), v))
+            .map(|(k, v)| (k.as_str(), v))
             .collect()
     }
 }
