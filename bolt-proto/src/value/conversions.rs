@@ -32,7 +32,7 @@ impl From<f64> for Value {
 
 impl From<&[u8]> for Value {
     fn from(value: &[u8]) -> Self {
-        Value::Bytes(ByteArray::from(value))
+        Value::Bytes(ByteArray::from(value.to_vec()))
     }
 }
 
