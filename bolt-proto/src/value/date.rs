@@ -1,8 +1,4 @@
-use chrono::NaiveDate;
-
 use bolt_proto_derive::*;
-
-use crate::error::*;
 
 mod conversions;
 
@@ -22,6 +18,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
+    use chrono::NaiveDate;
 
     use crate::serialization::*;
     use crate::value::integer::{MARKER_INT_16, MARKER_INT_32};

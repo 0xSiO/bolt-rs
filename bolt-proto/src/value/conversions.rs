@@ -1,9 +1,14 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone};
+use chrono_tz::Tz;
 
+use crate::error::*;
 use crate::value::*;
+
+// ------------------------- Into Value -------------------------
 
 impl From<bool> for Value {
     fn from(value: bool) -> Self {
@@ -157,5 +162,60 @@ impl From<Point2D> for Value {
 impl From<Point3D> for Value {
     fn from(value: Point3D) -> Self {
         Value::Point3D(value)
+    }
+}
+
+// ------------------------- From Value -------------------------
+
+// TODO: Move all TryFrom<Value> conversions here
+
+impl TryFrom<Value> for DateTime<FixedOffset> {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::DateTimeOffset(date_time_offset) => Ok(FixedOffset::east(
+                date_time_offset.offset_seconds,
+            )
+            .timestamp(
+                date_time_offset.epoch_seconds,
+                date_time_offset.nanos as u32,
+            )),
+            Value::DateTimeZoned(date_time_zoned) => {
+                // Time zone guaranteed to be valid in existing objects, ok to unwrap
+                let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
+                let timezone: FixedOffset = timezone
+                    // Get the fixed offset (e.g. Pacific Daylight vs. Pacific Standard) for the given point in time
+                    .offset_from_utc_datetime(
+                        &NaiveDateTime::from_timestamp_opt(date_time_zoned.epoch_seconds, 0)
+                            // epoch_seconds is guaranteed to be a valid timestamp, ok to unwrap
+                            .unwrap(),
+                    )
+                    .fix();
+                Ok(timezone
+                    .timestamp_opt(date_time_zoned.epoch_seconds, date_time_zoned.nanos as u32)
+                    // epoch_seconds and nanos are guaranteed to be valid in existing objects, ok to unwrap
+                    .unwrap())
+            }
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl TryFrom<Value> for DateTime<Tz> {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::DateTimeZoned(date_time_zoned) => {
+                // Time zone guaranteed to be valid in existing objects, ok to unwrap
+                let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
+                Ok(timezone
+                    .timestamp_opt(date_time_zoned.epoch_seconds, date_time_zoned.nanos as u32)
+                    // epoch_seconds and nanos are guaranteed to be valid in existing objects, ok to unwrap
+                    .unwrap())
+            }
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
     }
 }
