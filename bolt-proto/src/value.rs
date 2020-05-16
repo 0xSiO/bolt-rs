@@ -642,7 +642,7 @@ mod tests {
 
     #[test]
     fn local_time_from_bytes() {
-        let local_time = LocalTime::new(23, 59, 59, 999).unwrap();
+        let local_time = LocalTime::from(NaiveTime::from_hms_nano(23, 59, 59, 999));
         let local_time_bytes = local_time.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(local_time_bytes))).unwrap(),
@@ -652,7 +652,8 @@ mod tests {
 
     #[test]
     fn local_date_time_from_bytes() {
-        let local_date_time = LocalDateTime::new(1999, 2, 27, 1, 0, 0, 9999).unwrap();
+        let local_date_time =
+            LocalDateTime::from(NaiveDate::from_ymd(1999, 2, 27).and_hms_nano(1, 0, 0, 9999));
         let local_date_time_bytes = local_date_time.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(local_date_time_bytes))).unwrap(),

@@ -1,8 +1,4 @@
-use chrono::NaiveTime;
-
 use bolt_proto_derive::*;
-
-use crate::error::*;
 
 mod conversions;
 
@@ -14,20 +10,13 @@ pub struct LocalTime {
     pub(crate) nanos_since_midnight: i64,
 }
 
-impl LocalTime {
-    pub fn new(hour: u32, minute: u32, second: u32, nano: u32) -> Result<Self> {
-        let naive_time = NaiveTime::from_hms_nano_opt(hour, minute, second, nano)
-            .ok_or(Error::InvalidTime(hour, minute, second, nano))?;
-        Ok(LocalTime::from(naive_time))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
+    use chrono::NaiveTime;
 
     use crate::serialization::*;
     use crate::value::integer::MARKER_INT_64;
@@ -84,14 +73,5 @@ mod tests {
             LocalTime::try_from(Arc::new(Mutex::new(Bytes::from_static(time_bytes)))).unwrap(),
             time
         );
-    }
-
-    #[test]
-    fn rejects_invalid_times() {
-        assert!(LocalTime::new(0, 0, 0, 0).is_ok());
-        assert!(LocalTime::new(25, 0, 0, 0).is_err());
-        assert!(LocalTime::new(0, 60, 0, 0).is_err());
-        assert!(LocalTime::new(0, 0, 60, 0).is_err());
-        assert!(LocalTime::new(u32::MAX, 0, 0, 0).is_err());
     }
 }
