@@ -12,17 +12,9 @@ pub enum Error {
     IOError(#[from] std::io::Error),
     #[error("Value too large (size: {0})")]
     ValueTooLarge(usize),
+    // TODO: Do we need to use Overflow error anywhere?
     #[error("Overflow encountered")]
     Overflow,
-    // TODO: Are we really using the invalid date/time/etc errors?
-    #[error("Invalid date: {0}-{1}-{2}")]
-    InvalidDate(i32, u32, u32),
-    #[error("Invalid time: {0}:{1}:{2}:{3}")]
-    InvalidTime(u32, u32, u32, u32),
-    #[error("Invalid time zone offset: {0:?}")]
-    InvalidTimeZoneOffset((i32, i32)),
-    #[error("Invalid time zone ID: {0}")]
-    InvalidTimeZoneId(String),
     #[error(transparent)]
     ConversionError(#[from] ConversionError),
     #[error(transparent)]
