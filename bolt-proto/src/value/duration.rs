@@ -1,6 +1,6 @@
-use bolt_proto_derive::*;
+use std::time::Duration as StdDuration;
 
-mod conversions;
+use bolt_proto_derive::*;
 
 pub(crate) const MARKER: u8 = 0xB4;
 pub(crate) const SIGNATURE: u8 = 0x45;
@@ -37,6 +37,25 @@ impl Duration {
 
     pub fn nanos(&self) -> i32 {
         self.nanos
+    }
+}
+
+impl From<StdDuration> for Duration {
+    fn from(duration: StdDuration) -> Self {
+        // This fits in an i64 because u64::MAX / (3600 * 24) < i64::MAX
+        let days = (duration.as_secs() / (3600 * 24)) as i64;
+        // This fits in an i64 since it will be less than 3600 * 24
+        let seconds = (duration.as_secs() % (3600 * 24)) as i64;
+        // This fits in an i32 because 0 <= nanos < 1e9 which is less than i32::MAX
+        let nanos = duration.subsec_nanos() as i32;
+
+        // Months are not well-defined in terms of seconds so let's not use them here
+        Self {
+            months: 0,
+            days,
+            seconds,
+            nanos,
+        }
     }
 }
 

@@ -1,6 +1,5 @@
 use bolt_proto_derive::*;
-
-mod conversions;
+use chrono::{NaiveTime, Timelike};
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x74;
@@ -8,6 +7,15 @@ pub(crate) const SIGNATURE: u8 = 0x74;
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct LocalTime {
     pub(crate) nanos_since_midnight: i64,
+}
+
+impl From<NaiveTime> for LocalTime {
+    fn from(naive_time: NaiveTime) -> Self {
+        Self {
+            nanos_since_midnight: naive_time.num_seconds_from_midnight() as i64 * 1_000_000_000
+                + naive_time.nanosecond() as i64,
+        }
+    }
 }
 
 #[cfg(test)]

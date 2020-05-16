@@ -8,8 +8,6 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crate::error::*;
 use crate::serialization::*;
 
-mod conversions;
-
 pub(crate) const MARKER_SMALL: u8 = 0xCC;
 pub(crate) const MARKER_MEDIUM: u8 = 0xCD;
 pub(crate) const MARKER_LARGE: u8 = 0xCE;
@@ -76,6 +74,12 @@ impl TryFrom<Arc<Mutex<Bytes>>> for ByteArray {
             Ok(ByteArray::from(byte_arr))
         })
         .map_err(|_| DeserializationError::Panicked)?
+    }
+}
+
+impl From<Vec<u8>> for ByteArray {
+    fn from(value: Vec<u8>) -> Self {
+        Self { value }
     }
 }
 

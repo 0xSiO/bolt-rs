@@ -9,8 +9,6 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crate::error::*;
 use crate::serialization::*;
 
-mod conversions;
-
 pub(crate) const MARKER_TINY: u8 = 0x80;
 pub(crate) const MARKER_SMALL: u8 = 0xD0;
 pub(crate) const MARKER_MEDIUM: u8 = 0xD1;
@@ -85,6 +83,20 @@ impl TryFrom<Arc<Mutex<Bytes>>> for String {
             ))
         })
         .map_err(|_| DeserializationError::Panicked)?
+    }
+}
+
+impl From<&str> for String {
+    fn from(value: &str) -> Self {
+        Self {
+            value: value.to_string(),
+        }
+    }
+}
+
+impl From<std::string::String> for String {
+    fn from(value: std::string::String) -> Self {
+        Self { value }
     }
 }
 
