@@ -16,15 +16,6 @@ pub struct Date {
     pub(crate) days_since_epoch: i64,
 }
 
-impl Date {
-    pub fn new(year: i32, month: u32, day: u32) -> Result<Self> {
-        Ok(Self::from(
-            NaiveDate::from_ymd_opt(year, month, day)
-                .ok_or(Error::InvalidDate(year, month, day))?,
-        ))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
@@ -45,7 +36,7 @@ mod tests {
 
     #[test]
     fn try_into_bytes() {
-        let date = Date::new(1901, 12, 31).unwrap();
+        let date = Date::from(NaiveDate::from_ymd(1901, 12, 31));
         assert_eq!(
             date.try_into_bytes().unwrap(),
             Bytes::from_static(&[MARKER, SIGNATURE, MARKER_INT_16, 0x9E, 0xFA])
@@ -54,9 +45,9 @@ mod tests {
 
     #[test]
     fn try_from_bytes() {
-        let past_date = Date::new(1901, 12, 31).unwrap();
+        let past_date = Date::from(NaiveDate::from_ymd(1901, 12, 31));
         let past_bytes = &[MARKER_INT_16, 0x9E, 0xFA];
-        let future_date = Date::new(3000, 5, 23).unwrap();
+        let future_date = Date::from(NaiveDate::from_ymd(3000, 5, 23));
         let future_bytes = &[MARKER_INT_32, 0x00, 0x05, 0xBE, 0x16];
         assert_eq!(
             Date::try_from(Arc::new(Mutex::new(Bytes::from_static(past_bytes)))).unwrap(),
@@ -66,11 +57,5 @@ mod tests {
             Date::try_from(Arc::new(Mutex::new(Bytes::from_static(future_bytes)))).unwrap(),
             future_date
         );
-    }
-
-    #[test]
-    fn rejects_invalid_date() {
-        assert!(Date::new(2019, 1, 0).is_err());
-        assert!(Date::new(2000, 13, 1).is_err());
     }
 }
