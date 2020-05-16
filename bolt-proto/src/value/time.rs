@@ -15,6 +15,7 @@ pub struct Time {
 }
 
 impl Time {
+    // TODO: Change this to accept a NaiveTime instead of hour-minute-second-nano
     pub fn new(
         hour: u32,
         minute: u32,

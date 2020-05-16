@@ -4,7 +4,7 @@
 mod tests {
     use std::convert::TryFrom;
 
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
     use bolt_proto::message::*;
     use bolt_proto::value::*;
@@ -165,7 +165,7 @@ mod tests {
             .unwrap();
         client.pull_all().await.unwrap();
 
-        client.run("CREATE (:Client {name: 'bolt-client', starting: datetime('2019-12-19T16:08:04-08:00'), test: 'v2-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v2-node-rel'});", None).await.unwrap();
+        client.run("CREATE (:Client {name: 'bolt-client', starting: datetime('2019-12-19T16:08:04.322-08:00'), test: 'v2-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v2-node-rel'});", None).await.unwrap();
         client.pull_all().await.unwrap();
         client
             .run(
@@ -188,7 +188,9 @@ mod tests {
         assert_eq!(
             c.properties().get("starting"),
             Some(&&Value::from(
-                DateTimeOffset::new(2019, 12, 19, 16, 8, 4, 0, (-8, 0)).unwrap()
+                FixedOffset::east(-8 * 3600).from_utc_datetime(
+                    &NaiveDate::from_ymd(2019, 12, 19).and_hms_milli(16, 8, 4, 322)
+                )
             ))
         );
         assert_eq!(l.labels(), vec!["Language"]);
