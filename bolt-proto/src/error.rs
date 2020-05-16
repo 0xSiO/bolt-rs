@@ -12,9 +12,6 @@ pub enum Error {
     IOError(#[from] std::io::Error),
     #[error("Value too large (size: {0})")]
     ValueTooLarge(usize),
-    // TODO: Do we need to use Overflow error anywhere?
-    #[error("Overflow encountered")]
-    Overflow,
     #[error(transparent)]
     ConversionError(#[from] ConversionError),
     #[error(transparent)]
