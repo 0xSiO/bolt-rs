@@ -587,7 +587,7 @@ mod tests {
 
     #[test]
     fn date_from_bytes() {
-        let christmas = Date::new(2020, 12, 25).unwrap();
+        let christmas = Date::from(NaiveDate::from_ymd(2020, 12, 25));
         let christmas_bytes: Bytes = christmas.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(christmas_bytes))).unwrap(),
