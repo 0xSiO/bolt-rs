@@ -22,6 +22,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
+    use chrono::NaiveDate;
 
     use crate::serialization::*;
     use crate::value::*;
@@ -31,7 +32,7 @@ mod tests {
     fn new_msg() -> Failure {
         Failure::new(HashMap::from_iter(vec![(
             "failing_since".to_string(),
-            Value::from(Date::new(1985, 6, 26).unwrap()),
+            Value::from(NaiveDate::from_ymd(1985, 6, 26)),
         )]))
     }
 

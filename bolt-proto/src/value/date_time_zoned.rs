@@ -1,9 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
-use chrono_tz::Tz;
-
 use bolt_proto_derive::*;
-
-use crate::error::*;
 
 mod conversions;
 
@@ -17,41 +12,13 @@ pub struct DateTimeZoned {
     pub(crate) zone_id: String,
 }
 
-impl DateTimeZoned {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        year: i32,
-        month: u32,
-        day: u32,
-        hour: u32,
-        minute: u32,
-        second: u32,
-        nanosecond: u32,
-        zone_id: std::string::String,
-    ) -> Result<Self> {
-        let date_time = NaiveDateTime::new(
-            NaiveDate::from_ymd_opt(year, month, day)
-                .ok_or(Error::InvalidDate(year, month, day))?,
-            NaiveTime::from_hms_nano_opt(hour, minute, second, nanosecond)
-                .ok_or(Error::InvalidTime(hour, minute, second, nanosecond))?,
-        );
-        let timezone: Tz = zone_id
-            .parse()
-            .map_err(|_| Error::InvalidTimeZoneId(zone_id))?;
-        Ok(Self {
-            epoch_seconds: date_time.timestamp(),
-            nanos: date_time.nanosecond() as i64,
-            zone_id: timezone.name().to_string(),
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
+    use chrono::NaiveDate;
 
     use crate::serialization::*;
     use crate::value::integer::{MARKER_INT_32, MARKER_INT_64};
@@ -60,8 +27,10 @@ mod tests {
     use super::*;
 
     fn get_date_time() -> DateTimeZoned {
-        let zone = "Antarctica/Rothera".to_string();
-        DateTimeZoned::new(3500, 7, 29, 13, 5, 1, 123_456, zone).unwrap()
+        DateTimeZoned::from((
+            NaiveDate::from_ymd(3500, 7, 29).and_hms_nano(13, 5, 1, 123_456),
+            chrono_tz::Antarctica::Rothera,
+        ))
     }
 
     #[test]
@@ -160,13 +129,5 @@ mod tests {
                 .unwrap(),
             date_time_offset
         );
-    }
-
-    #[test]
-    fn rejects_invalid_date_time() {
-        assert!(DateTimeZoned::new(2015, 1, 1, 1, 1, 1, 1, "UTC".to_string()).is_ok());
-        assert!(DateTimeZoned::new(2015, 13, 1, 1, 1, 1, 1, "UTC".to_string()).is_err());
-        assert!(DateTimeZoned::new(2015, 1, 32, 1, 1, 1, 1, "UTC".to_string()).is_err());
-        assert!(DateTimeZoned::new(2015, 1, 1, 1, 1, 1, 1, "INVALID".to_string()).is_err());
     }
 }

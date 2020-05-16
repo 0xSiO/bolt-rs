@@ -281,7 +281,7 @@ mod tests {
     use std::iter::FromIterator;
 
     use super::*;
-    use chrono::{FixedOffset, Utc};
+    use chrono::{FixedOffset, NaiveDate, Utc};
 
     #[test]
     fn null_from_bytes() {
@@ -624,8 +624,10 @@ mod tests {
 
     #[test]
     fn date_time_zoned_from_bytes() {
-        let date_time =
-            DateTimeZoned::new(2030, 8, 3, 14, 30, 0, 0, "Asia/Ulaanbaatar".to_string()).unwrap();
+        let date_time = DateTimeZoned::from((
+            NaiveDate::from_ymd(2030, 8, 3).and_hms_milli(14, 30, 1, 2),
+            chrono_tz::Asia::Ulaanbaatar,
+        ));
         let date_time_bytes = date_time.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
