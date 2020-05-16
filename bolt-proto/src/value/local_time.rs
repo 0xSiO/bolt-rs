@@ -12,6 +12,7 @@ pub struct LocalTime {
 impl From<NaiveTime> for LocalTime {
     fn from(naive_time: NaiveTime) -> Self {
         Self {
+            // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
             nanos_since_midnight: naive_time.num_seconds_from_midnight() as i64 * 1_000_000_000
                 + naive_time.nanosecond() as i64,
         }
