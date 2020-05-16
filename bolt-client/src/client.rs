@@ -67,8 +67,9 @@ impl Client {
         TlsConnector::from(Arc::new(config))
     }
 
-    /// Perform a handshake with the Bolt server and agree upon a protocol version to use for the client.
-    pub async fn handshake(&mut self, supported_versions: &[u32; 4]) -> Result<()> {
+    /// Perform a handshake with the Bolt server and agree upon a protocol version to use for the client. Returns the
+    /// version that was agreed upon.
+    pub async fn handshake(&mut self, supported_versions: &[u32; 4]) -> Result<u32> {
         let mut allowed_versions = BytesMut::with_capacity(16);
         supported_versions
             .iter()
@@ -77,10 +78,10 @@ impl Client {
         self.stream.write_buf(&mut allowed_versions).await?;
         self.stream.flush().await?;
 
-        let version = self.stream.read_u32().await?;
+        let version: u32 = self.stream.read_u32().await?;
         if supported_versions.contains(&version) && version > 0 {
             self.version = Some(version);
-            Ok(())
+            Ok(version)
         } else {
             Err(Error::HandshakeFailed)
         }
