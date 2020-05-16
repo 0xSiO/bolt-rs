@@ -18,8 +18,8 @@ pub struct Node {
 impl Node {
     pub fn new(
         node_identity: i64,
-        labels: Vec<std::string::String>,
-        properties: HashMap<std::string::String, impl Into<Value>>,
+        labels: Vec<String>,
+        properties: HashMap<String, impl Into<Value>>,
     ) -> Self {
         Self {
             node_identity,

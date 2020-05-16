@@ -16,12 +16,12 @@ pub struct RunWithMetadata {
 
 impl RunWithMetadata {
     pub fn new(
-        statement: std::string::String,
-        parameters: HashMap<std::string::String, Value>,
-        metadata: HashMap<std::string::String, Value>,
+        statement: String,
+        parameters: HashMap<String, Value>,
+        metadata: HashMap<String, Value>,
     ) -> Self {
         Self {
-            statement: String::from(statement),
+            statement,
             parameters,
             metadata,
         }

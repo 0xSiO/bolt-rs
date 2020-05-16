@@ -22,8 +22,8 @@ impl Relationship {
         rel_identity: i64,
         start_node_identity: i64,
         end_node_identity: i64,
-        rel_type: std::string::String,
-        properties: HashMap<std::string::String, impl Into<Value>>,
+        rel_type: String,
+        properties: HashMap<String, impl Into<Value>>,
     ) -> Self {
         Self {
             rel_identity,
