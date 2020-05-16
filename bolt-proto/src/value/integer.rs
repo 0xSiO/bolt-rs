@@ -147,45 +147,40 @@ mod tests {
         let tiny = Integer::from(-16_i8);
         assert_eq!(
             Integer::try_from(Arc::new(Mutex::new(tiny.clone().try_into_bytes().unwrap())))
-                .unwrap()
-                .value,
-            tiny.value
+                .unwrap(),
+            tiny
         );
         let small = Integer::from(-50_i8);
         assert_eq!(
             Integer::try_from(Arc::new(Mutex::new(
                 small.clone().try_into_bytes().unwrap()
             )))
-            .unwrap()
-            .value,
-            small.value
+            .unwrap(),
+            small
         );
         let medium = Integer::from(-8000_i16);
         assert_eq!(
             Integer::try_from(Arc::new(Mutex::new(
                 medium.clone().try_into_bytes().unwrap()
             )))
-            .unwrap()
-            .value,
-            medium.value
+            .unwrap(),
+            medium
         );
         let large = Integer::from(-1_000_000_000_i32);
         assert_eq!(
             Integer::try_from(Arc::new(Mutex::new(
                 large.clone().try_into_bytes().unwrap()
             )))
-            .unwrap()
-            .value,
-            large.value
+            .unwrap(),
+            large
         );
         let very_large = Integer::from(-9_000_000_000_000_000_000_i64);
         assert_eq!(
             Integer::try_from(Arc::new(Mutex::new(
                 very_large.clone().try_into_bytes().unwrap()
             )))
-            .unwrap()
-            .value,
-            very_large.value
+            .unwrap(),
+            very_large
         );
     }
 }

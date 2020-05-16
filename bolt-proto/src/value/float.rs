@@ -85,17 +85,13 @@ mod tests {
     fn try_from_bytes() {
         let pi = Float::from(std::f64::consts::PI);
         assert_eq!(
-            Float::try_from(Arc::new(Mutex::new(pi.clone().try_into_bytes().unwrap())))
-                .unwrap()
-                .value,
-            pi.value
+            Float::try_from(Arc::new(Mutex::new(pi.clone().try_into_bytes().unwrap()))).unwrap(),
+            pi
         );
         let max = Float::from(std::f64::MAX);
         assert_eq!(
-            Float::try_from(Arc::new(Mutex::new(max.clone().try_into_bytes().unwrap())))
-                .unwrap()
-                .value,
-            max.value
+            Float::try_from(Arc::new(Mutex::new(max.clone().try_into_bytes().unwrap()))).unwrap(),
+            max
         );
         assert!(Float::try_from(Arc::new(Mutex::new(Bytes::from_static(&[0x01])))).is_err());
     }
