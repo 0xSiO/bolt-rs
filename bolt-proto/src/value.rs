@@ -53,6 +53,12 @@ pub(crate) mod string;
 pub(crate) mod time;
 pub(crate) mod unbound_relationship;
 
+/// An enum that can hold values of all Bolt-compatible types.
+///
+/// Conversions are provided for most types, and are usually pretty intuitive (`bool` to `Value::Boolean`, `i32` to
+/// `Value::Integer`, `HashMap` to `Value::Map`, etc.), but some types have no analog in Rust, like a timezone-aware
+/// time. For such types, conversions are still provided, but may feel a bit clunky (for example, you can convert a
+/// `(chrono::NaiveTime, impl chrono::Offset)` tuple into a `Value::Time`).
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     // V1-compatible value types
