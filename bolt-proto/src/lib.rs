@@ -7,6 +7,8 @@ pub mod message;
 mod serialization;
 pub mod value;
 
+// TODO: Check out crossbeam/parking_lot for concurrency primitives and compare performance
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_message_with_metadata {
