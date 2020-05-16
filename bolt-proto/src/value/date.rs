@@ -9,6 +9,8 @@ mod conversions;
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x44;
 
+// TODO: Decide on a final API for all the Date/Time stuff - it seems like we're just providing an alternative to
+//   chrono's types. Should we force users to use chrono types and hide the wrapper types?
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Date {
     pub(crate) days_since_epoch: i64,
