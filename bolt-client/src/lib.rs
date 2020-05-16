@@ -210,7 +210,6 @@ mod define_value_map;
 pub mod error;
 mod stream;
 
-// TODO: Document value map types
 define_value_map!(Metadata);
 define_value_map!(Params);
 
