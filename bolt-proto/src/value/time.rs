@@ -1,4 +1,4 @@
-use chrono::{NaiveTime, Offset, Timelike};
+use chrono::{FixedOffset, NaiveTime, Offset, Timelike};
 
 use bolt_proto_derive::*;
 
@@ -31,7 +31,16 @@ impl Time {
         })
     }
 
-    // TODO: Add some accessors since there's no chrono type we can convert this to
+    pub fn time(&self) -> NaiveTime {
+        let seconds = (self.nanos_since_midnight / 1_000_000_000) as u32;
+        let nanos = (self.nanos_since_midnight % 1_000_000_000) as u32;
+        // Does not panic since seconds and nanos came from a NaiveTime already (see constructor)
+        NaiveTime::from_num_seconds_from_midnight(seconds, nanos)
+    }
+
+    pub fn offset(&self) -> FixedOffset {
+        FixedOffset::east(self.zone_offset)
+    }
 }
 
 impl_try_from_value!(Time, Time);
@@ -111,5 +120,12 @@ mod tests {
         assert!(Time::new(25, 0, 0, 0, Utc).is_err());
         assert!(Time::new(0, 60, 0, 0, Utc).is_err());
         assert!(Time::new(0, 0, 60, 0, Utc).is_err());
+    }
+
+    #[test]
+    fn accessors() {
+        let time = get_time();
+        assert_eq!(time.time(), NaiveTime::from_hms_nano(1, 16, 40, 123));
+        assert_eq!(time.offset(), FixedOffset::east(3600));
     }
 }
