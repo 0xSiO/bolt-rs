@@ -1,4 +1,4 @@
-use chrono::{NaiveTime, Timelike};
+use chrono::NaiveTime;
 
 use bolt_proto_derive::*;
 
@@ -16,11 +16,9 @@ pub struct LocalTime {
 
 impl LocalTime {
     pub fn new(hour: u32, minute: u32, second: u32, nano: u32) -> Result<Self> {
-        let time = NaiveTime::from_hms_nano_opt(hour, minute, second, nano)
+        let naive_time = NaiveTime::from_hms_nano_opt(hour, minute, second, nano)
             .ok_or(Error::InvalidTime(hour, minute, second, nano))?;
-        Ok(Self {
-            nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
-        })
+        Ok(LocalTime::from(naive_time))
     }
 }
 
@@ -37,7 +35,7 @@ mod tests {
     use super::*;
 
     fn get_chrono_naive_time() -> NaiveTime {
-        NaiveTime::from_hms(12, 34, 24)
+        NaiveTime::from_hms_nano(12, 34, 24, 1029)
     }
 
     #[test]
@@ -50,7 +48,7 @@ mod tests {
     fn try_into_bytes() {
         let time = LocalTime::from(get_chrono_naive_time());
         assert_eq!(
-            time.try_into_bytes().unwrap(),
+            time.try_into_bytes().unwrap().to_vec(),
             Bytes::from_static(&[
                 MARKER,
                 SIGNATURE,
@@ -61,9 +59,10 @@ mod tests {
                 0x2A,
                 0xD8,
                 0xA4,
-                0x20,
-                0x00,
+                0x24,
+                0x05,
             ])
+            .to_vec()
         );
     }
 
@@ -78,8 +77,8 @@ mod tests {
             0x2A,
             0xD8,
             0xA4,
-            0x20,
-            0x00,
+            0x24,
+            0x05,
         ];
         assert_eq!(
             LocalTime::try_from(Arc::new(Mutex::new(Bytes::from_static(time_bytes)))).unwrap(),
