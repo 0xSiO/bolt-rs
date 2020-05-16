@@ -1,5 +1,3 @@
-use std::time::Duration as StdDuration;
-
 use bolt_proto_derive::*;
 
 pub(crate) const MARKER: u8 = 0xB4;
@@ -40,8 +38,8 @@ impl Duration {
     }
 }
 
-impl From<StdDuration> for Duration {
-    fn from(duration: StdDuration) -> Self {
+impl From<std::time::Duration> for Duration {
+    fn from(duration: std::time::Duration) -> Self {
         // This fits in an i64 because u64::MAX / (3600 * 24) < i64::MAX
         let days = (duration.as_secs() / (3600 * 24)) as i64;
         // This fits in an i64 since it will be less than 3600 * 24
