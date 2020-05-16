@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
-use crate::impl_try_from_value;
 use crate::Value;
 
 pub(crate) const MARKER: u8 = 0xB5;
@@ -54,5 +53,3 @@ impl Relationship {
         &self.properties
     }
 }
-
-impl_try_from_value!(Relationship, Relationship);

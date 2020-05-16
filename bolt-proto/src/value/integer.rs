@@ -8,8 +8,6 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crate::error::*;
 use crate::serialization::*;
 
-mod conversions;
-
 pub(crate) const MARKER_INT_8: u8 = 0xC8;
 pub(crate) const MARKER_INT_16: u8 = 0xC9;
 pub(crate) const MARKER_INT_32: u8 = 0xCA;
@@ -75,6 +73,19 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Integer {
         .map_err(|_| DeserializationError::Panicked)?
     }
 }
+
+macro_rules! impl_from_primitives_for_integer {
+    ($($T:ty),+) => {
+        $(
+            impl From<$T> for $crate::value::Integer {
+                fn from(value: $T) -> Self {
+                    Self { value: value as i64 }
+                }
+            }
+        )*
+    };
+}
+impl_from_primitives_for_integer!(i8, i16, i32, i64);
 
 #[cfg(test)]
 mod tests {

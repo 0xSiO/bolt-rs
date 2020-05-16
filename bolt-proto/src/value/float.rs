@@ -8,8 +8,6 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crate::error::*;
 use crate::serialization::*;
 
-mod conversions;
-
 pub(crate) const MARKER: u8 = 0xC1;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,6 +50,12 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Float {
             }
         })
         .map_err(|_| DeserializationError::Panicked)?
+    }
+}
+
+impl From<f64> for Float {
+    fn from(float: f64) -> Self {
+        Self { value: float }
     }
 }
 

@@ -1,6 +1,5 @@
 use bolt_proto_derive::*;
-
-mod conversions;
+use chrono::NaiveDate;
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x44;
@@ -8,6 +7,14 @@ pub(crate) const SIGNATURE: u8 = 0x44;
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Date {
     pub(crate) days_since_epoch: i64,
+}
+
+impl From<NaiveDate> for Date {
+    fn from(naive_date: NaiveDate) -> Self {
+        Self {
+            days_since_epoch: (naive_date - NaiveDate::from_ymd(1970, 1, 1)).num_days(),
+        }
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::hash::Hash;
 
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone};
 use chrono_tz::Tz;
@@ -168,7 +169,172 @@ impl From<Point3D> for Value {
 
 // ------------------------- From Value -------------------------
 
-// TODO: Move all TryFrom<Value> conversions here
+#[doc(hidden)]
+macro_rules! impl_try_from_value {
+    ($T:path, $V:ident) => {
+        impl ::std::convert::TryFrom<$crate::Value> for $T {
+            type Error = $crate::error::Error;
+
+            fn try_from(value: $crate::Value) -> $crate::error::Result<Self> {
+                match value {
+                    $crate::Value::$V(inner) => Ok(inner),
+                    _ => Err($crate::error::ConversionError::FromValue(value).into()),
+                }
+            }
+        }
+    };
+}
+
+impl TryFrom<Value> for bool {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::Boolean(boolean) => Ok(boolean.value),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+macro_rules! impl_try_from_value_for_primitives {
+    ($($T:ty),+) => {
+        $(
+            impl TryFrom<crate::Value> for $T {
+                type Error = crate::error::Error;
+
+                fn try_from(value: crate::Value) -> crate::error::Result<Self> {
+                    match value {
+                        crate::Value::Integer(integer) => Ok(integer.value as $T),
+                        _ => Err(crate::error::ConversionError::FromValue(value).into()),
+                    }
+                }
+            }
+        )*
+    };
+}
+impl_try_from_value_for_primitives!(i8, i16, i32, i64);
+
+impl TryFrom<Value> for f64 {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::Float(float) => Ok(float.value),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl TryFrom<Value> for Vec<u8> {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::Bytes(byte_array) => Ok(byte_array.value),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl<T> TryFrom<Value> for Vec<T>
+where
+    T: TryFrom<Value, Error = Error>,
+{
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::List(list) => list.value.into_iter().map(T::try_from).collect(),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl TryFrom<Value> for Vec<Value> {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::List(list) => Ok(list.value),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl<K, V> TryFrom<Value> for HashMap<K, V>
+where
+    K: Hash + Eq + TryFrom<Value, Error = Error>,
+    V: TryFrom<Value, Error = Error>,
+{
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::Map(map) => {
+                let mut new_map = HashMap::with_capacity(map.value.len());
+                for (k, v) in map.value {
+                    new_map.insert(K::try_from(k)?, V::try_from(v)?);
+                }
+                Ok(new_map)
+            }
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl<K> TryFrom<Value> for HashMap<K, Value>
+where
+    K: Hash + Eq + TryFrom<Value, Error = Error>,
+{
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::Map(map) => {
+                let mut new_map = HashMap::with_capacity(map.value.len());
+                for (k, v) in map.value {
+                    new_map.insert(K::try_from(k)?, v);
+                }
+                Ok(new_map)
+            }
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl TryFrom<Value> for std::string::String {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::String(string) => Ok(string.value),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl_try_from_value!(Node, Node);
+
+impl_try_from_value!(Relationship, Relationship);
+
+impl_try_from_value!(Path, Path);
+
+impl_try_from_value!(UnboundRelationship, UnboundRelationship);
+
+impl TryFrom<Value> for NaiveDate {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::Date(date) => {
+                Ok(NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(date.days_since_epoch))
+            }
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl_try_from_value!(Time, Time);
 
 impl TryFrom<Value> for DateTime<FixedOffset> {
     type Error = Error;
@@ -220,3 +386,44 @@ impl TryFrom<Value> for DateTime<Tz> {
         }
     }
 }
+
+impl TryFrom<Value> for NaiveTime {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            Value::LocalTime(local_time) => {
+                let seconds = (local_time.nanos_since_midnight / 1_000_000_000) as u32;
+                let nanos = (local_time.nanos_since_midnight % 1_000_000_000) as u32;
+                // We created the LocalTime from a NaiveTime, so it can easily be converted back without worrying about
+                // a panic occurring
+                Ok(NaiveTime::from_num_seconds_from_midnight(seconds, nanos))
+            }
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+impl TryFrom<Value> for NaiveDateTime {
+    type Error = Error;
+
+    fn try_from(value: Value) -> Result<Self> {
+        match value {
+            // We created the LocalDateTime from a NaiveDateTime, so it can easily be converted back without worrying
+            // about a panic occurring
+            Value::LocalDateTime(local_date_time) => Ok(NaiveDateTime::from_timestamp(
+                local_date_time.epoch_seconds,
+                local_date_time.nanos as u32,
+            )),
+            _ => Err(ConversionError::FromValue(value).into()),
+        }
+    }
+}
+
+// We cannot convert to std::time::Duration, since months are not well-defined in terms of seconds, and our Duration can
+// hold quantities that are impossible to hold in a std::time::Duration (like negative durations).
+impl_try_from_value!(Duration, Duration);
+
+impl_try_from_value!(Point2D, Point2D);
+
+impl_try_from_value!(Point3D, Point3D);

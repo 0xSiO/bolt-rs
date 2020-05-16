@@ -1,6 +1,7 @@
-use bolt_proto_derive::*;
+use chrono::{NaiveDateTime, Timelike};
+use chrono_tz::Tz;
 
-mod conversions;
+use bolt_proto_derive::*;
 
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x66;
@@ -10,6 +11,18 @@ pub struct DateTimeZoned {
     pub(crate) epoch_seconds: i64,
     pub(crate) nanos: i64,
     pub(crate) zone_id: String,
+}
+
+// Can't impl<T: TimeZone> From<DateTime<T>> for DateTimeZoned, since we can't get a timezone name from an Offset
+// Provide separate conversion instead
+impl From<(NaiveDateTime, Tz)> for DateTimeZoned {
+    fn from(pair: (NaiveDateTime, Tz)) -> Self {
+        Self {
+            epoch_seconds: pair.0.timestamp(),
+            nanos: pair.0.nanosecond() as i64,
+            zone_id: pair.1.name().to_string(),
+        }
+    }
 }
 
 #[cfg(test)]

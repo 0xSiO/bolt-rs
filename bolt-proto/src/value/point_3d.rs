@@ -1,7 +1,5 @@
 use bolt_proto_derive::*;
 
-use crate::impl_try_from_value;
-
 pub(crate) const MARKER: u8 = 0xB4;
 pub(crate) const SIGNATURE: u8 = 0x59;
 
@@ -34,8 +32,6 @@ impl Point3D {
         self.z
     }
 }
-
-impl_try_from_value!(Point3D, Point3D);
 
 #[cfg(test)]
 mod tests {

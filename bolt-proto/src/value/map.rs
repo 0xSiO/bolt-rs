@@ -1,3 +1,4 @@
+use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::mem;
@@ -9,8 +10,6 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use crate::error::*;
 use crate::serialization::*;
 use crate::Value;
-
-mod conversions;
 
 pub(crate) const MARKER_TINY: u8 = 0xA0;
 pub(crate) const MARKER_SMALL: u8 = 0xD8;
@@ -99,6 +98,21 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Map {
             Ok(Map::from(hash_map))
         })
         .map_err(|_| DeserializationError::Panicked)?
+    }
+}
+
+impl<K, V> From<HashMap<K, V>> for Map
+where
+    K: Into<Value>,
+    V: Into<Value>,
+{
+    fn from(value: HashMap<K, V, RandomState>) -> Self {
+        Self {
+            value: value
+                .into_iter()
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
+        }
     }
 }
 

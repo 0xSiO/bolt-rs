@@ -1,6 +1,6 @@
-use bolt_proto_derive::*;
+use chrono::{DateTime, Offset, TimeZone, Timelike};
 
-mod conversions;
+use bolt_proto_derive::*;
 
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x46;
@@ -10,6 +10,16 @@ pub struct DateTimeOffset {
     pub(crate) epoch_seconds: i64,
     pub(crate) nanos: i64,
     pub(crate) offset_seconds: i32,
+}
+
+impl<T: TimeZone> From<DateTime<T>> for DateTimeOffset {
+    fn from(date_time: DateTime<T>) -> Self {
+        Self {
+            epoch_seconds: date_time.timestamp(),
+            nanos: date_time.nanosecond() as i64,
+            offset_seconds: date_time.offset().fix().local_minus_utc(),
+        }
+    }
 }
 
 #[cfg(test)]

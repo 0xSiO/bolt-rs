@@ -1,6 +1,5 @@
 use bolt_proto_derive::*;
-
-mod conversions;
+use chrono::{NaiveDateTime, Timelike};
 
 pub(crate) const MARKER: u8 = 0xB2;
 pub(crate) const SIGNATURE: u8 = 0x64;
@@ -9,6 +8,15 @@ pub(crate) const SIGNATURE: u8 = 0x64;
 pub struct LocalDateTime {
     pub(crate) epoch_seconds: i64,
     pub(crate) nanos: i64,
+}
+
+impl From<NaiveDateTime> for LocalDateTime {
+    fn from(date_time: NaiveDateTime) -> Self {
+        Self {
+            epoch_seconds: date_time.timestamp(),
+            nanos: date_time.nanosecond() as i64,
+        }
+    }
 }
 
 #[cfg(test)]

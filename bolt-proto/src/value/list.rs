@@ -9,8 +9,6 @@ use crate::error::*;
 use crate::serialization::*;
 use crate::Value;
 
-mod conversions;
-
 pub(crate) const MARKER_TINY: u8 = 0x90;
 pub(crate) const MARKER_SMALL: u8 = 0xD4;
 pub(crate) const MARKER_MEDIUM: u8 = 0xD5;
@@ -94,6 +92,17 @@ impl TryFrom<Arc<Mutex<Bytes>>> for List {
             Ok(List::from(list))
         })
         .map_err(|_| DeserializationError::Panicked)?
+    }
+}
+
+impl<T> From<Vec<T>> for List
+where
+    T: Into<Value>,
+{
+    fn from(value: Vec<T>) -> Self {
+        Self {
+            value: value.into_iter().map(|v| v.into()).collect(),
+        }
     }
 }
 

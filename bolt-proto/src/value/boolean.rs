@@ -7,8 +7,6 @@ use bytes::{Buf, Bytes};
 use crate::error::*;
 use crate::serialization::*;
 
-mod conversions;
-
 pub(crate) const MARKER_FALSE: u8 = 0xC2;
 pub(crate) const MARKER_TRUE: u8 = 0xC3;
 
@@ -54,6 +52,12 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Boolean {
             }
         })
         .map_err(|_| DeserializationError::Panicked)?
+    }
+}
+
+impl From<bool> for Boolean {
+    fn from(value: bool) -> Self {
+        Self { value }
     }
 }
 

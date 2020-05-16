@@ -1,10 +1,6 @@
-use chrono::{FixedOffset, NaiveTime};
+use chrono::{FixedOffset, NaiveTime, Offset, Timelike};
 
 use bolt_proto_derive::*;
-
-use crate::impl_try_from_value;
-
-mod conversions;
 
 pub(crate) const MARKER: u8 = 0xB2;
 pub(crate) const SIGNATURE: u8 = 0x54;
@@ -28,7 +24,16 @@ impl Time {
     }
 }
 
-impl_try_from_value!(Time, Time);
+// No timezone-aware time in chrono, so provide separate conversion instead
+impl<O: Offset> From<(NaiveTime, O)> for Time {
+    fn from(pair: (NaiveTime, O)) -> Self {
+        Self {
+            nanos_since_midnight: pair.0.num_seconds_from_midnight() as i64 * 1_000_000_000
+                + pair.0.nanosecond() as i64,
+            zone_offset: pair.1.fix().local_minus_utc(),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

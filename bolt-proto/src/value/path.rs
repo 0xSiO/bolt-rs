@@ -1,6 +1,5 @@
 use bolt_proto_derive::*;
 
-use crate::impl_try_from_value;
 use crate::value::*;
 
 pub(crate) const MARKER: u8 = 0xB3;
@@ -34,5 +33,3 @@ impl Path {
         self.sequence
     }
 }
-
-impl_try_from_value!(Path, Path);
