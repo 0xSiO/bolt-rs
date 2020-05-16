@@ -14,12 +14,9 @@ pub struct Init {
 }
 
 impl Init {
-    pub fn new(
-        client_name: std::string::String,
-        auth_token: HashMap<std::string::String, Value>,
-    ) -> Self {
+    pub fn new(client_name: String, auth_token: HashMap<String, Value>) -> Self {
         Self {
-            client_name: client_name.into(),
+            client_name,
             auth_token,
         }
     }

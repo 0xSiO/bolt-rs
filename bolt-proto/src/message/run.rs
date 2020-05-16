@@ -14,12 +14,9 @@ pub struct Run {
 }
 
 impl Run {
-    pub fn new(
-        statement: std::string::String,
-        parameters: HashMap<std::string::String, Value>,
-    ) -> Self {
+    pub fn new(statement: String, parameters: HashMap<String, Value>) -> Self {
         Self {
-            statement: String::from(statement),
+            statement,
             parameters,
         }
     }

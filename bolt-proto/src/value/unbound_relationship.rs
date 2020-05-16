@@ -18,12 +18,12 @@ pub struct UnboundRelationship {
 impl UnboundRelationship {
     pub fn new(
         rel_identity: i64,
-        rel_type: std::string::String,
-        properties: HashMap<std::string::String, impl Into<Value>>,
+        rel_type: String,
+        properties: HashMap<String, impl Into<Value>>,
     ) -> Self {
         Self {
             rel_identity,
-            rel_type: rel_type,
+            rel_type,
             properties: properties.into_iter().map(|(k, v)| (k, v.into())).collect(),
         }
     }
