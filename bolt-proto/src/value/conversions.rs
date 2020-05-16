@@ -73,12 +73,6 @@ impl From<std::string::String> for Value {
     }
 }
 
-impl From<String> for Value {
-    fn from(value: String) -> Self {
-        Value::String(value)
-    }
-}
-
 impl From<Node> for Value {
     fn from(value: Node) -> Self {
         Value::Node(value)
@@ -103,30 +97,17 @@ impl From<UnboundRelationship> for Value {
     }
 }
 
-impl From<Date> for Value {
-    fn from(value: Date) -> Self {
-        Value::Date(value)
-    }
-}
-
 impl From<NaiveDate> for Value {
     fn from(value: NaiveDate) -> Self {
         Value::Date(Date::from(value))
     }
 }
 
+// No timezone-aware time in chrono
+// chrono docs say this type is not implemented "due to the lack of usefulness and also the complexity"
 impl From<Time> for Value {
     fn from(value: Time) -> Self {
         Value::Time(value)
-    }
-}
-
-// No timezone-aware time in chrono
-// chrono docs say this type is not implemented "due to the lack of usefulness and also the complexity"
-
-impl From<DateTimeOffset> for Value {
-    fn from(value: DateTimeOffset) -> Self {
-        Value::DateTimeOffset(value)
     }
 }
 
@@ -136,29 +117,16 @@ impl<T: TimeZone> From<DateTime<T>> for Value {
     }
 }
 
-impl From<DateTimeZoned> for Value {
-    fn from(value: DateTimeZoned) -> Self {
-        Value::DateTimeZoned(value)
-    }
-}
-
-// No zoned date-time in chrono, only FixedOffset. Can't determine a zone ID from a fixed offset.
-
-impl From<LocalTime> for Value {
-    fn from(value: LocalTime) -> Self {
-        Value::LocalTime(value)
+// Can't decide between Offset or Zoned variant at runtime if using a T: TimeZone, so provide a separate conversion
+impl From<(NaiveDateTime, chrono_tz::Tz)> for Value {
+    fn from(pair: (NaiveDateTime, chrono_tz::Tz)) -> Self {
+        Value::DateTimeZoned(DateTimeZoned::from(pair))
     }
 }
 
 impl From<NaiveTime> for Value {
     fn from(value: NaiveTime) -> Self {
         Value::LocalTime(LocalTime::from(value))
-    }
-}
-
-impl From<LocalDateTime> for Value {
-    fn from(value: LocalDateTime) -> Self {
-        Value::LocalDateTime(value)
     }
 }
 
