@@ -1,8 +1,4 @@
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
-
 use bolt_proto_derive::*;
-
-use crate::error::*;
 
 mod conversions;
 
@@ -15,35 +11,13 @@ pub struct LocalDateTime {
     pub(crate) nanos: i64,
 }
 
-impl LocalDateTime {
-    pub fn new(
-        year: i32,
-        month: u32,
-        day: u32,
-        hour: u32,
-        minute: u32,
-        second: u32,
-        nano: u32,
-    ) -> Result<Self> {
-        let date_time = NaiveDateTime::new(
-            NaiveDate::from_ymd_opt(year, month, day)
-                .ok_or(Error::InvalidDate(year, month, day))?,
-            NaiveTime::from_hms_nano_opt(hour, minute, second, nano)
-                .ok_or(Error::InvalidTime(hour, minute, second, nano))?,
-        );
-        Ok(Self {
-            epoch_seconds: date_time.timestamp(),
-            nanos: date_time.nanosecond() as i64,
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
+    use chrono::NaiveDate;
 
     use crate::serialization::*;
     use crate::value::integer::{MARKER_INT_16, MARKER_INT_64};
@@ -51,7 +25,7 @@ mod tests {
     use super::*;
 
     fn get_local_date_time() -> LocalDateTime {
-        LocalDateTime::new(2050, 3, 15, 13, 15, 5, 420).unwrap()
+        LocalDateTime::from(NaiveDate::from_ymd(2050, 3, 15).and_hms_nano(13, 15, 5, 420))
     }
 
     #[test]
