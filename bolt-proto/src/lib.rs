@@ -10,6 +10,10 @@ pub mod value;
 // TODO: Check for extraneous uses of String::from in message/value tests, since I removed some conversions from the
 //   String wrapper type and now String::from refers to std::string::String::from instead of crate::value::String::from
 
+// TODO: Replace any calls to integer max_value() with MAX (max_value has been deprecated)
+
+// TODO: Remove '.value' from equality assertion for some value type tests
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_message_with_metadata {

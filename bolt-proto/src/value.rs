@@ -281,6 +281,7 @@ mod tests {
     use std::iter::FromIterator;
 
     use super::*;
+    use chrono::{FixedOffset, Utc};
 
     #[test]
     fn null_from_bytes() {
@@ -596,9 +597,10 @@ mod tests {
 
     #[test]
     fn time_from_bytes() {
-        let midnight_utc = Time::new(0, 0, 0, 0, (0, 0)).unwrap();
+        let midnight_utc = Time::new(0, 0, 0, 0, Utc).unwrap();
         let midnight_utc_bytes = midnight_utc.clone().try_into_bytes().unwrap();
-        let about_four_pm_pacific = Time::new(16, 4, 35, 235, (-8, 0)).unwrap();
+        let about_four_pm_pacific =
+            Time::new(16, 4, 35, 235, FixedOffset::east(-8 * 3600)).unwrap();
         let about_four_pm_pacific_bytes = about_four_pm_pacific.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(midnight_utc_bytes))).unwrap(),

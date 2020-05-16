@@ -1,10 +1,9 @@
-use chrono::{NaiveTime, Timelike};
+use chrono::{NaiveTime, Offset, Timelike};
 
 use bolt_proto_derive::*;
 
 use crate::error::*;
-
-mod conversions;
+use crate::impl_try_from_value;
 
 pub(crate) const MARKER: u8 = 0xB2;
 pub(crate) const SIGNATURE: u8 = 0x54;
@@ -21,25 +20,21 @@ impl Time {
         minute: u32,
         second: u32,
         nanosecond: u32,
-        zone_offset: (i32, i32),
+        zone_offset: impl Offset,
     ) -> Result<Self> {
         let time = NaiveTime::from_hms_nano_opt(hour, minute, second, nanosecond)
             .ok_or(Error::InvalidTime(hour, minute, second, nanosecond))?;
-        let zone_offset = {
-            // Calculating the zone_offset may overflow, so we should check
-            let result = zone_offset.0 as i64 * 3600 + zone_offset.1 as i64 * 60;
-            if result > i32::max_value() as i64 {
-                Err(Error::InvalidTimeZoneOffset(zone_offset))
-            } else {
-                Ok(result as i32)
-            }
-        }?;
         Ok(Self {
-            nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000,
-            zone_offset,
+            nanos_since_midnight: time.num_seconds_from_midnight() as i64 * 1_000_000_000
+                + time.nanosecond() as i64,
+            zone_offset: zone_offset.fix().local_minus_utc(),
         })
     }
+
+    // TODO: Add some accessors since there's no chrono type we can convert this to
 }
+
+impl_try_from_value!(Time, Time);
 
 #[cfg(test)]
 mod tests {
@@ -47,29 +42,25 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use bytes::Bytes;
-    use chrono::{DateTime, FixedOffset, NaiveDateTime};
+    use chrono::{FixedOffset, Utc};
 
     use crate::serialization::*;
     use crate::value::integer::{MARKER_INT_16, MARKER_INT_64};
 
     use super::*;
 
-    fn get_chrono_date_time() -> DateTime<FixedOffset> {
-        DateTime::from_utc(
-            NaiveDateTime::from_timestamp(1000, 0),
-            FixedOffset::east(3600),
-        )
+    fn get_time() -> Time {
+        Time::new(1, 16, 40, 123, FixedOffset::east(3600)).unwrap()
     }
 
     #[test]
     fn get_marker() {
-        let time = Time::from(get_chrono_date_time());
-        assert_eq!(time.get_marker().unwrap(), MARKER);
+        assert_eq!(get_time().get_marker().unwrap(), MARKER);
     }
 
     #[test]
     fn try_into_bytes() {
-        let time = Time::from(get_chrono_date_time());
+        let time = get_time();
         assert_eq!(
             time.try_into_bytes().unwrap(),
             Bytes::from_static(&[
@@ -83,7 +74,7 @@ mod tests {
                 0x05,
                 0x5D,
                 0xB0,
-                0x00,
+                0x7B,
                 MARKER_INT_16,
                 0x0E,
                 0x10,
@@ -93,7 +84,7 @@ mod tests {
 
     #[test]
     fn try_from_bytes() {
-        let time = Time::from(get_chrono_date_time());
+        let time = get_time();
         let time_bytes = &[
             MARKER_INT_64,
             0x00,
@@ -103,7 +94,7 @@ mod tests {
             0x05,
             0x5D,
             0xB0,
-            0x00,
+            0x7B,
             MARKER_INT_16,
             0x0E,
             0x10,
@@ -116,10 +107,9 @@ mod tests {
 
     #[test]
     fn rejects_invalid_times() {
-        assert!(Time::new(0, 0, 0, 0, (0, 0)).is_ok());
-        assert!(Time::new(25, 0, 0, 0, (0, 0)).is_err());
-        assert!(Time::new(0, 60, 0, 0, (0, 0)).is_err());
-        assert!(Time::new(0, 0, 60, 0, (0, 0)).is_err());
-        assert!(Time::new(0, 0, 0, 0, (i32::max_value(), 0)).is_err());
+        assert!(Time::new(0, 0, 0, 0, Utc).is_ok());
+        assert!(Time::new(25, 0, 0, 0, Utc).is_err());
+        assert!(Time::new(0, 60, 0, 0, Utc).is_err());
+        assert!(Time::new(0, 0, 60, 0, Utc).is_err());
     }
 }
