@@ -28,6 +28,7 @@ impl Time {
 impl<O: Offset> From<(NaiveTime, O)> for Time {
     fn from(pair: (NaiveTime, O)) -> Self {
         Self {
+            // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
             nanos_since_midnight: pair.0.num_seconds_from_midnight() as i64 * 1_000_000_000
                 + pair.0.nanosecond() as i64,
             zone_offset: pair.1.fix().local_minus_utc(),
