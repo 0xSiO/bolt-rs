@@ -61,8 +61,7 @@ impl ManageConnection for BoltConnectionManager {
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
         let mut client = Client::new(self.addr, self.domain.as_ref()).await?;
-        client.handshake(&self.supported_versions).await?;
-        let version = client.version().unwrap(); // ok to unwrap if handshake succeeds
+        let version = client.handshake(&self.supported_versions).await?;
         let response = match version {
             1 | 2 => {
                 let mut metadata = self.metadata.clone();
