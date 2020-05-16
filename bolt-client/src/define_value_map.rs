@@ -2,6 +2,7 @@
 #[macro_export]
 macro_rules! define_value_map {
     ($T:ident) => {
+        /// A map from Strings to Values used primarily to provide supplementary information to Client methods.
         #[derive(Debug, Default, Clone)]
         pub struct $T {
             pub(crate) value: ::std::collections::HashMap<std::string::String, ::bolt_proto::Value>,

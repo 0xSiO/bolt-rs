@@ -29,6 +29,7 @@ mod v4;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 
+/// A tokio-based client for Bolt servers, compatible with versions 1 through 4 of the protocol.
 #[derive(Debug)]
 pub struct Client {
     pub(crate) stream: BufStream<Stream>,
@@ -108,7 +109,7 @@ impl Client {
         Ok(())
     }
 
-    /// Send multiple messages to the server without waiting for a response. Returns a Vec containing the server's
+    /// Send multiple messages to the server without waiting for a response. Returns a `Vec` containing the server's
     /// response messages for each of the sent messages, in the order they were provided.
     ///
     /// # Description
