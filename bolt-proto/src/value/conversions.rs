@@ -108,11 +108,10 @@ impl From<NaiveDate> for Value {
     }
 }
 
-// No timezone-aware time in chrono
-// chrono docs say this type is not implemented "due to the lack of usefulness and also the complexity"
-impl From<Time> for Value {
-    fn from(value: Time) -> Self {
-        Value::Time(value)
+// No timezone-aware time in chrono, so provide a separate conversion
+impl<O: Offset> From<(NaiveTime, O)> for Value {
+    fn from(pair: (NaiveTime, O)) -> Self {
+        Value::Time(Time::from(pair))
     }
 }
 
