@@ -14,6 +14,7 @@ pub enum Error {
     ValueTooLarge(usize),
     #[error("Overflow encountered")]
     Overflow,
+    // TODO: Are we really using the invalid date/time/etc errors?
     #[error("Invalid date: {0}-{1}-{2}")]
     InvalidDate(i32, u32, u32),
     #[error("Invalid time: {0}:{1}:{2}:{3}")]
