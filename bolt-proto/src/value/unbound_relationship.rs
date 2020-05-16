@@ -36,11 +36,8 @@ impl UnboundRelationship {
         &self.rel_type
     }
 
-    pub fn properties(&self) -> HashMap<&str, &Value> {
-        self.properties
-            .iter()
-            .map(|(k, v)| (k.as_str(), v))
-            .collect()
+    pub fn properties(&self) -> &HashMap<String, Value> {
+        &self.properties
     }
 }
 

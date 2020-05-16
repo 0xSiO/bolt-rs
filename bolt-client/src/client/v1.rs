@@ -402,13 +402,13 @@ pub(crate) mod tests {
         let r = Relationship::try_from(records[0].fields()[1].clone()).unwrap();
         let l = Node::try_from(records[0].fields()[2].clone()).unwrap();
 
-        assert_eq!(c.labels(), vec!["Client"]);
+        assert_eq!(c.labels(), &[String::from("Client")]);
         assert_eq!(
             c.properties().get("name"),
-            Some(&&Value::from("bolt-client"))
+            Some(&Value::from("bolt-client"))
         );
-        assert_eq!(l.labels(), vec!["Language"]);
-        assert_eq!(l.properties().get("name"), Some(&&Value::from("Rust")));
+        assert_eq!(l.labels(), &[String::from("Language")]);
+        assert_eq!(l.properties().get("name"), Some(&Value::from("Rust")));
         assert_eq!(r.rel_type(), "WRITTEN_IN");
         assert!(r.properties().is_empty());
         assert_eq!(

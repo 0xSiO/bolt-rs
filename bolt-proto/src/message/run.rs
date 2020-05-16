@@ -28,11 +28,8 @@ impl Run {
         &self.statement
     }
 
-    pub fn parameters(&self) -> HashMap<&str, &Value> {
-        self.parameters
-            .iter()
-            .map(|(k, v)| (k.as_str(), v))
-            .collect()
+    pub fn parameters(&self) -> &HashMap<String, Value> {
+        &self.parameters
     }
 }
 

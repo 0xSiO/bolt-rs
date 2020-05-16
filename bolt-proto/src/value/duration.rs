@@ -22,6 +22,22 @@ impl Duration {
             nanos,
         }
     }
+
+    pub fn months(&self) -> i64 {
+        self.months
+    }
+
+    pub fn days(&self) -> i64 {
+        self.days
+    }
+
+    pub fn seconds(&self) -> i64 {
+        self.seconds
+    }
+
+    pub fn nanos(&self) -> i32 {
+        self.nanos
+    }
 }
 
 #[cfg(test)]
