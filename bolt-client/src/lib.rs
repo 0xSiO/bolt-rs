@@ -1,8 +1,7 @@
-// TODO: Update doc test example to Bolt v4
 //! An asynchronous client for Bolt-compatible servers.
 //!
 //! # Example
-//! The below example demonstrates how to communicate with a Neo4j server using Bolt protocol version 3.
+//! The below example demonstrates how to communicate with a Neo4j server using Bolt protocol version 4.
 //! ```
 //! use std::collections::HashMap;
 //! use std::convert::TryFrom;
@@ -22,12 +21,12 @@
 //!     // create a client that uses a TLS-secured connection.
 //!     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
 //!                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
-//!     // This example demonstrates usage of the v3 protocol
-//!     let handshake_result = client.handshake(&[3, 0, 0, 0]).await;
-//!     # if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
-//!     #     println!("Skipping test: client handshake failed");
-//!     #     return Ok(());
-//!     # }
+//!     // This example demonstrates usage of the v4 protocol
+//!     let handshake_result = client.handshake(&[4, 0, 0, 0]).await;
+//! #   if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
+//! #       println!("Skipping test: client handshake failed");
+//! #       return Ok(());
+//! #   }
 //!     
 //!     // Send a HELLO message with authorization details to the server to initialize
 //!     // the session.
@@ -40,34 +39,35 @@
 //!         ]))).await?;
 //!     assert!(Success::try_from(response).is_ok());
 //!
-//!     // Run a query on the server and retrieve the results
+//!     // Run a query on the server
 //!     let response = client.run_with_metadata("RETURN 1 as num;", None, None).await?;
 //!
 //!     // Successful responses will include a SUCCESS message with related metadata
 //!     // Consuming these messages is optional and will be skipped for the rest of the example
 //!     assert!(Success::try_from(response).is_ok());
 //!
-//!     // Use PULL_ALL to retrieve results of the query, organized into RECORD messages
-//!     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
-//!     # assert!(Success::try_from(response).is_ok());
+//!     // Use PULL to retrieve results of the query, organized into RECORD messages
+//!     let pull_meta = Metadata::from_iter(vec![("n", 1)]);
+//!     let (response, records): (Message, Vec<Record>) =
+//!         client.pull(Some(pull_meta.clone())).await?;
+//! #   assert!(Success::try_from(response).is_ok());
 //!
-//!     // Integers are automatically packed into the smallest possible byte representation
-//!     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
-//!     #
-//!     # client.run_with_metadata("MATCH (n) DETACH DELETE n;", None, None).await?;
-//!     # client.pull_all().await?;
+//!     assert_eq!(records[0].fields(), &[Value::from(1)]);
+//! #    
+//! #   client.run_with_metadata("MATCH (n) DETACH DELETE n;", None, None).await?;
+//! #   client.pull(Some(pull_meta.clone())).await?;
 //!
 //!     // Run a more complex query with parameters
 //!     let params = Params::from_iter(vec![("name", "Rust")]);
 //!     client.run_with_metadata(
 //!         "CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});",
 //!         Some(params), None).await?;
-//!     client.pull_all().await?;
+//!     client.pull(Some(pull_meta.clone())).await?;
 //!
 //!     // Grab a node from the database and convert it to a native type
 //!     client.run_with_metadata("MATCH (rust:Language) RETURN rust;", None, None).await?;
-//!     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
-//!     # assert!(Success::try_from(response).is_ok());
+//!     let (response, records) = client.pull(Some(pull_meta.clone())).await?;
+//! #   assert!(Success::try_from(response).is_ok());
 //!     let node = Node::try_from(records[0].fields()[0].clone())?;
 //!
 //!     // Access properties from returned values
@@ -82,7 +82,65 @@
 //! }
 //! ```
 //!
-//! For versions 1 and 2 of the protocol, the above example would have a few key differences:
+//! For version 3 of the protocol, the above example would simply use `Client::pull_all` instead of `Client::pull`:
+//! ```
+//! # use std::collections::HashMap;
+//! # use std::convert::TryFrom;
+//! # use std::env;
+//! # use std::iter::FromIterator;
+//! #
+//! # use tokio::prelude::*;
+//! #
+//! # use bolt_client::*;
+//! # use bolt_proto::{message::*, value::*, Message, Value};
+//! #
+//! # #[tokio::main]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! #     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
+//! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
+//! #     let handshake_result = client.handshake(&[3, 0, 0, 0]).await;
+//! #     if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
+//! #         println!("Skipping test: client handshake failed");
+//! #         return Ok(());
+//! #     }
+//! #
+//! #     let response: Message = client.hello(
+//! #         Some(Metadata::from_iter(vec![
+//! #             ("user_agent", "my-client-name/1.0"),
+//! #             ("scheme", "basic"),
+//! #             ("principal", &env::var("BOLT_TEST_USERNAME")?),
+//! #             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
+//! #         ]))).await?;
+//! #     assert!(Success::try_from(response).is_ok());
+//! #
+//! #     let response = client.run_with_metadata("RETURN 1 as num;", None, None).await?;
+//! #     assert!(Success::try_from(response).is_ok());
+//! let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
+//! #     assert!(Success::try_from(response).is_ok());
+//! #
+//! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
+//! #     client.run_with_metadata("MATCH (n) DETACH DELETE n;", None, None).await?;
+//! #     client.pull_all().await?;
+//! #
+//! #     let params = Params::from_iter(vec![("name", "Rust")]);
+//! #     client.run_with_metadata(
+//! #         "CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});",
+//! #         Some(params), None).await?;
+//! #     client.pull_all().await?;
+//! #
+//! #     client.run_with_metadata("MATCH (rust:Language) RETURN rust;", None, None).await?;
+//! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
+//! #     assert!(Success::try_from(response).is_ok());
+//! #     let node = Node::try_from(records[0].fields()[0].clone())?;
+//! #     assert_eq!(node.labels(), &[String::from("Language")]);
+//! #     assert_eq!(node.properties(),
+//! #                &HashMap::from_iter(vec![(String::from("name"), Value::from("Rust"))]));
+//! #     client.goodbye().await?;
+//! #     Ok(())
+//! # }
+//! ```
+//!
+//! For versions 1 and 2 of the protocol, the changes are more involved:
 //! ```
 //! # use std::collections::HashMap;
 //! # use std::convert::TryFrom;
@@ -100,10 +158,10 @@
 //! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
 //! // For the handshake we want to support versions 1 and 2 only, preferring version 2.
 //! let handshake_result = client.handshake(&[2, 1, 0, 0]).await;
-//!     # if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
-//!     #     println!("Skipping test: client handshake failed");
-//!     #     return Ok(());
-//!     # }
+//! #     if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
+//! #         println!("Skipping test: client handshake failed");
+//! #         return Ok(());
+//! #     }
 //!     
 //! // Instead of `hello`, we call `init`, and the user agent string is provided separately.
 //! let response: Message = client.init(
@@ -113,34 +171,34 @@
 //!         ("principal", &env::var("BOLT_TEST_USERNAME")?),
 //!         ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
 //!     ])).await?;
-//!     # assert!(Success::try_from(response).is_ok());
+//! #     assert!(Success::try_from(response).is_ok());
 //!
 //! // Instead of `run_with_metadata`, we call `run`, and there is no third parameter for metadata.
 //! let response = client.run("RETURN 1 as num;", None).await?;
-//!     # assert!(Success::try_from(response).is_ok());
-//!     # let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
-//!     # assert!(Success::try_from(response).is_ok());
-//!     # assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
-//!     #
-//!     # client.run("MATCH (n) DETACH DELETE n;", None).await?;
-//!     # client.pull_all().await?;
-//!     #
-//!     # client.run("CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});".to_string(),
-//!     #            Some(Params::from_iter(
-//!     #                vec![("name".to_string(), Value::from("Rust"))]
-//!     #            ))).await?;
-//!     # client.pull_all().await?;
-//!     # client.run("MATCH (rust:Language) RETURN rust;", None).await?;
-//!     # let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
-//!     # assert!(Success::try_from(response).is_ok());
-//!     #
-//!     # let node = Node::try_from(records[0].fields()[0].clone())?;
-//!     # assert_eq!(node.labels(), &["Language".to_string()]);
-//!     # assert_eq!(node.properties(),
-//!     #            &HashMap::from_iter(vec![(String::from("name"), Value::from("Rust"))]));
+//! #     assert!(Success::try_from(response).is_ok());
+//! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
+//! #     assert!(Success::try_from(response).is_ok());
+//! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
+//! #    
+//! #     client.run("MATCH (n) DETACH DELETE n;", None).await?;
+//! #     client.pull_all().await?;
+//! #    
+//! #     client.run("CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});".to_string(),
+//! #                Some(Params::from_iter(
+//! #                    vec![("name".to_string(), Value::from("Rust"))]
+//! #                ))).await?;
+//! #     client.pull_all().await?;
+//! #     client.run("MATCH (rust:Language) RETURN rust;", None).await?;
+//! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
+//! #     assert!(Success::try_from(response).is_ok());
+//! #    
+//! #     let node = Node::try_from(records[0].fields()[0].clone())?;
+//! #     assert_eq!(node.labels(), &["Language".to_string()]);
+//! #     assert_eq!(node.properties(),
+//! #                &HashMap::from_iter(vec![(String::from("name"), Value::from("Rust"))]));
 //!
 //! // There is no call to `goodbye`
-//!     # Ok(())
+//! #     Ok(())
 //! # }
 //! ```
 //! See the documentation of the `Client` struct for information on transaction management, error handling, and more.
@@ -152,6 +210,7 @@ mod define_value_map;
 pub mod error;
 mod stream;
 
+// TODO: Document value map types
 define_value_map!(Metadata);
 define_value_map!(Params);
 
