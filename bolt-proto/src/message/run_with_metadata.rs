@@ -31,15 +31,12 @@ impl RunWithMetadata {
         &self.statement
     }
 
-    pub fn parameters(&self) -> HashMap<&str, &Value> {
-        self.parameters
-            .iter()
-            .map(|(k, v)| (k.as_str(), v))
-            .collect()
+    pub fn parameters(&self) -> &HashMap<String, Value> {
+        &self.parameters
     }
 
-    pub fn metadata(&self) -> HashMap<&str, &Value> {
-        self.metadata.iter().map(|(k, v)| (k.as_str(), v)).collect()
+    pub fn metadata(&self) -> &HashMap<String, Value> {
+        &self.metadata
     }
 }
 

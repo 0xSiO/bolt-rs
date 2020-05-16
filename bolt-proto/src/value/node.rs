@@ -32,15 +32,12 @@ impl Node {
         self.node_identity
     }
 
-    pub fn labels(&self) -> Vec<&str> {
-        self.labels.iter().map(|v| v.as_str()).collect()
+    pub fn labels(&self) -> &[String] {
+        &self.labels
     }
 
-    pub fn properties(&self) -> HashMap<&str, &Value> {
-        self.properties
-            .iter()
-            .map(|(k, v)| (k.as_str(), v))
-            .collect()
+    pub fn properties(&self) -> &HashMap<String, Value> {
+        &self.properties
     }
 }
 

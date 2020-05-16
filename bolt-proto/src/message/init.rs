@@ -28,11 +28,8 @@ impl Init {
         &self.client_name
     }
 
-    pub fn auth_token(&self) -> HashMap<&str, &Value> {
-        self.auth_token
-            .iter()
-            .map(|(k, v)| (k.as_str(), v))
-            .collect()
+    pub fn auth_token(&self) -> &HashMap<String, Value> {
+        &self.auth_token
     }
 }
 
