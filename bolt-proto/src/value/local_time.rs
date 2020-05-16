@@ -92,6 +92,6 @@ mod tests {
         assert!(LocalTime::new(25, 0, 0, 0).is_err());
         assert!(LocalTime::new(0, 60, 0, 0).is_err());
         assert!(LocalTime::new(0, 0, 60, 0).is_err());
-        assert!(LocalTime::new(u32::max_value(), 0, 0, 0).is_err());
+        assert!(LocalTime::new(u32::MAX, 0, 0, 0).is_err());
     }
 }
