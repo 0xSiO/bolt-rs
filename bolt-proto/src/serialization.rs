@@ -26,7 +26,6 @@ pub(crate) const STRUCT_MARKER_SMALL: u8 = 0xDC;
 pub(crate) const STRUCT_MARKER_MEDIUM: u8 = 0xDD;
 
 // Might panic. Use this inside a catch_unwind block
-// TODO: This is what makes us use catch_unwind all over the place. Maybe just do that here?
 pub(crate) fn get_info_from_bytes(bytes: &mut impl Buf) -> Result<(u8, u8)> {
     let marker = bytes.get_u8();
     let _size = match marker {
