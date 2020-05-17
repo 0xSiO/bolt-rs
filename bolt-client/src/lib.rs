@@ -1,4 +1,3 @@
-// TODO: Doc tests sometimes failing when getting query results - probably a race condition
 //! An asynchronous client for Bolt-compatible servers.
 //!
 //! # Example
@@ -120,22 +119,23 @@
 //! #     assert!(Success::try_from(response).is_ok());
 //! #
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
-//! #     client.run_with_metadata("MATCH (n) DETACH DELETE n;", None, None).await?;
+//! #     client.run_with_metadata("MATCH (n {test: 'doctest-v3'}) DETACH DELETE n;", None, None).await?;
 //! #     client.pull_all().await?;
 //! #
 //! #     let params = Params::from_iter(vec![("name", "Rust")]);
 //! #     client.run_with_metadata(
-//! #         "CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});",
+//! #         "CREATE (:Client {test: 'doctest-v3'})-[:WRITTEN_IN]->(:Language {name: $name, test: 'doctest-v3'});",
 //! #         Some(params), None).await?;
 //! #     client.pull_all().await?;
 //! #
-//! #     client.run_with_metadata("MATCH (rust:Language) RETURN rust;", None, None).await?;
+//! #     client.run_with_metadata("MATCH (rust:Language {test: 'doctest-v3'}) RETURN rust;", None, None).await?;
 //! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //! #     assert!(Success::try_from(response).is_ok());
 //! #     let node = Node::try_from(records[0].fields()[0].clone())?;
 //! #     assert_eq!(node.labels(), &[String::from("Language")]);
 //! #     assert_eq!(node.properties(),
-//! #                &HashMap::from_iter(vec![(String::from("name"), Value::from("Rust"))]));
+//! #                &HashMap::from_iter(vec![(String::from("name"), Value::from("Rust")),
+//! #                                         (String::from("test"), Value::from("doctest-v3"))]));
 //! #     client.goodbye().await?;
 //! #     Ok(())
 //! # }
@@ -181,22 +181,23 @@
 //! #     assert!(Success::try_from(response).is_ok());
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //! #    
-//! #     client.run("MATCH (n) DETACH DELETE n;", None).await?;
+//! #     client.run("MATCH (n {test: 'doctest-v2-v1'}) DETACH DELETE n;", None).await?;
 //! #     client.pull_all().await?;
 //! #    
-//! #     client.run("CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});".to_string(),
+//! #     client.run("CREATE (:Client {test: 'doctest-v2-v1'})-[:WRITTEN_IN]->(:Language {name: $name, test: 'doctest-v2-v1'});",
 //! #                Some(Params::from_iter(
 //! #                    vec![("name".to_string(), Value::from("Rust"))]
 //! #                ))).await?;
 //! #     client.pull_all().await?;
-//! #     client.run("MATCH (rust:Language) RETURN rust;", None).await?;
+//! #     client.run("MATCH (rust:Language {test: 'doctest-v2-v1'}) RETURN rust;", None).await?;
 //! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //! #     assert!(Success::try_from(response).is_ok());
 //! #    
 //! #     let node = Node::try_from(records[0].fields()[0].clone())?;
 //! #     assert_eq!(node.labels(), &["Language".to_string()]);
 //! #     assert_eq!(node.properties(),
-//! #                &HashMap::from_iter(vec![(String::from("name"), Value::from("Rust"))]));
+//! #                &HashMap::from_iter(vec![(String::from("name"), Value::from("Rust")),
+//! #                                         (String::from("test"), Value::from("doctest-v2-v1"))]));
 //!
 //! // There is no call to `goodbye`
 //! #     Ok(())
