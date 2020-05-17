@@ -144,7 +144,7 @@ mod tests {
                     "Skipping test: server doesn't support Bolt v{}.",
                     bolt_version
                 );
-                return;
+                continue;
             }
 
             let manager = get_connection_manager([bolt_version, 0, 0, 0]);

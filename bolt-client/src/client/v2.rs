@@ -1,5 +1,3 @@
-// TODO: Remote test DB doesn't seem to support v2 or v4 (handshake fails). Perhaps a Neo4j version issue?
-
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
