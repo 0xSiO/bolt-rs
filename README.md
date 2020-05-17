@@ -21,7 +21,8 @@ Neo4j 4.0. The project roadmap is shown below:
     - [x] v4 client behavior
     - [x] Test connection pool with all client versions
     - [x] Benchmarks!
-- [ ] Address TODOs scattered throughout codebase
+- [x] Address TODOs scattered throughout codebase
+- [ ] Review of API and documentation
 
 ### bolt-client
 [![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)
