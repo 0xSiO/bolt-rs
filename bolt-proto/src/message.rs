@@ -188,6 +188,7 @@ impl TryFrom<MessageBytes> for Message {
         catch_unwind(move || {
             let (marker, signature) = get_info_from_bytes(&mut message_bytes)?;
             let remaining_bytes_arc =
+                // TODO: This is awkward, maybe just freeze message_bytes.bytes
                 Arc::new(Mutex::new(message_bytes.split_to(message_bytes.len())));
 
             match signature {

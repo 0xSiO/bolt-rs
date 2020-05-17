@@ -192,8 +192,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
 
     fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
         catch_unwind(move || {
-            let marker = input_arc.lock().unwrap().clone().get_u8();
-
+            let marker = input_arc.lock().unwrap()[0];
             match marker {
                 null::MARKER => {
                     input_arc.lock().unwrap().advance(1);
@@ -256,29 +255,35 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
     }
 }
 
-// Might panic. Use this inside a catch_unwind block
 fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
-    let (_marker, signature) = get_info_from_bytes(&mut *input_arc.lock().unwrap())?;
-    match signature {
-        node::SIGNATURE => Ok(Value::Node(Node::try_from(input_arc)?)),
-        relationship::SIGNATURE => Ok(Value::Relationship(Relationship::try_from(input_arc)?)),
-        path::SIGNATURE => Ok(Value::Path(Path::try_from(input_arc)?)),
-        unbound_relationship::SIGNATURE => Ok(Value::UnboundRelationship(
-            UnboundRelationship::try_from(input_arc)?,
-        )),
-        date::SIGNATURE => Ok(Value::Date(Date::try_from(input_arc)?)),
-        time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?)),
-        date_time_offset::SIGNATURE => {
-            Ok(Value::DateTimeOffset(DateTimeOffset::try_from(input_arc)?))
+    catch_unwind(move || {
+        let (_marker, signature) = get_info_from_bytes(&mut *input_arc.lock().unwrap())?;
+        match signature {
+            node::SIGNATURE => Ok(Value::Node(Node::try_from(input_arc)?)),
+            relationship::SIGNATURE => Ok(Value::Relationship(Relationship::try_from(input_arc)?)),
+            path::SIGNATURE => Ok(Value::Path(Path::try_from(input_arc)?)),
+            unbound_relationship::SIGNATURE => Ok(Value::UnboundRelationship(
+                UnboundRelationship::try_from(input_arc)?,
+            )),
+            date::SIGNATURE => Ok(Value::Date(Date::try_from(input_arc)?)),
+            time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?)),
+            date_time_offset::SIGNATURE => {
+                Ok(Value::DateTimeOffset(DateTimeOffset::try_from(input_arc)?))
+            }
+            date_time_zoned::SIGNATURE => {
+                Ok(Value::DateTimeZoned(DateTimeZoned::try_from(input_arc)?))
+            }
+            local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
+            local_date_time::SIGNATURE => {
+                Ok(Value::LocalDateTime(LocalDateTime::try_from(input_arc)?))
+            }
+            duration::SIGNATURE => Ok(Value::Duration(Duration::try_from(input_arc)?)),
+            point_2d::SIGNATURE => Ok(Value::Point2D(Point2D::try_from(input_arc)?)),
+            point_3d::SIGNATURE => Ok(Value::Point3D(Point3D::try_from(input_arc)?)),
+            _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
         }
-        date_time_zoned::SIGNATURE => Ok(Value::DateTimeZoned(DateTimeZoned::try_from(input_arc)?)),
-        local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
-        local_date_time::SIGNATURE => Ok(Value::LocalDateTime(LocalDateTime::try_from(input_arc)?)),
-        duration::SIGNATURE => Ok(Value::Duration(Duration::try_from(input_arc)?)),
-        point_2d::SIGNATURE => Ok(Value::Point2D(Point2D::try_from(input_arc)?)),
-        point_3d::SIGNATURE => Ok(Value::Point3D(Point3D::try_from(input_arc)?)),
-        _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
-    }
+    })
+    .map_err(|_| DeserializationError::Panicked)?
 }
 
 #[cfg(test)]
