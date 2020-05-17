@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
+use std::ops::DerefMut;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
@@ -257,7 +258,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
 
 fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
     catch_unwind(move || {
-        let (_marker, signature) = get_info_from_bytes(&mut *input_arc.lock().unwrap())?;
+        let (_marker, signature) = get_info_from_bytes(input_arc.lock().unwrap().deref_mut())?;
         match signature {
             node::SIGNATURE => Ok(Value::Node(Node::try_from(input_arc)?)),
             relationship::SIGNATURE => Ok(Value::Relationship(Relationship::try_from(input_arc)?)),
@@ -291,8 +292,9 @@ mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
 
-    use super::*;
     use chrono::{FixedOffset, NaiveDate, NaiveTime, TimeZone, Utc};
+
+    use super::*;
 
     #[test]
     fn null_from_bytes() {

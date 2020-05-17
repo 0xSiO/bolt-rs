@@ -1,9 +1,10 @@
 use std::convert::{TryFrom, TryInto};
 use std::mem;
+use std::ops::DerefMut;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
-use bytes::Bytes;
+use bytes::{BufMut, Bytes, BytesMut};
 use tokio::io::BufStream;
 use tokio::prelude::*;
 
@@ -87,7 +88,16 @@ impl Message {
     pub async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
         buf_stream: &mut BufStream<T>,
     ) -> Result<Message> {
-        Message::try_from(MessageBytes::from_stream(buf_stream).await?)
+        let mut bytes = BytesMut::new();
+        let mut chunk_len = buf_stream.read_u16().await? as usize;
+        // Messages end in a 0_u16
+        while chunk_len > 0 {
+            let mut buf = vec![0; chunk_len];
+            buf_stream.read_exact(&mut buf).await?;
+            bytes.put_slice(&buf);
+            chunk_len = buf_stream.read_u16().await? as usize;
+        }
+        Message::try_from(Arc::new(Mutex::new(bytes.freeze())))
     }
 }
 
@@ -175,40 +185,28 @@ impl Deserialize for Message {}
 impl TryFrom<Arc<Mutex<Bytes>>> for Message {
     type Error = Error;
 
-    fn try_from(value: Arc<Mutex<Bytes>>) -> Result<Self> {
-        let message_bytes = MessageBytes::try_from(value)?;
-        Message::try_from(message_bytes)
-    }
-}
-
-impl TryFrom<MessageBytes> for Message {
-    type Error = Error;
-
-    fn try_from(mut message_bytes: MessageBytes) -> Result<Self> {
+    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
         catch_unwind(move || {
-            let (marker, signature) = get_info_from_bytes(&mut message_bytes)?;
-            let remaining_bytes_arc =
-                // TODO: This is awkward, maybe just freeze message_bytes.bytes
-                Arc::new(Mutex::new(message_bytes.split_to(message_bytes.len())));
+            let (marker, signature) = get_info_from_bytes(input_arc.lock().unwrap().deref_mut())?;
 
             match signature {
                 init::SIGNATURE => {
                     // Equal to hello::SIGNATURE, so we have to check for metadata.
                     // INIT has 2 fields, while HELLO has 1.
                     if marker == init::MARKER {
-                        Ok(Message::Init(Init::try_from(remaining_bytes_arc)?))
+                        Ok(Message::Init(Init::try_from(input_arc)?))
                     } else {
-                        Ok(Message::Hello(Hello::try_from(remaining_bytes_arc)?))
+                        Ok(Message::Hello(Hello::try_from(input_arc)?))
                     }
                 }
                 run::SIGNATURE => {
                     // Equal to run_with_metadata::SIGNATURE, so we have to check for metadata.
                     // RUN has 2 fields, while RUN_WITH_METADATA has 3.
                     if marker == run::MARKER {
-                        Ok(Message::Run(Run::try_from(remaining_bytes_arc)?))
+                        Ok(Message::Run(Run::try_from(input_arc)?))
                     } else {
                         Ok(Message::RunWithMetadata(RunWithMetadata::try_from(
-                            remaining_bytes_arc,
+                            input_arc,
                         )?))
                     }
                 }
@@ -218,7 +216,7 @@ impl TryFrom<MessageBytes> for Message {
                     if marker == discard_all::MARKER {
                         Ok(Message::DiscardAll)
                     } else {
-                        Ok(Message::Discard(Discard::try_from(remaining_bytes_arc)?))
+                        Ok(Message::Discard(Discard::try_from(input_arc)?))
                     }
                 }
                 pull_all::SIGNATURE => {
@@ -227,17 +225,17 @@ impl TryFrom<MessageBytes> for Message {
                     if marker == pull_all::MARKER {
                         Ok(Message::PullAll)
                     } else {
-                        Ok(Message::Pull(Pull::try_from(remaining_bytes_arc)?))
+                        Ok(Message::Pull(Pull::try_from(input_arc)?))
                     }
                 }
                 ack_failure::SIGNATURE => Ok(Message::AckFailure),
                 reset::SIGNATURE => Ok(Message::Reset),
-                record::SIGNATURE => Ok(Message::Record(Record::try_from(remaining_bytes_arc)?)),
-                success::SIGNATURE => Ok(Message::Success(Success::try_from(remaining_bytes_arc)?)),
-                failure::SIGNATURE => Ok(Message::Failure(Failure::try_from(remaining_bytes_arc)?)),
+                record::SIGNATURE => Ok(Message::Record(Record::try_from(input_arc)?)),
+                success::SIGNATURE => Ok(Message::Success(Success::try_from(input_arc)?)),
+                failure::SIGNATURE => Ok(Message::Failure(Failure::try_from(input_arc)?)),
                 ignored::SIGNATURE => Ok(Message::Ignored),
                 goodbye::SIGNATURE => Ok(Message::Goodbye),
-                begin::SIGNATURE => Ok(Message::Begin(Begin::try_from(remaining_bytes_arc)?)),
+                begin::SIGNATURE => Ok(Message::Begin(Begin::try_from(input_arc)?)),
                 commit::SIGNATURE => Ok(Message::Commit),
                 rollback::SIGNATURE => Ok(Message::Rollback),
                 _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),

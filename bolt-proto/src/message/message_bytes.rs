@@ -22,14 +22,6 @@ impl MessageBytes {
         }
     }
 
-    pub(crate) fn len(&self) -> usize {
-        self.bytes.len()
-    }
-
-    pub(crate) fn split_to(&mut self, at: usize) -> Bytes {
-        self.bytes.split_to(at).freeze()
-    }
-
     fn add_chunk(&mut self, chunk: Chunk) {
         self.bytes.put(chunk.data);
     }
@@ -70,9 +62,10 @@ impl TryInto<Bytes> for MessageBytes {
     type Error = Error;
 
     fn try_into(self) -> Result<Bytes> {
-        let mut bytes =
-            BytesMut::with_capacity(mem::size_of::<u16>() + self.len() + mem::size_of::<u16>());
-        bytes.put_u16(self.len() as u16);
+        let mut bytes = BytesMut::with_capacity(
+            mem::size_of::<u16>() + self.bytes.len() + mem::size_of::<u16>(),
+        );
+        bytes.put_u16(self.bytes.len() as u16);
         bytes.put(self.bytes);
         bytes.put_u16(0);
         Ok(bytes.freeze())
