@@ -1,3 +1,4 @@
+// TODO: Doc tests sometimes failing when getting query results - probably a race condition
 //! An asynchronous client for Bolt-compatible servers.
 //!
 //! # Example
