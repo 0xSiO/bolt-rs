@@ -13,4 +13,4 @@ proc-macro = true
 
 [dependencies]
 syn = "1.0.22"
-quote = "1.0.5"
+quote = "1.0.6"
