@@ -47,9 +47,9 @@
 //!     assert!(Success::try_from(response).is_ok());
 //!
 //!     // Use PULL to retrieve results of the query, organized into RECORD messages
+//!     // We get a (Message, Vec<Record>) returned from a PULL
 //!     let pull_meta = Metadata::from_iter(vec![("n", 1)]);
-//!     let (response, records): (Message, Vec<Record>) =
-//!         client.pull(Some(pull_meta.clone())).await?;
+//!     let (response, records) = client.pull(Some(pull_meta.clone())).await?;
 //! #   assert!(Success::try_from(response).is_ok());
 //!
 //!     assert_eq!(records[0].fields(), &[Value::from(1)]);
@@ -82,7 +82,9 @@
 //! }
 //! ```
 //!
-//! For version 3 of the protocol, the above example would simply use `Client::pull_all` instead of `Client::pull`:
+//! For version 3 of the protocol, the above example would simply use `Client::pull_all` instead of `Client::pull`. In
+//! version 4, note that we must pass metadata to `PULL` to indicate how many records we wish to consume, but in version
+//! 3 this metadata is not required (i.e. all records are consumed).
 //! ```
 //! # use std::collections::HashMap;
 //! # use std::convert::TryFrom;
@@ -115,7 +117,7 @@
 //! #
 //! #     let response = client.run_with_metadata("RETURN 1 as num;", None, None).await?;
 //! #     assert!(Success::try_from(response).is_ok());
-//! let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
+//! let (response, records) = client.pull_all().await?;
 //! #     assert!(Success::try_from(response).is_ok());
 //! #
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
@@ -167,7 +169,7 @@
 //! // Instead of `hello`, we call `init`, and the user agent string is provided separately.
 //! let response: Message = client.init(
 //!     "my-client-name/1.0",
-//!     HashMap::from_iter(vec![
+//!     Metadata::from_iter(vec![
 //!         ("scheme", "basic"),
 //!         ("principal", &env::var("BOLT_TEST_USERNAME")?),
 //!         ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
@@ -177,7 +179,9 @@
 //! // Instead of `run_with_metadata`, we call `run`, and there is no third parameter for metadata.
 //! let response = client.run("RETURN 1 as num;", None).await?;
 //! #     assert!(Success::try_from(response).is_ok());
-//! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
+//!
+//! // We also use Client::pull_all here.
+//! let (response, records) = client.pull_all().await?;
 //! #     assert!(Success::try_from(response).is_ok());
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //! #    
