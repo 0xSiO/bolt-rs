@@ -9,8 +9,8 @@ impl Client {
     /// Send a `HELLO` message to the server.
     ///
     /// # Description
-    /// This message is the equivalent of `INIT` for Bolt v3+ clients, but the client name and auth token are merged into
-    /// a single metadata object.
+    /// This message is the equivalent of `INIT` for Bolt v3+ clients, but the client name and auth token are merged
+    /// into a single metadata object.
     ///
     /// # Response
     /// - `SUCCESS {…}` if initialization has completed successfully
