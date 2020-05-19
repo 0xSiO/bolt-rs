@@ -9,10 +9,12 @@ impl Client {
     /// Send an `INIT` message to the server.
     ///
     /// # Description
-    /// The `INIT` message is a Bolt v1 client message used once to initialize the session. This message is always the
-    /// first message the client sends after negotiating protocol version via the initial handshake. Sending any message
-    /// other than `INIT` as the first message to the server will result in a `FAILURE`. The client must acknowledge
-    /// failures using `ACK_FAILURE`, after which `INIT` may be reattempted.
+    /// The `INIT` message is a Bolt v1 - v2 client message used once to initialize the session. For Bolt v3+, see
+    /// [`hello`](Client::hello).
+    ///
+    /// This message is always the first message the client sends after negotiating protocol version via the initial
+    /// handshake. Sending any message other than `INIT` as the first message to the server will result in a `FAILURE`.
+    /// The client must acknowledge failures using `ACK_FAILURE`, after which `INIT` may be reattempted.
     ///
     /// # Response
     /// - `SUCCESS {…}` if initialization has completed successfully
@@ -32,7 +34,9 @@ impl Client {
     /// Send a `RUN` message to the server.
     ///
     /// # Description
-    /// The `RUN` message is a client message used to pass a statement for execution on the server.
+    /// The `RUN` message is a Bolt v1 - v2 client message used to pass a statement for execution on the server. For
+    /// Bolt v3+, see [`run_with_metadata`](Client::run_with_metadata).
+    ///
     /// On receipt of a `RUN` message, the server will start a new job by executing the statement with the parameters
     /// (optionally) supplied. If successful, the subsequent response will consist of a single `SUCCESS` message; if
     /// not, a `FAILURE` response will be sent instead. A successful job will always produce a result stream which must
@@ -69,7 +73,8 @@ impl Client {
     /// Send a `DISCARD_ALL` message to the server.
     ///
     /// # Description
-    /// The `DISCARD_ALL` message is a client message used to discard all remaining items from the active result stream.
+    /// The `DISCARD_ALL` message is a Bolt v1 - v3 client message used to discard all remaining items from the active
+    /// result stream. For Bolt v4, see [`discard`](Client::discard).
     ///
     /// On receipt of a `DISCARD_ALL` message, the server will dispose of all remaining items from the active result
     /// stream, close the stream and send a single `SUCCESS` message to the client. If no result stream is currently
@@ -87,11 +92,12 @@ impl Client {
         self.read_message().await
     }
 
-    /// Send a `PULL_ALL` message to the server. Returns a tuple containing a `Vec` of the records returned from the
+    /// Send a `PULL_ALL` message to the server. Returns a tuple containing a [`Vec`] of the records returned from the
     /// server as well as the summary message (`SUCCESS` or `FAILURE`).
     ///
     /// # Description
-    /// The `PULL_ALL` message is a client message used to retrieve all remaining items from the active result stream.
+    /// The `PULL_ALL` message is a Bolt v1 - v3 client message used to retrieve all remaining items from the active
+    /// result stream. For Bolt v4, see [`pull`](Client::pull).
     ///
     /// On receipt of a `PULL_ALL` message, the server will send all remaining result data items to the client, each in
     /// a single `RECORD` message. The server will then close the stream and send a single `SUCCESS` message optionally
@@ -119,7 +125,7 @@ impl Client {
     /// Send an `ACK_FAILURE` message to the server.
     ///
     /// # Description
-    /// The `ACK_FAILURE` message is a client message used to acknowledge a failure the server has sent.
+    /// The `ACK_FAILURE` message is a Bolt v1 - v2 client message used to acknowledge a failure the server has sent.
     ///
     /// The following actions are performed by `ACK_FAILURE`:
     /// - clear any outstanding `FAILURE` state
@@ -151,7 +157,8 @@ impl Client {
     /// - dispose of any outstanding result records
     /// - rollback the current transaction (if any)
     ///
-    /// See [`ack_failure`](Client::ack_failure) for sending a message that only clears `FAILURE` state.
+    /// For Bolt v1 - v2, see [`ack_failure`](Client::ack_failure) for sending a message that only clears `FAILURE`
+    /// state.
     ///
     /// # Response
     /// - `SUCCESS {…}` if the session was successfully reset
