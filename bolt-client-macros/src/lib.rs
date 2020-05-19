@@ -39,7 +39,7 @@ pub fn bolt_version(attr_args: TokenStream, item: TokenStream) -> TokenStream {
     let args = syn::parse_macro_input!(attr_args as syn::AttributeArgs);
     let (attributes, visibility, signature, versions, function_body) = get_fn_info(&func, args);
 
-    let gen = quote! {
+    quote!(
         #(#attributes)*
         #visibility #signature {
             if self.version.is_some() && [#(#versions),*].contains(&self.version.unwrap()) {
@@ -48,6 +48,6 @@ pub fn bolt_version(attr_args: TokenStream, item: TokenStream) -> TokenStream {
                 Err(crate::error::Error::UnsupportedOperation(self.version))
             }
         }
-    };
-    gen.into()
+    )
+    .into()
 }

@@ -2,36 +2,11 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 
-use syn::{Data, DataStruct, Ident};
+use syn::{Data, DataStruct, Fields, Generics, Ident, WhereClause};
 
 use quote::{format_ident, quote};
 
-#[proc_macro_derive(Signature)]
-pub fn signature_derive(input: TokenStream) -> TokenStream {
-    impl_signature(&syn::parse(input).unwrap())
-}
-
-// I am so lazy, I just put all the impls into the Signature derive and made the other derives do nothing. This is so
-// message structures can derive from all the traits and I only need to do the parsing and macro stuff once. Yes, I
-// am aware this is a terrible thing to do.
-// ------------------------------------------------------------------------------------------------------------------
-#[proc_macro_derive(Marker)]
-pub fn marker_derive(_input: TokenStream) -> TokenStream {
-    quote!().into()
-}
-
-#[proc_macro_derive(Serialize)]
-pub fn serialize_derive(_input: TokenStream) -> TokenStream {
-    quote!().into()
-}
-
-#[proc_macro_derive(Deserialize)]
-pub fn deserialize_derive(_input: TokenStream) -> TokenStream {
-    quote!().into()
-}
-// ------------------------------------------------------------------------------------------------------------------
-
-fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
+fn get_struct_info(ast: &syn::DeriveInput) -> (&Ident, &Generics, &Option<WhereClause>, &Fields) {
     let name = &ast.ident;
     let type_args = &ast.generics;
     let where_clause = &ast.generics.where_clause;
@@ -39,6 +14,46 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         Data::Struct(DataStruct { fields, .. }) => fields,
         _ => panic!("Macro must be used on a struct."),
     };
+    (name, type_args, where_clause, fields)
+}
+
+#[proc_macro_derive(Signature)]
+pub fn signature_derive(input: TokenStream) -> TokenStream {
+    let ast = &syn::parse(input).unwrap();
+    let (name, type_args, where_clause, _fields) = get_struct_info(ast);
+
+    quote!(
+        impl#type_args crate::serialization::Signature for #name#type_args
+        #where_clause
+        {
+            fn get_signature(&self) -> u8 {
+                SIGNATURE
+            }
+        }
+    )
+    .into()
+}
+
+#[proc_macro_derive(Marker)]
+pub fn marker_derive(input: TokenStream) -> TokenStream {
+    let ast = &syn::parse(input).unwrap();
+    let (name, type_args, where_clause, _fields) = get_struct_info(ast);
+    quote!(
+        impl#type_args crate::serialization::Marker for #name#type_args
+        #where_clause
+        {
+            fn get_marker(&self) -> crate::error::Result<u8> {
+                Ok(MARKER)
+            }
+        }
+    )
+    .into()
+}
+
+#[proc_macro_derive(Serialize)]
+pub fn serialize_derive(input: TokenStream) -> TokenStream {
+    let ast = &syn::parse(input).unwrap();
+    let (name, type_args, where_clause, fields) = get_struct_info(ast);
 
     let byte_var_names: Vec<Ident> = fields
         .iter()
@@ -50,33 +65,7 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
         quote!(let #var_name = crate::Value::from(self.#field_name).try_into_bytes()?;)
     });
 
-    let deserialize_fields =
-        fields
-            .iter()
-            .map(|field| {
-                let field_name = field.ident.as_ref().unwrap();
-                quote!(#field_name: crate::Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?.try_into()?,)
-            });
-
-    let gen = quote! {
-        use ::bytes::BufMut;
-
-        impl#type_args crate::serialization::Signature for #name#type_args
-        #where_clause
-        {
-            fn get_signature(&self) -> u8 {
-                SIGNATURE
-            }
-        }
-
-        impl#type_args crate::serialization::Marker for #name#type_args
-        #where_clause
-        {
-            fn get_marker(&self) -> crate::error::Result<u8> {
-                Ok(MARKER)
-            }
-        }
-
+    quote!(
         impl#type_args crate::serialization::Serialize for #name#type_args
         #where_clause
         {}
@@ -87,8 +76,9 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
             type Error = crate::error::Error;
 
             fn try_into(self) -> crate::error::Result<::bytes::Bytes> {
-                use crate::serialization::Serialize;
                 use ::std::convert::{TryFrom, TryInto};
+                use ::bytes::BufMut;
+                use crate::serialization::Serialize;
 
                 let marker = MARKER;
                 let signature = SIGNATURE;
@@ -103,7 +93,24 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
                 Ok(result_bytes_mut.freeze())
             }
         }
+    )
+    .into()
+}
 
+#[proc_macro_derive(Deserialize)]
+pub fn deserialize_derive(input: TokenStream) -> TokenStream {
+    let ast = &syn::parse(input).unwrap();
+    let (name, type_args, where_clause, fields) = get_struct_info(ast);
+
+    let deserialize_fields =
+        fields
+            .iter()
+            .map(|field| {
+                let field_name = field.ident.as_ref().unwrap();
+                quote!(#field_name: crate::Value::try_from(::std::sync::Arc::clone(&remaining_bytes_arc))?.try_into()?,)
+            });
+
+    quote!(
         impl crate::serialization::Deserialize for #name#type_args
         #where_clause
         {}
@@ -120,6 +127,5 @@ fn impl_signature(ast: &syn::DeriveInput) -> TokenStream {
                 })
             }
         }
-    };
-    gen.into()
+    ).into()
 }
