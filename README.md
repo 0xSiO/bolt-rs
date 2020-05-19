@@ -7,22 +7,7 @@
 This project aims to provide a comprehensive set of libraries that allow for interaction with graph database servers that
 support the [Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29) protocol, namely, [Neo4j](https://neo4j.com).
 This set of libraries allows interacting with servers supporting versions 1 through 4 of the protocol, which includes
-Neo4j 4.0. The project roadmap is shown below:
-- [x] Bolt v1 protocol
-    - [x] Messaging and serialization
-- [x] Bolt v2 protocol
-    - [x] New data types (dates, times, durations, points)
-- [x] Bolt v3 protocol
-    - [x] New message types (Hello, Goodbye, RunWithMetadata, Begin, Commit, Rollback)
-- [x] Bolt v4 protocol
-    - [x] New message types (Pull, Discard)
-- [x] Client and connection pool adaptor
-    - [x] v1-v3 client behavior
-    - [x] v4 client behavior
-    - [x] Test connection pool with all client versions
-    - [x] Benchmarks!
-- [x] Address TODOs scattered throughout codebase
-- [ ] Review of API and documentation
+Neo4j 4.0.
 
 ### bolt-client
 [![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)
