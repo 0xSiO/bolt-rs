@@ -71,7 +71,7 @@ impl ManageConnection for BoltConnectionManager {
                         Error::ClientInitFailed("metadata must contain a user_agent".to_string())
                     })
                     .map(String::try_from)??;
-                client.init(user_agent, metadata).await?
+                client.init(user_agent, Metadata::from(metadata)).await?
             }
             3 | 4 => {
                 client

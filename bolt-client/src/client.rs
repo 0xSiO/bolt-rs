@@ -37,7 +37,7 @@ pub struct Client {
 }
 
 impl Client {
-    /// Create a new client pointing to the provided server address. If a server domain is provided, the Client will
+    /// Create a new client pointing to the provided server address. If a server domain is provided, the client will
     /// attempt to connect to the server over a connection secured with TLS.
     pub async fn new(addr: impl ToSocketAddrs, domain: Option<impl Into<String>>) -> Result<Self> {
         let stream = match domain {

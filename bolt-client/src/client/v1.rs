@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 use bolt_client_macros::*;
 use bolt_proto::message::*;
-use bolt_proto::{Message, Value};
+use bolt_proto::Message;
 
 use crate::error::*;
-use crate::{Client, Params};
+use crate::{Client, Metadata, Params};
 
 impl Client {
     /// Send an `INIT` message to the server.
@@ -24,15 +22,9 @@ impl Client {
     pub async fn init(
         &mut self,
         client_name: impl Into<String>,
-        auth_token: HashMap<impl Into<String>, impl Into<Value>>,
+        auth_token: Metadata,
     ) -> Result<Message> {
-        let init_msg = Init::new(
-            client_name.into(),
-            auth_token
-                .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect(),
-        );
+        let init_msg = Init::new(client_name.into(), auth_token.value);
         self.send_message(Message::Init(init_msg)).await?;
         self.read_message().await
     }
@@ -173,7 +165,6 @@ impl Client {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::collections::HashMap;
     use std::convert::TryFrom;
     use std::env;
     use std::iter::FromIterator;
@@ -208,7 +199,7 @@ pub(crate) mod tests {
             client
                 .init(
                     "bolt-client/X.Y.Z",
-                    HashMap::from_iter(vec![
+                    Metadata::from_iter(vec![
                         ("scheme", "basic"),
                         ("principal", &username),
                         ("credentials", &password),
