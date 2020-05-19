@@ -32,8 +32,8 @@ const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 /// A tokio-based client for Bolt servers, compatible with versions 1 through 4 of the protocol.
 #[derive(Debug)]
 pub struct Client {
-    pub(crate) stream: BufStream<Stream>,
-    pub(crate) version: Option<u32>,
+    stream: BufStream<Stream>,
+    version: Option<u32>,
 }
 
 impl Client {
