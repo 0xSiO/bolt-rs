@@ -1,6 +1,6 @@
 [package]
 name = "bolt-client"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "A client that sends messages using the Bolt protocol.\n"
 readme = "README.md"
@@ -15,8 +15,8 @@ chrono = "0.4.11"
 criterion = "0.3.2"
 
 [dependencies]
-bolt-client-macros = { path = "../bolt-client-macros", version = "0.1.0" }
-bolt-proto = { path = "../bolt-proto", version = "0.7.0" }
+bolt-client-macros = { path = "../bolt-client-macros", version = "0.1.1" }
+bolt-proto = { path = "../bolt-proto", version = "0.8.0" }
 
 bytes = "0.5.4"
 thiserror = "1.0.18"

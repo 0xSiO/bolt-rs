@@ -1,6 +1,6 @@
 [package]
 name = "bb8-bolt"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "A bolt-client adaptor for the bb8 connection pool.\n"
 repository = "https://github.com/lucis-fluxum/bolt-rs"
@@ -14,8 +14,8 @@ tokio = { version = "0.2.21", features = ["rt-core", "rt-threaded", "macros"] }
 futures = { version = "0.3.5", features = [] }
 
 [dependencies]
-bolt-client = { path = "../bolt-client", version = "0.6.0" }
-bolt-proto = { path = "../bolt-proto", version = "0.7.0" }
+bolt-client = { path = "../bolt-client", version = "0.7.0" }
+bolt-proto = { path = "../bolt-proto", version = "0.8.0" }
 
 async-trait = "0.1.31"
 bb8 = "0.4.2"
