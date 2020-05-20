@@ -27,7 +27,7 @@ pub enum Message {
 
     // V4+-compatible message types
     Discard(Discard),
-    Pull(Pull)
+    Pull(Pull),
 }
 ```
 See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/message/enum.Message.html) for more details.
@@ -37,9 +37,9 @@ Structures like `List` and `Map` allow `Value`s to be nested with arbitrary comp
 ```rust
 pub enum Value {
     // V1-compatible value types
-    Boolean(bool),
+    Boolean(Boolean),
     Integer(Integer),
-    Float(f64),
+    Float(Float),
     Bytes(ByteArray), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
     List(List),
     Map(Map),
