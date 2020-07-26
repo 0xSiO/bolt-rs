@@ -9,19 +9,6 @@ support the [Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29) pr
 This set of libraries allows interacting with servers supporting versions 1 through 4 of the protocol, which includes
 Neo4j 4.0.
 
-### bolt-client
-[![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)
-[![Released API docs](https://docs.rs/bolt-client/badge.svg)](https://docs.rs/bolt-client)
-
-Contains an asynchronous client for Bolt-compatible servers, using a TCP stream optionally secured using
-TLS.
-
-### bolt-client-macros
-[![crates.io](https://img.shields.io/crates/v/bolt-client-macros.svg)](https://crates.io/crates/bolt-client-macros)
-[![Released API docs](https://docs.rs/bolt-client-macros/badge.svg)](https://docs.rs/bolt-client-macros)
-
-Procedural macros used in bolt-client for client version requirements and smarter tests.
-
 ### bolt-proto
 [![crates.io](https://img.shields.io/crates/v/bolt-proto.svg)](https://crates.io/crates/bolt-proto)
 [![Released API docs](https://docs.rs/bolt-proto/badge.svg)](https://docs.rs/bolt-proto)
@@ -29,17 +16,30 @@ Procedural macros used in bolt-client for client version requirements and smarte
 Contains the traits and primitives used in the protocol. The `Message` and `Value` enums are of particular importance,
 and are the primary units of information sent and consumed by Bolt clients/servers.
 
-### bolt-proto-derive
-[![crates.io](https://img.shields.io/crates/v/bolt-proto-derive.svg)](https://crates.io/crates/bolt-proto-derive)
-[![Released API docs](https://docs.rs/bolt-proto-derive/badge.svg)](https://docs.rs/bolt-proto-derive)
+### bolt-client
+[![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)
+[![Released API docs](https://docs.rs/bolt-client/badge.svg)](https://docs.rs/bolt-client)
 
-Ugly procedural macros used in bolt-proto to derive serialization-related traits.
+Contains an asynchronous client for Bolt-compatible servers, using a TCP stream optionally secured using
+TLS.
 
 ### bb8-bolt
 [![crates.io](https://img.shields.io/crates/v/bb8-bolt.svg)](https://crates.io/crates/bb8-bolt)
 [![Released API docs](https://docs.rs/bb8-bolt/badge.svg)](https://docs.rs/bb8-bolt)
 
 A bolt-client adapter crate for the [bb8](https://crates.io/crates/bb8) connection pool.
+
+### bolt-proto-derive
+[![crates.io](https://img.shields.io/crates/v/bolt-proto-derive.svg)](https://crates.io/crates/bolt-proto-derive)
+[![Released API docs](https://docs.rs/bolt-proto-derive/badge.svg)](https://docs.rs/bolt-proto-derive)
+
+Procedural macros used in bolt-proto to derive serialization-related traits.
+
+### bolt-client-macros
+[![crates.io](https://img.shields.io/crates/v/bolt-client-macros.svg)](https://crates.io/crates/bolt-client-macros)
+[![Released API docs](https://docs.rs/bolt-client-macros/badge.svg)](https://docs.rs/bolt-client-macros)
+
+Procedural macros used in bolt-client for client version requirements and smarter tests.
 
 ## Benchmarks
 
