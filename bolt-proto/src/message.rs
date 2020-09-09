@@ -84,7 +84,11 @@ impl Message {
         buf_stream: &mut BufStream<T>,
     ) -> Result<Message> {
         let mut bytes = BytesMut::new();
-        let mut chunk_len = buf_stream.read_u16().await? as usize;
+        let mut chunk_len = 0;
+        // Ignore any no-op messages
+        while chunk_len == 0 {
+            chunk_len = buf_stream.read_u16().await? as usize;
+        }
         // Messages end in a 0_u16
         while chunk_len > 0 {
             let mut buf = vec![0; chunk_len];
