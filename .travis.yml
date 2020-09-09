@@ -16,6 +16,8 @@ env:
     - BOLT_TEST_USERNAME=neo4j
     - BOLT_TEST_PASSWORD=neo4j
   jobs:
+    - NEO4J_VERSION=3.0
+    - NEO4J_VERSION=3.1
     - NEO4J_VERSION=3.2
     - NEO4J_VERSION=3.3
     - NEO4J_VERSION=3.4
