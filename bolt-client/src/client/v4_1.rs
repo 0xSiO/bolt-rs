@@ -76,10 +76,7 @@ mod tests {
             assert!(match response {
                 Message::Success(_) => true,
                 Message::Record(record) => {
-                    assert_eq!(
-                        Record::try_from(record).unwrap().fields()[0],
-                        Value::from(Duration::new(118, 7, 0, 0))
-                    );
+                    assert_eq!(record.fields()[0], Value::from(Duration::new(118, 7, 0, 0)));
                     true
                 }
                 _ => false,
@@ -185,8 +182,7 @@ mod tests {
         let mut node_exists = false;
         for response in client.pipeline(messages).await.unwrap() {
             if let Message::Record(record) = response {
-                let node =
-                    Node::try_from(Record::try_from(record).unwrap().fields()[0].clone()).unwrap();
+                let node = Node::try_from(record.fields()[0].clone()).unwrap();
                 assert_eq!(node.labels(), &["Database"]);
                 node_exists = true;
                 break;

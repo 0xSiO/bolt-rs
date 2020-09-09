@@ -101,10 +101,7 @@ mod tests {
             assert!(match response {
                 Message::Success(_) => true,
                 Message::Record(record) => {
-                    assert_eq!(
-                        Record::try_from(record).unwrap().fields()[0],
-                        Value::from(Duration::new(118, 7, 0, 0))
-                    );
+                    assert_eq!(record.fields()[0], Value::from(Duration::new(118, 7, 0, 0)));
                     true
                 }
                 _ => false,
