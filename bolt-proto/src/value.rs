@@ -580,7 +580,7 @@ mod tests {
 
     #[test]
     fn path_from_bytes() {
-        let path = Path::new(vec![get_node()], vec![get_unbound_rel()], 100_i64);
+        let path = Path::new(vec![get_node()], vec![get_unbound_rel()], vec![100, 101]);
         let path_bytes: Bytes = path.clone().try_into_bytes().unwrap();
 
         assert_eq!(
