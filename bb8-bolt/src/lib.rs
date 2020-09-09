@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::net::{SocketAddr, ToSocketAddrs};
 
+use async_trait::async_trait;
 use bb8::ManageConnection;
 use thiserror::Error;
 
-use async_trait::async_trait;
 use bolt_client::*;
 use bolt_proto::*;
 
@@ -108,6 +108,7 @@ mod tests {
     use std::iter::FromIterator;
 
     use bb8::*;
+    use futures_util::future::join_all;
 
     use super::*;
 
@@ -185,7 +186,7 @@ mod tests {
                     assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
                 }));
             }
-            tokio::join!(futures::future::join_all(tasks));
+            join_all(tasks).await;
         }
     }
 
