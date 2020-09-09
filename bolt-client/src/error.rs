@@ -8,8 +8,8 @@ pub enum Error {
     InvalidDNSName(String),
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    #[error("Handshake with server failed")]
-    HandshakeFailed,
+    #[error("Handshake with server failed for versions {0:?}")]
+    HandshakeFailed([u32; 4]),
     #[error("Unsupported operation for client with version = {0:?}")]
     UnsupportedOperation(Option<u32>),
     #[error(transparent)]

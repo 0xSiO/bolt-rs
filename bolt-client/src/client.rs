@@ -84,7 +84,7 @@ impl Client {
             self.version = Some(version);
             Ok(version)
         } else {
-            Err(Error::HandshakeFailed)
+            Err(Error::HandshakeFailed(*supported_versions))
         }
     }
 
