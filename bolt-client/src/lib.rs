@@ -23,10 +23,7 @@
 //!                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
 //!     // This example demonstrates usage of the v4 protocol
 //!     let handshake_result = client.handshake(&[4, 0, 0, 0]).await;
-//! #   if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
-//! #       println!("Skipping test: client handshake failed");
-//! #       return Ok(());
-//! #   }
+//! #   skip_if_handshake_failed!(handshake_result, Ok(()));
 //!     
 //!     // Send a HELLO message with authorization details to the server to initialize
 //!     // the session.
@@ -101,10 +98,7 @@
 //! #     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
 //! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
 //! #     let handshake_result = client.handshake(&[3, 0, 0, 0]).await;
-//! #     if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
-//! #         println!("Skipping test: client handshake failed");
-//! #         return Ok(());
-//! #     }
+//! #     skip_if_handshake_failed!(handshake_result, Ok(()));
 //! #
 //! #     let response: Message = client.hello(
 //! #         Some(Metadata::from_iter(vec![
@@ -161,10 +155,7 @@
 //! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
 //! // For the handshake we want to support versions 1 and 2 only, preferring version 2.
 //! let handshake_result = client.handshake(&[2, 1, 0, 0]).await;
-//! #     if let Err(bolt_client::error::Error::HandshakeFailed) = handshake_result {
-//! #         println!("Skipping test: client handshake failed");
-//! #         return Ok(());
-//! #     }
+//! #     skip_if_handshake_failed!(handshake_result, Ok(()));
 //!     
 //! // Instead of `hello`, we call `init`, and the user agent string is provided separately.
 //! let response: Message = client.init(
@@ -223,14 +214,20 @@ define_value_map!(Params);
 #[macro_export]
 macro_rules! skip_if_handshake_failed {
     ($var:expr) => {
-        if let ::std::result::Result::Err(crate::error::Error::HandshakeFailed) = $var {
-            println!("Skipping test: client handshake failed");
+        if let ::std::result::Result::Err(crate::error::Error::HandshakeFailed(versions)) = $var {
+            println!(
+                "Skipping test: client handshake failed for versions {:?}",
+                versions
+            );
             return;
         }
     };
     ($var:expr, $ret:expr) => {
-        if let ::std::result::Result::Err(crate::error::Error::HandshakeFailed) = $var {
-            println!("Skipping test: client handshake failed");
+        if let ::std::result::Result::Err(crate::error::Error::HandshakeFailed(versions)) = $var {
+            println!(
+                "Skipping test: client handshake failed for versions {:?}",
+                versions
+            );
             return $ret;
         }
     };
