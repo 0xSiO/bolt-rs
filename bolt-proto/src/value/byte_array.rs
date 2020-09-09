@@ -98,7 +98,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn get_marker_large() {
         let large_arr: ByteArray = vec![0; 100_000].into();
         assert_eq!(large_arr.get_marker().unwrap(), MARKER_LARGE);
@@ -132,7 +131,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn try_into_large_bytes() {
         let large_arr: ByteArray = vec![1_u8; 100_000].into();
         let large_arr_expected_bytes: Vec<u8> = vec![MARKER_LARGE, 0x00, 0x01, 0x86, 0xA0] // marker, size
@@ -174,7 +172,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn try_from_large_bytes() {
         let large_arr: ByteArray = vec![1_u8; 100_000].into();
         let large_arr_bytes = large_arr.clone().try_into_bytes().unwrap();
