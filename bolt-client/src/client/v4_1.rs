@@ -90,13 +90,31 @@ mod tests {
     //   - Sending DISCARD with 'n' equal to some number results in a Neo.DatabaseError.General.UnknownError, saying
     //     "Currently it is only supported to discard ALL records, but it was requested to discard " + n
     //   - Sending DISCARD with 'n' equal to -1 indicates discard of all records in the result stream.
-    //
-    // This makes it functionally equivalent to DISCARD_ALL... so... why did they do this...?
     #[tokio::test]
     async fn discard() {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+
+        let response = run_valid_query(&mut client).await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+        let response = client.discard(None).await.unwrap();
+        assert!(Failure::try_from(response).is_ok());
+
+        let response = client.reset().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+
+        let response = run_valid_query(&mut client).await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+        let response = client
+            .discard(Some(Metadata::from_iter(vec![("n", 1)])))
+            .await
+            .unwrap();
+        assert!(Failure::try_from(response).is_ok());
+
+        let response = client.reset().await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = client
