@@ -1,6 +1,6 @@
-use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::hash::BuildHasher;
 use std::mem;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
@@ -9,6 +9,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use crate::error::*;
 use crate::serialization::*;
+use crate::value::String;
 use crate::Value;
 
 pub(crate) const MARKER_TINY: u8 = 0xA0;
@@ -18,7 +19,7 @@ pub(crate) const MARKER_LARGE: u8 = 0xDA;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Map {
-    pub(crate) value: HashMap<Value, Value>,
+    pub(crate) value: HashMap<String, Value>,
 }
 
 impl Marker for Map {
@@ -89,9 +90,9 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Map {
                     return Err(DeserializationError::InvalidMarkerByte(marker).into());
                 }
             };
-            let mut hash_map: HashMap<Value, Value> = HashMap::with_capacity(size);
+            let mut hash_map: HashMap<String, Value> = HashMap::with_capacity(size);
             for _ in 0..size {
-                let key = Value::try_from(Arc::clone(&input_arc))?;
+                let key = String::try_from(Arc::clone(&input_arc))?;
                 let value = Value::try_from(Arc::clone(&input_arc))?;
                 hash_map.insert(key, value);
             }
@@ -101,12 +102,13 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Map {
     }
 }
 
-impl<K, V> From<HashMap<K, V>> for Map
+impl<K, V, S> From<HashMap<K, V, S>> for Map
 where
-    K: Into<Value>,
+    K: Into<String>,
     V: Into<Value>,
+    S: BuildHasher,
 {
-    fn from(value: HashMap<K, V, RandomState>) -> Self {
+    fn from(value: HashMap<K, V, S>) -> Self {
         Self {
             value: value
                 .into_iter()

@@ -1,7 +1,6 @@
-use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::hash::{BuildHasher, Hash};
+use std::hash::BuildHasher;
 
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone};
 use chrono_tz::Tz;
@@ -57,12 +56,13 @@ where
     }
 }
 
-impl<K, V> From<HashMap<K, V>> for Value
+impl<K, V, S> From<HashMap<K, V, S>> for Value
 where
-    K: Into<Value>,
+    K: Into<String>,
     V: Into<Value>,
+    S: BuildHasher,
 {
-    fn from(value: HashMap<K, V, RandomState>) -> Self {
+    fn from(value: HashMap<K, V, S>) -> Self {
         Value::Map(Map::from(value))
     }
 }
@@ -259,9 +259,8 @@ impl TryFrom<Value> for Vec<Value> {
     }
 }
 
-impl<K, V, S> TryFrom<Value> for HashMap<K, V, S>
+impl<V, S> TryFrom<Value> for HashMap<std::string::String, V, S>
 where
-    K: Hash + Eq + TryFrom<Value, Error = Error>,
     V: TryFrom<Value, Error = Error>,
     S: BuildHasher + Default,
 {
@@ -273,7 +272,7 @@ where
                 let mut new_map =
                     HashMap::with_capacity_and_hasher(map.value.len(), Default::default());
                 for (k, v) in map.value {
-                    new_map.insert(K::try_from(k)?, V::try_from(v)?);
+                    new_map.insert(k.value, V::try_from(v)?);
                 }
                 Ok(new_map)
             }
@@ -282,9 +281,8 @@ where
     }
 }
 
-impl<K, S> TryFrom<Value> for HashMap<K, Value, S>
+impl<S> TryFrom<Value> for HashMap<std::string::String, Value, S>
 where
-    K: Hash + Eq + TryFrom<Value, Error = Error>,
     S: BuildHasher + Default,
 {
     type Error = Error;
@@ -295,7 +293,7 @@ where
                 let mut new_map =
                     HashMap::with_capacity_and_hasher(map.value.len(), Default::default());
                 for (k, v) in map.value {
-                    new_map.insert(K::try_from(k)?, v);
+                    new_map.insert(k.value, v);
                 }
                 Ok(new_map)
             }
