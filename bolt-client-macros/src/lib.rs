@@ -18,12 +18,19 @@ fn get_fn_info(
         .into_iter()
         .map(|item| {
             if let NestedMeta::Lit(lit) = item {
-                if let Lit::Int(lit_int) = lit {
-                    lit_int
+                match lit {
+                    Lit::Int(lit_int) => lit_int
                         .base10_parse::<u32>()
-                        .expect("couldn't parse version")
-                } else {
-                    panic!("Invalid version token: {:?}", lit);
+                        .expect("couldn't parse version"),
+                    Lit::Float(lit_float) => {
+                        let version = lit_float
+                            .base10_parse::<f64>()
+                            .expect("couldn't parse version");
+                        let major = version.trunc() as u32;
+                        let minor = (version.fract() * 10.0).round() as u32;
+                        minor << 8 | major
+                    }
+                    _ => panic!("Invalid version token: {:?}", lit),
                 }
             } else {
                 panic!("Invalid version token: {:?}", item);
