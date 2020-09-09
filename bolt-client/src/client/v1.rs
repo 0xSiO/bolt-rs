@@ -349,10 +349,7 @@ pub(crate) mod tests {
             assert!(match response {
                 Message::Success(_) => true,
                 Message::Record(record) => {
-                    assert_eq!(
-                        Record::try_from(record).unwrap().fields()[0],
-                        Value::from(12_i8)
-                    );
+                    assert_eq!(record.fields()[0], Value::from(12_i8));
                     true
                 }
                 _ => false,
