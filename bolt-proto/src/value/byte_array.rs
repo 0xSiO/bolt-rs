@@ -22,7 +22,7 @@ impl Marker for ByteArray {
         match self.value.len() {
             0..=255 => Ok(MARKER_SMALL),
             256..=65_535 => Ok(MARKER_MEDIUM),
-            65_536..=4_294_967_295 => Ok(MARKER_LARGE),
+            65_536..=2_147_483_647 => Ok(MARKER_LARGE),
             _ => Err(Error::ValueTooLarge(self.value.len())),
         }
     }
@@ -42,7 +42,7 @@ impl TryInto<Bytes> for ByteArray {
         match self.value.len() {
             0..=255 => bytes.put_u8(self.value.len() as u8),
             256..=65_535 => bytes.put_u16(self.value.len() as u16),
-            65_536..=4_294_967_295 => bytes.put_u32(self.value.len() as u32),
+            65_536..=2_147_483_647 => bytes.put_u32(self.value.len() as u32),
             _ => return Err(Error::ValueTooLarge(self.value.len())),
         }
         bytes.put_slice(&self.value);
