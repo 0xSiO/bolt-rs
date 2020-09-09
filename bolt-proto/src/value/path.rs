@@ -6,8 +6,6 @@ pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x50;
 
 #[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
-// FIXME: Path deserialization is incomplete!
-//        See ValuePackerV1.java, lines 216-248 in official Java driver
 pub struct Path {
     pub(crate) nodes: Vec<Node>,
     pub(crate) relationships: Vec<UnboundRelationship>,
