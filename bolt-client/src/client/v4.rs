@@ -175,6 +175,8 @@ mod tests {
         let client = get_initialized_client(4).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+
+        // Try pulling 1 result
         let response = client
             .run_with_metadata("RETURN 3458376 as n;", None, None)
             .await
@@ -183,6 +185,21 @@ mod tests {
 
         let (response, records) = client
             .pull(Some(Metadata::from_iter(vec![("n", 1)])))
+            .await
+            .unwrap();
+        assert!(Success::try_from(response).is_ok());
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].fields(), &[Value::from(3_458_376)]);
+
+        // Try pulling all results
+        let response = client
+            .run_with_metadata("RETURN 3458376 as n;", None, None)
+            .await
+            .unwrap();
+        assert!(Success::try_from(response).is_ok());
+
+        let (response, records) = client
+            .pull(Some(Metadata::from_iter(vec![("n", -1)])))
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
