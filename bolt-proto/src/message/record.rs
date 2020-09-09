@@ -40,8 +40,8 @@ mod tests {
         Record::new(vec![
             Value::from(1200_i16),
             Value::from("hi there"),
-            Value::from(HashMap::from_iter(vec![(
-                "key".to_string(),
+            Value::from(HashMap::<&str, Value>::from_iter(vec![(
+                "key",
                 Value::from("value"),
             )])),
         ])
