@@ -44,7 +44,7 @@ pub enum Error {
     IOError(#[from] std::io::Error),
     #[error("Invalid host address.")]
     InvalidAddress,
-    #[error("Invalid client version: {0}")]
+    #[error("Invalid client version: {0:#x}")]
     InvalidClientVersion(u32),
     #[error("Initialization of client failed: {0}")]
     ClientInitFailed(String),
@@ -73,7 +73,7 @@ impl ManageConnection for BoltConnectionManager {
                     .map(String::try_from)??;
                 client.init(user_agent, Metadata::from(metadata)).await?
             }
-            3 | 4 => {
+            3 | 4 | 0x0104 => {
                 client
                     .hello(Some(Metadata::from(self.metadata.clone())))
                     .await?
@@ -138,11 +138,11 @@ mod tests {
 
     #[tokio::test]
     async fn basic_pool() {
-        for bolt_version in 1..=4 {
+        for &bolt_version in &[1_u32, 2, 3, 4, 0x0104] {
             // Don't even test connection pool if server doesn't support this Bolt version
             if !is_server_compatible(bolt_version).await.unwrap() {
                 println!(
-                    "Skipping test: server doesn't support Bolt v{}.",
+                    "Skipping test: server doesn't support Bolt version {:#x}.",
                     bolt_version
                 );
                 continue;
@@ -170,7 +170,7 @@ mod tests {
                                 .unwrap();
                             client.pull_all().await.unwrap()
                         }
-                        4 => {
+                        4 | 0x0104 => {
                             client
                                 .run_with_metadata(statement, None, None)
                                 .await
@@ -180,7 +180,7 @@ mod tests {
                                 .await
                                 .unwrap()
                         }
-                        _ => panic!("Unsupported client version: {}", version),
+                        _ => panic!("Unsupported client version: {:#x}", version),
                     };
                     assert!(message::Success::try_from(response).is_ok());
                     assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
