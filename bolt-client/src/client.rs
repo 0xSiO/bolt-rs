@@ -34,7 +34,6 @@ const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 #[derive(Debug)]
 pub struct Client {
     stream: BufStream<Stream>,
-    // TODO: Consider making version a repr(u32) enum
     version: Option<u32>,
 }
 
