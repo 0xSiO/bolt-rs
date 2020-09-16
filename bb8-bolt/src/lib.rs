@@ -7,7 +7,7 @@ use bb8::ManageConnection;
 use thiserror::Error;
 
 use bolt_client::*;
-use bolt_proto::*;
+use bolt_proto::{version::*, *};
 
 pub struct BoltConnectionManager {
     addr: SocketAddr,
@@ -63,7 +63,7 @@ impl ManageConnection for BoltConnectionManager {
         let mut client = Client::new(self.addr, self.domain.as_ref()).await?;
         let version = client.handshake(&self.supported_versions).await?;
         let response = match version {
-            1 | 2 => {
+            V1_0 | V2_0 => {
                 let mut metadata = self.metadata.clone();
                 let user_agent: String = metadata
                     .remove("user_agent")
@@ -73,7 +73,7 @@ impl ManageConnection for BoltConnectionManager {
                     .map(String::try_from)??;
                 client.init(user_agent, Metadata::from(metadata)).await?
             }
-            3 | 4 | 0x0104 => {
+            V3_0 | V4_0 | V4_1 => {
                 client
                     .hello(Some(Metadata::from(self.metadata.clone())))
                     .await?
@@ -138,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn basic_pool() {
-        for &bolt_version in &[1_u32, 2, 3, 4, 0x0104] {
+        for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1] {
             // Don't even test connection pool if server doesn't support this Bolt version
             if !is_server_compatible(bolt_version).await.unwrap() {
                 println!(
@@ -159,18 +159,18 @@ mod tests {
                     let statement = format!("RETURN {} as num;", i);
                     let version = client.version().unwrap();
                     let (response, records) = match version {
-                        1 | 2 => {
+                        V1_0 | V2_0 => {
                             client.run(statement, None).await.unwrap();
                             client.pull_all().await.unwrap()
                         }
-                        3 => {
+                        V3_0 => {
                             client
                                 .run_with_metadata(statement, None, None)
                                 .await
                                 .unwrap();
                             client.pull_all().await.unwrap()
                         }
-                        4 | 0x0104 => {
+                        V4_0 | V4_1 => {
                             client
                                 .run_with_metadata(statement, None, None)
                                 .await
@@ -195,7 +195,7 @@ mod tests {
         let invalid_manager = BoltConnectionManager::new(
             "127.0.0.1:7687",
             None,
-            [4, 3, 2, 1],
+            [V4_1, V4_0, V3_0, V2_0],
             HashMap::from_iter(vec![
                 ("user_agent", "bolt-client/X.Y.Z"),
                 ("scheme", "basic"),

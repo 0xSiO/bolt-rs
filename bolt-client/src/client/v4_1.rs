@@ -4,15 +4,11 @@ mod tests {
     use std::convert::TryFrom;
     use std::iter::FromIterator;
 
-    use bolt_proto::message::*;
-    use bolt_proto::value::*;
-    use bolt_proto::Message;
+    use bolt_proto::{message::*, value::*, version::*, Message};
 
     use crate::client::v1::tests::*;
     use crate::skip_if_handshake_failed;
     use crate::Metadata;
-
-    const V4_1: u32 = 0x0104;
 
     #[tokio::test]
     async fn hello() {
