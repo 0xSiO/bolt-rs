@@ -87,14 +87,14 @@ impl Message {
         let mut chunk_len = 0;
         // Ignore any no-op messages
         while chunk_len == 0 {
-            chunk_len = buf_stream.read_u16().await? as usize;
+            chunk_len = buf_stream.read_u16().await?;
         }
         // Messages end in a 0_u16
         while chunk_len > 0 {
-            let mut buf = vec![0; chunk_len];
+            let mut buf = vec![0; chunk_len as usize];
             buf_stream.read_exact(&mut buf).await?;
             bytes.put_slice(&buf);
-            chunk_len = buf_stream.read_u16().await? as usize;
+            chunk_len = buf_stream.read_u16().await?;
         }
         Message::try_from(Arc::new(Mutex::new(bytes.freeze())))
     }
