@@ -6,6 +6,7 @@ pub mod error;
 pub mod message;
 mod serialization;
 pub mod value;
+pub mod version;
 
 #[doc(hidden)]
 #[macro_export]

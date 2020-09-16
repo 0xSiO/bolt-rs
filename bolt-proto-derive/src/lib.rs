@@ -12,7 +12,7 @@ fn get_struct_info(ast: &syn::DeriveInput) -> (&Ident, &Generics, &Option<WhereC
     let where_clause = &ast.generics.where_clause;
     let fields = match &ast.data {
         Data::Struct(DataStruct { fields, .. }) => fields,
-        _ => panic!("Macro must be used on a struct."),
+        _ => panic!("macro must be used on a struct."),
     };
     (name, type_args, where_clause, fields)
 }

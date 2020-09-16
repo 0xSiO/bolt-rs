@@ -214,19 +214,19 @@ define_value_map!(Params);
 #[macro_export]
 macro_rules! skip_if_handshake_failed {
     ($var:expr) => {
-        if let ::std::result::Result::Err(crate::error::Error::HandshakeFailed(versions)) = $var {
+        if let ::std::result::Result::Err($crate::error::Error::HandshakeFailed(versions)) = $var {
             println!(
-                "Skipping test: client handshake failed for versions {:?}",
-                versions
+                "Skipping test: {}",
+                $crate::error::Error::HandshakeFailed(versions)
             );
             return;
         }
     };
     ($var:expr, $ret:expr) => {
-        if let ::std::result::Result::Err(crate::error::Error::HandshakeFailed(versions)) = $var {
+        if let ::std::result::Result::Err($crate::error::Error::HandshakeFailed(versions)) = $var {
             println!(
-                "Skipping test: client handshake failed for versions {:?}",
-                versions
+                "Skipping test: {}",
+                $crate::error::Error::HandshakeFailed(versions)
             );
             return $ret;
         }

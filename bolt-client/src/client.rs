@@ -72,21 +72,21 @@ impl Client {
 
     /// Perform a handshake with the Bolt server and agree upon a protocol version to use for the client. Returns the
     /// version that was agreed upon.
-    pub async fn handshake(&mut self, supported_versions: &[u32; 4]) -> Result<u32> {
-        let mut allowed_versions = BytesMut::with_capacity(16);
-        supported_versions
+    pub async fn handshake(&mut self, preferred_versions: &[u32; 4]) -> Result<u32> {
+        let mut preferred_versions_bytes = BytesMut::with_capacity(16);
+        preferred_versions
             .iter()
-            .for_each(|&v| allowed_versions.put_u32(v));
+            .for_each(|&v| preferred_versions_bytes.put_u32(v));
         self.stream.write(&PREAMBLE).await?;
-        self.stream.write_buf(&mut allowed_versions).await?;
+        self.stream.write_buf(&mut preferred_versions_bytes).await?;
         self.stream.flush().await?;
 
         let version: u32 = self.stream.read_u32().await?;
-        if supported_versions.contains(&version) && version > 0 {
+        if preferred_versions.contains(&version) && version > 0 {
             self.version = Some(version);
             Ok(version)
         } else {
-            Err(Error::HandshakeFailed(*supported_versions))
+            Err(Error::HandshakeFailed(*preferred_versions))
         }
     }
 

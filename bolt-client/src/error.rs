@@ -1,17 +1,39 @@
+use bolt_proto::version::*;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Invalid DNS name: {0}")]
+    #[error("invalid DNS name: {0}")]
     InvalidDNSName(String),
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    #[error("Handshake with server failed for versions {0:?}")]
+    #[error("handshake with server failed for versions [{}]", 
+            format_versions(.0))]
     HandshakeFailed([u32; 4]),
-    #[error("Unsupported operation for client with version = {0:?}")]
+    #[error("unsupported operation for client with version = {}",
+            .0.map(|v| format!("Some({})", format_version(v))).unwrap_or_else(|| String::from("None")))]
     UnsupportedOperation(Option<u32>),
     #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
+}
+
+fn format_version(version: u32) -> String {
+    match version {
+        V1_0 => String::from("1.0"),
+        V2_0 => String::from("2.0"),
+        V3_0 => String::from("3.0"),
+        V4_0 => String::from("4.0"),
+        V4_1 => String::from("4.1"),
+        _ => format!("{:#x}", version),
+    }
+}
+
+fn format_versions(versions: &[u32]) -> String {
+    versions
+        .iter()
+        .map(|&v| format_version(v))
+        .collect::<Vec<String>>()
+        .join(", ")
 }
