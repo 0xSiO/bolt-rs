@@ -11,7 +11,7 @@
 //! use tokio::prelude::*;
 //!
 //! use bolt_client::*;
-//! use bolt_proto::{message::*, value::*, Message, Value};
+//! use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -21,8 +21,8 @@
 //!     // create a client that uses a TLS-secured connection.
 //!     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
 //!                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
-//!     // This example demonstrates usage of the v4 protocol
-//!     let handshake_result = client.handshake(&[4, 0, 0, 0]).await;
+//!     // This example demonstrates usage of the v4.1 or v4 protocol
+//!     let handshake_result = client.handshake(&[V4_1, V4_0, 0, 0]).await;
 //! #   skip_if_handshake_failed!(handshake_result, Ok(()));
 //!     
 //!     // Send a HELLO message with authorization details to the server to initialize
@@ -91,13 +91,13 @@
 //! # use tokio::prelude::*;
 //! #
 //! # use bolt_client::*;
-//! # use bolt_proto::{message::*, value::*, Message, Value};
+//! # use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //! #
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! #     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
 //! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
-//! #     let handshake_result = client.handshake(&[3, 0, 0, 0]).await;
+//! #     let handshake_result = client.handshake(&[V3_0, 0, 0, 0]).await;
 //! #     skip_if_handshake_failed!(handshake_result, Ok(()));
 //! #
 //! #     let response: Message = client.hello(
@@ -147,14 +147,14 @@
 //! # use tokio::prelude::*;
 //! #
 //! # use bolt_client::*;
-//! # use bolt_proto::{message::*, value::*, Message, Value};
+//! # use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //! #
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! #     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
 //! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
 //! // For the handshake we want to support versions 1 and 2 only, preferring version 2.
-//! let handshake_result = client.handshake(&[2, 1, 0, 0]).await;
+//! let handshake_result = client.handshake(&[V2_0, V1_0, 0, 0]).await;
 //! #     skip_if_handshake_failed!(handshake_result, Ok(()));
 //!     
 //! // Instead of `hello`, we call `init`, and the user agent string is provided separately.

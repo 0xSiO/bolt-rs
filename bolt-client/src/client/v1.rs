@@ -176,8 +176,7 @@ pub(crate) mod tests {
     use std::env;
     use std::iter::FromIterator;
 
-    use bolt_proto::message::*;
-    use bolt_proto::value::*;
+    use bolt_proto::{message::*, value::*, version::*};
 
     use crate::{skip_if_handshake_failed, Metadata};
 
@@ -202,7 +201,7 @@ pub(crate) mod tests {
         };
 
         let version = client.version.unwrap();
-        if [1_u32, 2_u32].contains(&version) {
+        if [V1_0, V2_0].contains(&version) {
             client
                 .init(
                     "bolt-client/X.Y.Z",
@@ -232,7 +231,7 @@ pub(crate) mod tests {
     }
 
     pub(crate) async fn run_invalid_query(client: &mut Client) -> Result<Message> {
-        if client.version.unwrap() > 2 {
+        if client.version.unwrap() > V2_0 {
             client
                 .run_with_metadata(
                     "RETURN invalid query oof as n;",
@@ -246,7 +245,7 @@ pub(crate) mod tests {
     }
 
     pub(crate) async fn run_valid_query(client: &mut Client) -> Result<Message> {
-        if client.version.unwrap() > 2 {
+        if client.version.unwrap() > V2_0 {
             client
                 .run_with_metadata(
                     "RETURN $some_val as n;",
@@ -261,7 +260,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn init() {
-        let client = new_client(1).await;
+        let client = new_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, true).await.unwrap();
@@ -270,7 +269,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn init_fail() {
-        let client = new_client(1).await;
+        let client = new_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, false).await.unwrap();
@@ -288,7 +287,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn ack_failure() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
@@ -301,7 +300,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn ack_failure_after_ignored() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
@@ -319,7 +318,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn run() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
@@ -328,7 +327,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn run_pipelined() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let messages = vec![
@@ -359,7 +358,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn run_and_pull() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client.run("RETURN 3458376 as n;", None).await.unwrap();
@@ -373,7 +372,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn node_and_rel_creation() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client
@@ -414,7 +413,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn discard_all_fail() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client.discard_all().await.unwrap();
@@ -423,7 +422,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn discard_all() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
@@ -434,7 +433,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn discard_all_and_pull() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
@@ -448,7 +447,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn reset() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
@@ -466,7 +465,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn ignored() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
@@ -480,7 +479,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn v3_method_with_v1_client_fails() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert!(match client.commit().await {
@@ -491,7 +490,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn v3_message_with_v1_client_fails() {
-        let client = get_initialized_client(1).await;
+        let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client.send_message(Message::Commit).await.unwrap();

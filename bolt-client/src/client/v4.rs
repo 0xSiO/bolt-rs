@@ -51,7 +51,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::iter::FromIterator;
 
-    use bolt_proto::value::*;
+    use bolt_proto::{value::*, version::*};
 
     use crate::client::v1::tests::*;
     use crate::skip_if_handshake_failed;
@@ -60,7 +60,7 @@ mod tests {
 
     #[tokio::test]
     async fn hello() {
-        let client = new_client(4).await;
+        let client = new_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, true).await.unwrap();
@@ -69,7 +69,7 @@ mod tests {
 
     #[tokio::test]
     async fn hello_fail() {
-        let client = new_client(4).await;
+        let client = new_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, false).await.unwrap();
@@ -78,7 +78,7 @@ mod tests {
 
     #[tokio::test]
     async fn goodbye() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert!(client.goodbye().await.is_ok());
@@ -86,7 +86,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_with_metadata() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
@@ -95,7 +95,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_with_metadata_pipelined() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let messages = vec![
@@ -136,7 +136,7 @@ mod tests {
     //   - Sending DISCARD with 'n' equal to -1 indicates discard of all records in the result stream.
     #[tokio::test]
     async fn discard() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
 
@@ -172,7 +172,7 @@ mod tests {
     //   - Need to send an 'n' metadata parameter here too, but finite values of n will work here.
     #[tokio::test]
     async fn run_and_pull() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
 
@@ -209,7 +209,7 @@ mod tests {
 
     #[tokio::test]
     async fn begin() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client.begin(None).await.unwrap();
@@ -218,7 +218,7 @@ mod tests {
 
     #[tokio::test]
     async fn commit_empty_transaction() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client.begin(None).await.unwrap();
@@ -228,7 +228,7 @@ mod tests {
 
     #[tokio::test]
     async fn commit() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client.begin(None).await.unwrap();
@@ -272,7 +272,7 @@ mod tests {
 
     #[tokio::test]
     async fn commit_with_no_begin_fails() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client.commit().await.unwrap();
@@ -281,7 +281,7 @@ mod tests {
 
     #[tokio::test]
     async fn rollback_empty_transaction() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client.begin(None).await.unwrap();
@@ -291,7 +291,7 @@ mod tests {
 
     #[tokio::test]
     async fn rollback() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client.begin(None).await.unwrap();
@@ -331,7 +331,7 @@ mod tests {
 
     #[tokio::test]
     async fn rollback_with_no_begin_fails() {
-        let client = get_initialized_client(4).await;
+        let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client.rollback().await.unwrap();

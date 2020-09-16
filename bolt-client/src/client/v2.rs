@@ -4,8 +4,7 @@ mod tests {
 
     use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
-    use bolt_proto::message::*;
-    use bolt_proto::value::*;
+    use bolt_proto::{message::*, value::*, version::*};
 
     use crate::client::v1::tests::*;
     use crate::error::*;
@@ -13,7 +12,7 @@ mod tests {
 
     #[tokio::test]
     async fn init() {
-        let client = new_client(2).await;
+        let client = new_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, true).await.unwrap();
@@ -22,7 +21,7 @@ mod tests {
 
     #[tokio::test]
     async fn init_fail() {
-        let client = new_client(2).await;
+        let client = new_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = initialize_client(&mut client, false).await.unwrap();
@@ -40,7 +39,7 @@ mod tests {
 
     #[tokio::test]
     async fn ack_failure() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
@@ -53,7 +52,7 @@ mod tests {
 
     #[tokio::test]
     async fn ack_failure_after_ignored() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
@@ -71,7 +70,7 @@ mod tests {
 
     #[tokio::test]
     async fn run() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
@@ -80,7 +79,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_pipelined() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let messages = vec![
@@ -111,7 +110,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_and_pull() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client
@@ -151,7 +150,7 @@ mod tests {
 
     #[tokio::test]
     async fn node_and_rel_creation() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client
@@ -200,7 +199,7 @@ mod tests {
 
     #[tokio::test]
     async fn discard_all_fail() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = client.discard_all().await.unwrap();
@@ -209,7 +208,7 @@ mod tests {
 
     #[tokio::test]
     async fn discard_all() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
@@ -220,7 +219,7 @@ mod tests {
 
     #[tokio::test]
     async fn discard_all_and_pull() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_valid_query(&mut client).await.unwrap();
@@ -234,7 +233,7 @@ mod tests {
 
     #[tokio::test]
     async fn reset() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
@@ -252,7 +251,7 @@ mod tests {
 
     #[tokio::test]
     async fn ignored() {
-        let client = get_initialized_client(2).await;
+        let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let response = run_invalid_query(&mut client).await.unwrap();
