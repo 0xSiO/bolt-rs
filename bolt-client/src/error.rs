@@ -9,12 +9,10 @@ pub enum Error {
     InvalidDNSName(String),
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    #[error("handshake with server failed for versions [{}]", 
-            format_versions(.0))]
+    #[error("handshake with server failed for versions [{}]", format_versions(.0))]
     HandshakeFailed([u32; 4]),
-    #[error("unsupported operation for client with version = {}",
-            .0.map(|v| format!("Some({})", format_version(v))).unwrap_or_else(|| String::from("None")))]
-    UnsupportedOperation(Option<u32>),
+    #[error("unsupported operation for client with version = {}", format_version(*.0))]
+    UnsupportedOperation(u32),
     #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
 }

@@ -208,7 +208,6 @@ pub use self::client::Client;
 mod client;
 mod define_value_map;
 pub mod error;
-mod stream;
 
 define_value_map!(Metadata);
 define_value_map!(Params);

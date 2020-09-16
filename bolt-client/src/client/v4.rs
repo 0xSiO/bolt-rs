@@ -1,11 +1,12 @@
 use bolt_client_macros::*;
 use bolt_proto::message::*;
 use bolt_proto::Message;
+use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::error::*;
 use crate::{Client, Metadata};
 
-impl Client {
+impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send a `DISCARD` message to the server.
     ///
     /// # Description
