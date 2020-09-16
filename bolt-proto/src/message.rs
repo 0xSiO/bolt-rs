@@ -5,8 +5,7 @@ use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
 use bytes::{BufMut, Bytes, BytesMut};
-use tokio::io::BufStream;
-use tokio::prelude::*;
+use futures_util::io::{AsyncRead, AsyncReadExt};
 
 pub use ack_failure::AckFailure;
 pub use begin::Begin;
@@ -80,21 +79,23 @@ pub enum Message {
 }
 
 impl Message {
-    pub async fn from_stream<T: Unpin + AsyncRead + AsyncWrite>(
-        buf_stream: &mut BufStream<T>,
-    ) -> Result<Message> {
+    pub async fn from_stream(mut buf_stream: impl AsyncRead + Unpin) -> Result<Message> {
         let mut bytes = BytesMut::new();
         let mut chunk_len = 0;
         // Ignore any no-op messages
         while chunk_len == 0 {
-            chunk_len = buf_stream.read_u16().await?;
+            let mut u16_bytes = [0, 0];
+            buf_stream.read_exact(&mut u16_bytes).await?;
+            chunk_len = u16::from_be_bytes(u16_bytes);
         }
         // Messages end in a 0_u16
         while chunk_len > 0 {
             let mut buf = vec![0; chunk_len as usize];
             buf_stream.read_exact(&mut buf).await?;
             bytes.put_slice(&buf);
-            chunk_len = buf_stream.read_u16().await?;
+            let mut u16_bytes = [0, 0];
+            buf_stream.read_exact(&mut u16_bytes).await?;
+            chunk_len = u16::from_be_bytes(u16_bytes);
         }
         Message::try_from(Arc::new(Mutex::new(bytes.freeze())))
     }
