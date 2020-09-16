@@ -8,21 +8,13 @@
 // PO Box 1866, Mountain View, CA 94042, USA.
 
 use std::convert::TryInto;
-use std::sync::Arc;
 
 use bytes::*;
-use tokio::io::BufStream;
-use tokio::net::{TcpStream, ToSocketAddrs};
-use tokio::prelude::*;
-use tokio_rustls::rustls::ClientConfig;
-use tokio_rustls::webpki::DNSNameRef;
-use tokio_rustls::{webpki, TlsConnector};
-use webpki_roots::TLS_SERVER_ROOTS;
+use futures_util::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use bolt_proto::Message;
 
 use crate::error::*;
-use crate::stream::Stream;
 
 mod v1;
 mod v2;
@@ -34,62 +26,37 @@ const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 
 /// A tokio-based client for Bolt servers.
 #[derive(Debug)]
-pub struct Client {
-    stream: BufStream<Stream>,
-    version: Option<u32>,
+pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
+    stream: S,
+    version: u32,
 }
 
-impl Client {
-    /// Create a new client pointing to the provided server address. If a server domain
-    /// is provided, the client will attempt to connect to the server over a connection
-    /// secured with TLS.
-    pub async fn new(addr: impl ToSocketAddrs, domain: Option<impl Into<String>>) -> Result<Self> {
-        let stream = match domain {
-            Some(domain) => {
-                let domain = domain.into();
-                let tls_connector = Client::configure_tls_connector(&TLS_SERVER_ROOTS);
-                let dns_name_ref = DNSNameRef::try_from_ascii_str(&domain)
-                    .map_err(|_| Error::InvalidDNSName(domain.clone()))?;
-                let stream = TcpStream::connect(addr).await?;
-                Stream::SecureTcp(Box::new(tls_connector.connect(dns_name_ref, stream).await?))
-            }
-            None => Stream::Tcp(TcpStream::connect(addr).await?),
-        };
-        Ok(Client {
-            stream: BufStream::new(stream),
-            version: None,
-        })
-    }
-
-    /// Get the current version of this client.
-    pub fn version(&self) -> &Option<u32> {
-        &self.version
-    }
-
-    fn configure_tls_connector(root_certs: &webpki::TLSServerTrustAnchors) -> TlsConnector {
-        let mut config = ClientConfig::new();
-        config.root_store.add_server_trust_anchors(root_certs);
-        TlsConnector::from(Arc::new(config))
-    }
-
-    /// Perform a handshake with the Bolt server and agree upon a protocol version to
-    /// use for the client. Returns the version that was agreed upon.
-    pub async fn handshake(&mut self, preferred_versions: &[u32; 4]) -> Result<u32> {
+impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
+    /// Attempt to create a new client from an asynchronous stream. A handshake will be
+    /// performed with the provided protocol versions, and, if this succeeds, a Client will be
+    /// returned.
+    pub async fn new(mut stream: S, preferred_versions: &[u32; 4]) -> Result<Self> {
         let mut preferred_versions_bytes = BytesMut::with_capacity(16);
         preferred_versions
             .iter()
             .for_each(|&v| preferred_versions_bytes.put_u32(v));
-        self.stream.write(&PREAMBLE).await?;
-        self.stream.write_buf(&mut preferred_versions_bytes).await?;
-        self.stream.flush().await?;
+        stream.write_all(&PREAMBLE).await?;
+        stream.write_all(&mut preferred_versions_bytes).await?;
+        stream.flush().await?;
 
-        let version: u32 = self.stream.read_u32().await?;
+        let mut u32_bytes = [0, 0, 0, 0];
+        stream.read_exact(&mut u32_bytes).await?;
+        let version = u32::from_be_bytes(u32_bytes);
         if preferred_versions.contains(&version) && version > 0 {
-            self.version = Some(version);
-            Ok(version)
+            Ok(Self { stream, version })
         } else {
             Err(Error::HandshakeFailed(*preferred_versions))
         }
+    }
+
+    /// Get the current version of this client.
+    pub fn version(&self) -> u32 {
+        self.version
     }
 
     pub(crate) async fn read_message(&mut self) -> Result<Message> {
@@ -107,7 +74,7 @@ impl Client {
 
         let chunks: Vec<Bytes> = message.try_into()?;
         for mut chunk in chunks {
-            self.stream.write_buf(&mut chunk).await?;
+            self.stream.write_all(&mut chunk).await?;
         }
         self.stream.flush().await?;
         Ok(())
@@ -149,7 +116,7 @@ impl Client {
 
             let chunks: Vec<Bytes> = message.try_into()?;
             for mut chunk in chunks {
-                self.stream.write_buf(&mut chunk).await?;
+                self.stream.write_all(&mut chunk).await?;
             }
         }
         self.stream.flush().await?;
