@@ -96,8 +96,9 @@ impl ManageConnection for BoltConnectionManager {
     }
 
     fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
-        // There's no good/fast way to check if a tokio TcpStream is still healthy. However, given that the TcpStream
-        // is shut down when the connection object is dropped, we can assume existing connections aren't broken.
+        // There's no good/fast way to check if a tokio TcpStream is still healthy.
+        // However, given that the TcpStream is shut down when the connection object is
+        // dropped, we can assume existing connections aren't broken.
         false
     }
 }

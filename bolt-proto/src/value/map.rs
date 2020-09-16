@@ -52,7 +52,8 @@ impl TryInto<Bytes> for Map {
             value_bytes_vec.push(key_bytes);
             value_bytes_vec.push(val_bytes);
         }
-        // Worst case is a large Map, with marker byte, 32-bit size value, and all the Value bytes
+        // Worst case is a large Map, with marker byte, 32-bit size value, and all the
+        // Value bytes
         let mut bytes = BytesMut::with_capacity(
             mem::size_of::<u8>() + mem::size_of::<u32>() + total_value_bytes,
         );
@@ -176,9 +177,11 @@ mod tests {
         .into();
         let small_len = small_map.value.len();
         let small_bytes = small_map.try_into_bytes().unwrap();
-        // Can't check the whole map since the bytes are in no particular order, check marker/length instead
+        // Can't check the whole map since the bytes are in no particular order, check
+        // marker/length instead
         assert_eq!(small_bytes[0], MARKER_SMALL);
-        // Marker byte, size (u8), then list of 2-byte String (marker, value) + 1-byte tiny ints
+        // Marker byte, size (u8), then list of 2-byte String (marker, value) + 1-byte
+        // tiny ints
         assert_eq!(small_bytes.len(), 2 + small_len * 3);
     }
 

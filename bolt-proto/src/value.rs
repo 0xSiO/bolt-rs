@@ -56,11 +56,13 @@ pub(crate) mod unbound_relationship;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
-/// Conversions are provided for most types, and are usually pretty intuitive ([`bool`] to [`Value::Boolean`], [`i32`]
-/// to [`Value::Integer`], [`HashMap`](std::collections::HashMap) to [`Value::Map`], etc.), but some types have no
-/// analog in Rust, like a timezone-aware time. For such types, conversions are still provided, but may feel a bit
-/// clunky (for example, you can convert a `(`[`NaiveTime`](chrono::NaiveTime)`, impl `[`Offset`](chrono::Offset)`)`
-/// tuple into a [`Value::Time`]).
+/// Conversions are provided for most types, and are usually pretty intuitive ([`bool`] to
+/// [`Value::Boolean`], [`i32`] to [`Value::Integer`],
+/// [`HashMap`](std::collections::HashMap) to [`Value::Map`], etc.), but some types have
+/// no analog in Rust, like a timezone-aware time. For such types, conversions are still
+/// provided, but may feel a bit clunky (for example, you can convert a
+/// `(`[`NaiveTime`](chrono::NaiveTime)`, impl `[`Offset`](chrono::Offset)`)` tuple into a
+/// [`Value::Time`]).
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     // V1-compatible value types
@@ -90,7 +92,8 @@ pub enum Value {
 }
 
 #[allow(clippy::derive_hash_xor_eq)]
-// We implement Hash here despite deriving PartialEq because f64 and HashMap cannot be hashed and must panic
+// We implement Hash here despite deriving PartialEq because f64 and HashMap cannot be
+// hashed and must panic
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {

@@ -9,13 +9,14 @@ impl Client {
     /// Send a `HELLO` message to the server.
     ///
     /// # Description
-    /// This message is the equivalent of `INIT` for Bolt v3+ clients, but the client name and auth token are merged
-    /// into a single metadata object.
+    /// This message is the equivalent of `INIT` for Bolt v3+ clients, but the client name
+    /// and auth token are merged into a single metadata object.
     ///
     /// # Response
     /// - `SUCCESS {…}` if initialization has completed successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if initialization
-    ///     cannot be performed at this time, or if the authorization failed.
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
+    ///   if initialization cannot be performed at this time, or if the authorization
+    ///   failed.
     #[bolt_version(3, 4, 4.1)]
     pub async fn hello(&mut self, metadata: Option<Metadata>) -> Result<Message> {
         let hello_msg = Hello::new(metadata.unwrap_or_default().value);
@@ -26,8 +27,8 @@ impl Client {
     /// Send a `GOODBYE` message to the server.
     ///
     /// # Description
-    /// The `GOODBYE` message is a Bolt v3+ client message used to end the session. The server will end the connection
-    /// upon receipt of this message.
+    /// The `GOODBYE` message is a Bolt v3+ client message used to end the session. The
+    /// server will end the connection upon receipt of this message.
     #[bolt_version(3, 4, 4.1)]
     pub async fn goodbye(&mut self) -> Result<()> {
         self.send_message(Message::Goodbye).await?;
@@ -37,13 +38,13 @@ impl Client {
     /// Send a `RUN_WITH_METADATA` message to the server.
     ///
     /// # Description
-    /// This message is the equivalent of `RUN` for Bolt v3+ clients, but allows passing an arbitrary metadata hash
-    /// along with the request.
+    /// This message is the equivalent of `RUN` for Bolt v3+ clients, but allows passing
+    /// an arbitrary metadata hash along with the request.
     ///
     /// # Response
     /// - `SUCCESS {…​}` if the statement has been accepted for execution
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or if a statement may not be executed at this
-    ///     time
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or
+    ///   if a statement may not be executed at this time
     #[bolt_version(3, 4, 4.1)]
     pub async fn run_with_metadata(
         &mut self,
@@ -63,11 +64,13 @@ impl Client {
     /// Send a `BEGIN` message to the server.
     ///
     /// # Description
-    /// This Bolt v3+ message begins a transaction. A hash of arbitrary metadata can be passed along with the request.
+    /// This Bolt v3+ message begins a transaction. A hash of arbitrary metadata can be
+    /// passed along with the request.
     ///
     /// # Response
     /// - `SUCCESS {…}` if transaction has started successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be started
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
+    ///   if transaction could not be started
     #[bolt_version(3, 4, 4.1)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> Result<Message> {
         let begin_msg = Begin::new(metadata.unwrap_or_default().value);
@@ -78,12 +81,14 @@ impl Client {
     /// Send a `COMMIT` message to the server.
     ///
     /// # Description
-    /// This Bolt v3+ message commits a transaction. Any changes made since the transaction was started will be
-    /// persisted to the database. To instead cancel pending changes, send a `ROLLBACK` message.
+    /// This Bolt v3+ message commits a transaction. Any changes made since the
+    /// transaction was started will be persisted to the database. To instead cancel
+    /// pending changes, send a `ROLLBACK` message.
     ///
     /// # Response
     /// - `SUCCESS {…}` if transaction has been committed successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be committed
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
+    ///   if transaction could not be committed
     #[bolt_version(3, 4, 4.1)]
     pub async fn commit(&mut self) -> Result<Message> {
         self.send_message(Message::Commit).await?;
@@ -93,12 +98,14 @@ impl Client {
     /// Send a `ROLLBACK` message to the server.
     ///
     /// # Description
-    /// This Bolt v3+ message cancels a transaction. Any changes made since the transaction was started will be undone.
-    /// To instead keep pending changes, send a `COMMIT` message.
+    /// This Bolt v3+ message cancels a transaction. Any changes made since the
+    /// transaction was started will be undone. To instead keep pending changes, send a
+    /// `COMMIT` message.
     ///
     /// # Response
     /// - `SUCCESS {…}` if transaction has been rolled back successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if transaction could not be rolled back
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
+    ///   if transaction could not be rolled back
     #[bolt_version(3, 4, 4.1)]
     pub async fn rollback(&mut self) -> Result<Message> {
         self.send_message(Message::Rollback).await?;

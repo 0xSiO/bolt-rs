@@ -81,11 +81,14 @@ mod tests {
     }
 
     // Current Neo4j behavior:
-    //   - Sending DISCARD without 'n' metadata parameter results in a Neo.ClientError.Request.Invalid, saying
-    //     "Expecting DISCARD size n to be a Long value, but got: NO_VALUE"
-    //   - Sending DISCARD with 'n' equal to some number results in a Neo.DatabaseError.General.UnknownError, saying
-    //     "Currently it is only supported to discard ALL records, but it was requested to discard " + n
-    //   - Sending DISCARD with 'n' equal to -1 indicates discard of all records in the result stream.
+    //   - Sending DISCARD without 'n' metadata parameter results in a
+    //     Neo.ClientError.Request.Invalid, saying "Expecting DISCARD size n to be a Long
+    //     value, but got: NO_VALUE"
+    //   - Sending DISCARD with 'n' equal to some number results in a
+    //     Neo.DatabaseError.General.UnknownError, saying "Currently it is only supported
+    //     to discard ALL records, but it was requested to discard " + n
+    //   - Sending DISCARD with 'n' equal to -1 indicates discard of all records in the
+    //     result stream.
     #[tokio::test]
     async fn discard() {
         let client = get_initialized_client(V4_1).await;
@@ -121,7 +124,8 @@ mod tests {
     }
 
     // Current Neo4j behavior:
-    //   - Need to send an 'n' metadata parameter here too, but finite values of n will work here.
+    //   - Need to send an 'n' metadata parameter here too, but finite values of n will
+    //     work here.
     #[tokio::test]
     async fn run_and_pull() {
         let client = get_initialized_client(V4_1).await;

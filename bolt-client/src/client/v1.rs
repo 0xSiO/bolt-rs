@@ -9,17 +9,19 @@ impl Client {
     /// Send an `INIT` message to the server.
     ///
     /// # Description
-    /// The `INIT` message is a Bolt v1 - v2 client message used once to initialize the session. For Bolt v3+, see
-    /// [`hello`](Client::hello).
+    /// The `INIT` message is a Bolt v1 - v2 client message used once to initialize the
+    /// session. For Bolt v3+, see [`hello`](Client::hello).
     ///
-    /// This message is always the first message the client sends after negotiating protocol version via the initial
-    /// handshake. Sending any message other than `INIT` as the first message to the server will result in a `FAILURE`.
-    /// The client must acknowledge failures using `ACK_FAILURE`, after which `INIT` may be reattempted.
+    /// This message is always the first message the client sends after negotiating
+    /// protocol version via the initial handshake. Sending any message other than `INIT`
+    /// as the first message to the server will result in a `FAILURE`. The client must
+    /// acknowledge failures using `ACK_FAILURE`, after which `INIT` may be reattempted.
     ///
     /// # Response
     /// - `SUCCESS {…}` if initialization has completed successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or if initialization
-    ///     cannot be performed at this time, or if the authorization failed.
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
+    ///   if initialization cannot be performed at this time, or if the authorization
+    ///   failed.
     #[bolt_version(1, 2)]
     pub async fn init(
         &mut self,
@@ -34,31 +36,34 @@ impl Client {
     /// Send a `RUN` message to the server.
     ///
     /// # Description
-    /// The `RUN` message is a Bolt v1 - v2 client message used to pass a statement for execution on the server. For
-    /// Bolt v3+, see [`run_with_metadata`](Client::run_with_metadata).
+    /// The `RUN` message is a Bolt v1 - v2 client message used to pass a statement for
+    /// execution on the server.
+    /// For Bolt v3+, see [`run_with_metadata`](Client::run_with_metadata).
     ///
-    /// On receipt of a `RUN` message, the server will start a new job by executing the statement with the parameters
-    /// (optionally) supplied. If successful, the subsequent response will consist of a single `SUCCESS` message; if
-    /// not, a `FAILURE` response will be sent instead. A successful job will always produce a result stream which must
-    /// then be explicitly consumed (via `PULL_ALL` or `DISCARD_ALL`), even if empty.
+    /// On receipt of a `RUN` message, the server will start a new job by executing the
+    /// statement with the parameters (optionally) supplied. If successful, the subsequent
+    /// response will consist of a single `SUCCESS` message; if not, a `FAILURE` response
+    /// will be sent instead. A successful job will always produce a result stream which
+    /// must then be explicitly consumed (via `PULL_ALL` or `DISCARD_ALL`), even if empty.
     ///
-    /// Depending on the statement you are executing, additional metadata may be returned in both the `SUCCESS` message
-    /// from the `RUN`, as well as in the final `SUCCESS` after the stream has been consumed. It is up to the statement
-    /// you are running to determine what meta data to return. Notably, most queries will contain a `fields` metadata
-    /// section in the `SUCCESS` message for the RUN statement, which lists the result record field names, and a
-    /// `result_available_after` section measuring the number of milliseconds it took for the results to be available
-    /// for consumption.
+    /// Depending on the statement you are executing, additional metadata may be returned
+    /// in both the `SUCCESS` message from the `RUN`, as well as in the final `SUCCESS`
+    /// after the stream has been consumed. It is up to the statement you are running to
+    /// determine what metadata to return. Notably, most queries will contain a `fields`
+    /// metadata section in the `SUCCESS` message for the RUN statement, which lists the
+    /// result record field names, and a `result_available_after` section measuring the
+    /// number of milliseconds it took for the results to be available for consumption.
     ///
-    /// In the case where a previous result stream has not yet been fully consumed, an attempt to `RUN` a new job will
-    /// trigger a `FAILURE` response.
+    /// In the case where a previous result stream has not yet been fully consumed, an
+    /// attempt to `RUN` a new job will trigger a `FAILURE` response.
     ///
-    /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
-    /// single `IGNORED` message and take no further action.
+    /// If an unacknowledged failure is pending from a previous exchange, the server will
+    /// immediately respond with a single `IGNORED` message and take no further action.
     ///
     /// # Response
     /// - `SUCCESS {…}` if the statement has been accepted for execution
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or if a statement may not be executed at this
-    ///     time
+    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or
+    ///   if a statement may not be executed at this time
     #[bolt_version(1, 2)]
     pub async fn run(
         &mut self,
@@ -73,43 +78,51 @@ impl Client {
     /// Send a `DISCARD_ALL` message to the server.
     ///
     /// # Description
-    /// The `DISCARD_ALL` message is a Bolt v1 - v3 client message used to discard all remaining items from the active
-    /// result stream. For Bolt v4, see [`discard`](Client::discard).
+    /// The `DISCARD_ALL` message is a Bolt v1 - v3 client message used to discard all
+    /// remaining items from the active result stream. For Bolt v4, see
+    /// [`discard`](Client::discard).
     ///
-    /// On receipt of a `DISCARD_ALL` message, the server will dispose of all remaining items from the active result
-    /// stream, close the stream and send a single `SUCCESS` message to the client. If no result stream is currently
-    /// active, the server will respond with a single `FAILURE` message.
+    /// On receipt of a `DISCARD_ALL` message, the server will dispose of all remaining
+    /// items from the active result stream, close the stream and send a single `SUCCESS`
+    /// message to the client. If no result stream is currently active, the server will
+    /// respond with a single `FAILURE` message.
     ///
-    /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
-    /// single `IGNORED` message and take no further action.
+    /// If an unacknowledged failure is pending from a previous exchange, the server will
+    /// immediately respond with a single `IGNORED` message and take no further action.
     ///
     /// # Response
     /// - `SUCCESS {…}` if the result stream has been successfully discarded
-    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
+    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
+    ///   available
     #[bolt_version(1, 2, 3)]
     pub async fn discard_all(&mut self) -> Result<Message> {
         self.send_message(Message::DiscardAll).await?;
         self.read_message().await
     }
 
-    /// Send a `PULL_ALL` message to the server. Returns a tuple containing a [`Vec`] of the records returned from the
-    /// server as well as the summary message (`SUCCESS` or `FAILURE`).
+    /// Send a `PULL_ALL` message to the server. Returns a tuple containing a [`Vec`] of
+    /// the records returned from the server as well as the summary message (`SUCCESS` or
+    /// `FAILURE`).
     ///
     /// # Description
-    /// The `PULL_ALL` message is a Bolt v1 - v3 client message used to retrieve all remaining items from the active
-    /// result stream. For Bolt v4, see [`pull`](Client::pull).
+    /// The `PULL_ALL` message is a Bolt v1 - v3 client message used to retrieve all
+    /// remaining items from the active result stream. For Bolt v4, see
+    /// [`pull`](Client::pull).
     ///
-    /// On receipt of a `PULL_ALL` message, the server will send all remaining result data items to the client, each in
-    /// a single `RECORD` message. The server will then close the stream and send a single `SUCCESS` message optionally
-    /// containing summary information on the data items sent. If an error is encountered, the server must instead send
-    /// a `FAILURE` message, discard all remaining data items and close the stream.
+    /// On receipt of a `PULL_ALL` message, the server will send all remaining result data
+    /// items to the client, each in a single `RECORD` message. The server will then close
+    /// the stream and send a single `SUCCESS` message optionally containing summary
+    /// information on the data items sent. If an error is encountered, the server must
+    /// instead send a `FAILURE` message, discard all remaining data items and close the
+    /// stream.
     ///
-    /// If an unacknowledged failure is pending from a previous exchange, the server will immediately respond with a
-    /// single `IGNORED` message and take no further action.
+    /// If an unacknowledged failure is pending from a previous exchange, the server will
+    /// immediately respond with a single `IGNORED` message and take no further action.
     ///
     /// # Response
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
-    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available or if retrieval fails
+    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
+    ///   available or if retrieval fails
     #[bolt_version(1, 2, 3)]
     pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>)> {
         self.send_message(Message::PullAll).await?;
@@ -125,16 +138,19 @@ impl Client {
     /// Send an `ACK_FAILURE` message to the server.
     ///
     /// # Description
-    /// The `ACK_FAILURE` message is a Bolt v1 - v2 client message used to acknowledge a failure the server has sent.
+    /// The `ACK_FAILURE` message is a Bolt v1 - v2 client message used to acknowledge a
+    /// failure the server has sent.
     ///
     /// The following actions are performed by `ACK_FAILURE`:
     /// - clear any outstanding `FAILURE` state
     ///
-    /// In some cases, it may be preferable to use `RESET` after a failure, to clear the entire state of the connection.
+    /// In some cases, it may be preferable to use `RESET` after a failure, to clear the
+    /// entire state of the connection.
     ///
     /// # Response
     /// - `SUCCESS {…}` if the session was successfully reset
-    /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting to be cleared
+    /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting
+    ///   to be cleared
     #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> Result<Message> {
         self.send_message(Message::AckFailure).await?;
@@ -144,11 +160,13 @@ impl Client {
     /// Send a `RESET` message to the server.
     ///
     /// # Description
-    /// The `RESET` message is a client message used to return the current session to a "clean" state. It will cause the
-    /// session to `IGNORE` any message it is currently processing, as well as any message before `RESET` that had not
-    /// yet begun processing. This allows `RESET` to abort long-running operations. It also means clients must be
-    /// careful about pipelining `RESET`. Only send this if you are not currently waiting for a result from a prior
-    /// message, or if you want to explicitly abort any prior message.
+    /// The `RESET` message is a client message used to return the current session to a
+    /// "clean" state. It will cause the session to `IGNORE` any message it is currently
+    /// processing, as well as any message before `RESET` that had not yet begun
+    /// processing. This allows `RESET` to abort long-running operations. It also means
+    /// clients must be careful about pipelining `RESET`. Only send this if you are not
+    /// currently waiting for a result from a prior message, or if you want to explicitly
+    /// abort any prior message.
     ///
     /// The following actions are performed by `RESET`:
     /// - force any currently processing message to abort with `IGNORED`
@@ -157,12 +175,13 @@ impl Client {
     /// - dispose of any outstanding result records
     /// - rollback the current transaction (if any)
     ///
-    /// For Bolt v1 - v2, see [`ack_failure`](Client::ack_failure) for sending a message that only clears `FAILURE`
-    /// state.
+    /// For Bolt v1 - v2, see [`ack_failure`](Client::ack_failure) for sending a message
+    /// that only clears `FAILURE` state.
     ///
     /// # Response
     /// - `SUCCESS {…}` if the session was successfully reset
-    /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently possible
+    /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently
+    ///   possible
     #[bolt_version(1, 2, 3, 4, 4.1)]
     pub async fn reset(&mut self) -> Result<Message> {
         self.send_message(Message::Reset).await?;

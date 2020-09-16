@@ -13,8 +13,8 @@ pub struct DateTimeZoned {
     pub(crate) zone_id: String,
 }
 
-// Can't impl<T: TimeZone> From<DateTime<T>> for DateTimeZoned, since we can't get a timezone name from an Offset
-// Provide separate conversion instead
+// Can't impl<T: TimeZone> From<DateTime<T>> for DateTimeZoned, since we can't get a
+// timezone name from an Offset. Provide separate conversion instead
 impl From<(NaiveDateTime, Tz)> for DateTimeZoned {
     fn from(pair: (NaiveDateTime, Tz)) -> Self {
         Self {
