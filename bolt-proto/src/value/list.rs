@@ -47,7 +47,8 @@ impl TryInto<Bytes> for List {
             total_value_bytes += value_bytes.len();
             value_bytes_vec.push(value_bytes);
         }
-        // Worst case is a large List, with marker byte, 32-bit size value, and all the Value bytes
+        // Worst case is a large List, with marker byte, 32-bit size value, and all the
+        // Value bytes
         let mut bytes = BytesMut::with_capacity(
             mem::size_of::<u8>() + mem::size_of::<u32>() + total_value_bytes,
         );

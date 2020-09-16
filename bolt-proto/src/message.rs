@@ -199,8 +199,8 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Message {
                     }
                 }
                 run::SIGNATURE => {
-                    // Equal to run_with_metadata::SIGNATURE, so we have to check for metadata.
-                    // RUN has 2 fields, while RUN_WITH_METADATA has 3.
+                    // Equal to run_with_metadata::SIGNATURE, so we have to check for
+                    // metadata. RUN has 2 fields, while RUN_WITH_METADATA has 3.
                     if marker == run::MARKER {
                         Ok(Message::Run(Run::try_from(input_arc)?))
                     } else {
@@ -250,7 +250,8 @@ impl TryInto<Vec<Bytes>> for Message {
     fn try_into(self) -> Result<Vec<Bytes>> {
         let bytes: Bytes = self.try_into_bytes()?;
 
-        // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
+        // Big enough to hold all the chunks, plus a partial chunk, plus the message
+        // footer
         let mut result: Vec<Bytes> = Vec::with_capacity(bytes.len() / CHUNK_SIZE + 2);
         for slice in bytes.chunks(CHUNK_SIZE) {
             // 16-bit size, then the chunk data

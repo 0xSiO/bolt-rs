@@ -9,12 +9,13 @@ impl Client {
     /// Send a `DISCARD` message to the server.
     ///
     /// # Description
-    /// This message is the equivalent of `DISCARD_ALL` for Bolt v4+ clients, but allows passing an arbitrary metadata
-    /// hash along with the request.
+    /// This message is the equivalent of `DISCARD_ALL` for Bolt v4+ clients, but allows
+    /// passing an arbitrary metadata hash along with the request.
     ///
     /// # Response
     /// - `SUCCESS {…}` if the result stream has been successfully discarded
-    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available
+    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
+    ///   available
     #[bolt_version(4, 4.1)]
     pub async fn discard(&mut self, metadata: Option<Metadata>) -> Result<Message> {
         let discard_msg = Discard::new(metadata.unwrap_or_default().value);
@@ -25,12 +26,13 @@ impl Client {
     /// Send a `PULL` message to the server.
     ///
     /// # Description
-    /// This message is the equivalent of `PULL_ALL` for Bolt v4+ clients, but allows passing an arbitrary metadata hash
-    /// along with the request.
+    /// This message is the equivalent of `PULL_ALL` for Bolt v4+ clients, but allows
+    /// passing an arbitrary metadata hash along with the request.
     ///
     /// # Response
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
-    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently available or if retrieval fails
+    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
+    ///   available or if retrieval fails
     #[bolt_version(4, 4.1)]
     pub async fn pull(&mut self, metadata: Option<Metadata>) -> Result<(Message, Vec<Record>)> {
         let pull_msg = Pull::new(metadata.unwrap_or_default().value);
@@ -129,11 +131,14 @@ mod tests {
     }
 
     // Current Neo4j behavior:
-    //   - Sending DISCARD without 'n' metadata parameter results in a Neo.ClientError.Request.Invalid, saying
-    //     "Expecting DISCARD size n to be a Long value, but got: NO_VALUE"
-    //   - Sending DISCARD with 'n' equal to some number results in a Neo.DatabaseError.General.UnknownError, saying
-    //     "Currently it is only supported to discard ALL records, but it was requested to discard " + n
-    //   - Sending DISCARD with 'n' equal to -1 indicates discard of all records in the result stream.
+    //   - Sending DISCARD without 'n' metadata parameter results in a
+    //     Neo.ClientError.Request.Invalid, saying "Expecting DISCARD size n to be a Long
+    //     value, but got: NO_VALUE"
+    //   - Sending DISCARD with 'n' equal to some number results in a
+    //     Neo.DatabaseError.General.UnknownError, saying "Currently it is only supported
+    //     to discard ALL records, but it was requested to discard " + n
+    //   - Sending DISCARD with 'n' equal to -1 indicates discard of all records in the
+    //     result stream.
     #[tokio::test]
     async fn discard() {
         let client = get_initialized_client(V4_0).await;
@@ -169,7 +174,8 @@ mod tests {
     }
 
     // Current Neo4j behavior:
-    //   - Need to send an 'n' metadata parameter here too, but finite values of n will work here.
+    //   - Need to send an 'n' metadata parameter here too, but finite values of n will
+    //     work here.
     #[tokio::test]
     async fn run_and_pull() {
         let client = get_initialized_client(V4_0).await;

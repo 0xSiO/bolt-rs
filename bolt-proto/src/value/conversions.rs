@@ -122,7 +122,8 @@ impl<T: TimeZone> From<DateTime<T>> for Value {
     }
 }
 
-// Can't decide between Offset or Zoned variant at runtime if using a T: TimeZone, so provide a separate conversion
+// Can't decide between Offset or Zoned variant at runtime if using a T: TimeZone, so
+// provide a separate conversion
 impl From<(NaiveDateTime, chrono_tz::Tz)> for Value {
     fn from(pair: (NaiveDateTime, chrono_tz::Tz)) -> Self {
         Value::DateTimeZoned(DateTimeZoned::from(pair))
@@ -352,16 +353,19 @@ impl TryFrom<Value> for DateTime<FixedOffset> {
                 // Time zone guaranteed to be valid in existing objects, ok to unwrap
                 let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
                 let timezone: FixedOffset = timezone
-                    // Get the fixed offset (e.g. Pacific Daylight vs. Pacific Standard) for the given point in time
+                    // Get the fixed offset (e.g. Pacific Daylight vs. Pacific Standard)
+                    // for the given point in time
                     .offset_from_utc_datetime(
                         &NaiveDateTime::from_timestamp_opt(date_time_zoned.epoch_seconds, 0)
-                            // epoch_seconds is guaranteed to be a valid timestamp, ok to unwrap
+                            // epoch_seconds is guaranteed to be a valid timestamp, ok to
+                            // unwrap
                             .unwrap(),
                     )
                     .fix();
                 Ok(timezone
                     .timestamp_opt(date_time_zoned.epoch_seconds, date_time_zoned.nanos as u32)
-                    // epoch_seconds and nanos are guaranteed to be valid in existing objects, ok to unwrap
+                    // epoch_seconds and nanos are guaranteed to be valid in existing
+                    // objects, ok to unwrap
                     .unwrap())
             }
             _ => Err(ConversionError::FromValue(value).into()),
@@ -379,7 +383,8 @@ impl TryFrom<Value> for DateTime<Tz> {
                 let timezone: Tz = date_time_zoned.zone_id.parse().unwrap();
                 Ok(timezone
                     .timestamp_opt(date_time_zoned.epoch_seconds, date_time_zoned.nanos as u32)
-                    // epoch_seconds and nanos are guaranteed to be valid in existing objects, ok to unwrap
+                    // epoch_seconds and nanos are guaranteed to be valid in existing
+                    // objects, ok to unwrap
                     .unwrap())
             }
             _ => Err(ConversionError::FromValue(value).into()),
@@ -395,8 +400,8 @@ impl TryFrom<Value> for NaiveTime {
             Value::LocalTime(local_time) => {
                 let seconds = (local_time.nanos_since_midnight / 1_000_000_000) as u32;
                 let nanos = (local_time.nanos_since_midnight % 1_000_000_000) as u32;
-                // We created the LocalTime from a NaiveTime, so it can easily be converted back without worrying about
-                // a panic occurring
+                // We created the LocalTime from a NaiveTime, so it can easily be
+                // converted back without worrying about a panic occurring
                 Ok(NaiveTime::from_num_seconds_from_midnight(seconds, nanos))
             }
             _ => Err(ConversionError::FromValue(value).into()),
@@ -409,8 +414,8 @@ impl TryFrom<Value> for NaiveDateTime {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            // We created the LocalDateTime from a NaiveDateTime, so it can easily be converted back without worrying
-            // about a panic occurring
+            // We created the LocalDateTime from a NaiveDateTime, so it can easily be
+            // converted back without worrying about a panic occurring
             Value::LocalDateTime(local_date_time) => Ok(NaiveDateTime::from_timestamp(
                 local_date_time.epoch_seconds,
                 local_date_time.nanos as u32,
@@ -420,8 +425,9 @@ impl TryFrom<Value> for NaiveDateTime {
     }
 }
 
-// We cannot convert to std::time::Duration, since months are not well-defined in terms of seconds, and our Duration can
-// hold quantities that are impossible to hold in a std::time::Duration (like negative durations).
+// We cannot convert to std::time::Duration, since months are not well-defined in terms of
+// seconds, and our Duration can hold quantities that are impossible to hold in a
+// std::time::Duration (like negative durations).
 impl_try_from_value!(Duration, Duration);
 
 impl_try_from_value!(Point2D, Point2D);

@@ -1,7 +1,8 @@
 //! An asynchronous client for Bolt-compatible servers.
 //!
 //! # Example
-//! The below example demonstrates how to communicate with a Neo4j server using Bolt protocol version 4.
+//! The below example demonstrates how to communicate with a Neo4j server using Bolt
+//! protocol version 4.
 //! ```
 //! use std::collections::HashMap;
 //! use std::convert::TryFrom;
@@ -79,9 +80,10 @@
 //! }
 //! ```
 //!
-//! For version 3 of the protocol, the above example would simply use [`Client::pull_all`] instead of [`Client::pull`].
-//! In version 4, note that we must pass metadata to `PULL` to indicate how many records we wish to consume, but in
-//! version 3 this metadata is not required (i.e. all records are consumed).
+//! For version 3 of the protocol, the above example would simply use [`Client::pull_all`]
+//! instead of [`Client::pull`]. In version 4, note that we must pass metadata to `PULL`
+//! to indicate how many records we wish to consume, but in version 3 this metadata is not
+//! required (i.e. all records are consumed).
 //! ```
 //! # use std::collections::HashMap;
 //! # use std::convert::TryFrom;
@@ -198,7 +200,8 @@
 //! #     Ok(())
 //! # }
 //! ```
-//! See the documentation of the [`Client`] struct for information on transaction management, error handling, and more.
+//! See the documentation of the [`Client`] struct for information on transaction
+//! management, error handling, and more.
 #[doc(inline)]
 pub use self::client::Client;
 
