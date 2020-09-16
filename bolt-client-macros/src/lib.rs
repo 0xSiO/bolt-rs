@@ -30,10 +30,10 @@ fn get_fn_info(
                         let minor = (version.fract() * 10.0).round() as u32;
                         minor << 8 | major
                     }
-                    _ => panic!("Invalid version token: {:?}", lit),
+                    _ => panic!("invalid version token: {:?}", lit),
                 }
             } else {
-                panic!("Invalid version token: {:?}", item);
+                panic!("invalid version token: {:?}", item);
             }
         })
         .collect();

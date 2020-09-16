@@ -10,7 +10,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    #[error("Value too large (size: {0})")]
+    #[error("value too large (size: {0})")]
     ValueTooLarge(usize),
     #[error(transparent)]
     ConversionError(#[from] ConversionError),
@@ -20,20 +20,20 @@ pub enum Error {
 
 #[derive(Debug, Error)]
 pub enum ConversionError {
-    #[error("Invalid conversion from value {0:?}")]
+    #[error("invalid conversion from value {0:?}")]
     FromValue(Value),
-    #[error("Invalid conversion from message {0:?}")]
+    #[error("invalid conversion from message {0:?}")]
     FromMessage(Message),
 }
 
 #[derive(Debug, Error)]
 pub enum DeserializationError {
-    #[error("Panicked during deserialization")]
+    #[error("panicked during deserialization")]
     Panicked,
-    #[error("Invalid marker byte: {0:x}")]
+    #[error("invalid marker byte: {0:x}")]
     InvalidMarkerByte(u8),
-    #[error("Invalid signature byte: {0:x}")]
+    #[error("invalid signature byte: {0:x}")]
     InvalidSignatureByte(u8),
-    #[error("String deserialization failed: {0}")]
+    #[error("string deserialization failed: {0}")]
     InvalidUTF8(#[from] Utf8Error),
 }

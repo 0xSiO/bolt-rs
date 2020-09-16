@@ -42,11 +42,11 @@ impl BoltConnectionManager {
 pub enum Error {
     #[error(transparent)]
     IOError(#[from] std::io::Error),
-    #[error("Invalid host address.")]
+    #[error("invalid host address.")]
     InvalidAddress,
-    #[error("Invalid client version: {0:#x}")]
+    #[error("invalid client version: {0:#x}")]
     InvalidClientVersion(u32),
-    #[error("Initialization of client failed: {0}")]
+    #[error("initialization of client failed: {0}")]
     ClientInitFailed(String),
     #[error(transparent)]
     ClientError(#[from] bolt_client::error::Error),
