@@ -12,7 +12,7 @@
 //! use tokio::io::BufStream;
 //! use tokio_util::compat::*;
 //!
-//! use bolt_client::{*, stream::Stream};
+//! use bolt_client::*;
 //! use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //!
 //! #[tokio::main]
@@ -97,7 +97,7 @@
 //! # use tokio::io::BufStream;
 //! # use tokio_util::compat::*;
 //! #
-//! # use bolt_client::{*, stream::Stream};
+//! # use bolt_client::*;
 //! # use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //! #
 //! # #[tokio::main]
@@ -159,7 +159,7 @@
 //! # use tokio::io::BufStream;
 //! # use tokio_util::compat::*;
 //! #
-//! # use bolt_client::{*, stream::Stream};
+//! # use bolt_client::*;
 //! # use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //! #
 //! # #[tokio::main]
@@ -223,7 +223,10 @@ mod define_value_map;
 pub mod error;
 
 #[cfg(feature = "tokio-stream")]
-pub mod stream;
+mod stream;
+
+#[cfg(feature = "tokio-stream")]
+pub use stream::Stream;
 
 define_value_map!(Metadata);
 define_value_map!(Params);
