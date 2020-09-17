@@ -192,27 +192,43 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::convert::TryFrom;
-    use std::env;
-    use std::iter::FromIterator;
+    use std::{convert::TryFrom, env, iter::FromIterator, sync::Arc};
 
     use bolt_proto::{message::*, value::*, version::*};
+    use tokio::net::TcpStream;
+    use tokio_rustls::{rustls::ClientConfig, webpki::DNSNameRef, TlsConnector};
+    use tokio_util::compat::*;
 
-    use crate::{skip_if_handshake_failed, Metadata};
+    use crate::{skip_if_handshake_failed, stream::Stream, Metadata};
 
     use super::*;
 
-    pub(crate) async fn new_client(version: u32) -> Result<Client> {
-        let mut client = Client::new(
-            env::var("BOLT_TEST_ADDR").unwrap(),
-            env::var("BOLT_TEST_DOMAIN").ok(),
-        )
-        .await?;
-        client.handshake(&[version, 0, 0, 0]).await?;
-        Ok(client)
+    pub(crate) async fn new_client(version: u32) -> Result<Client<Stream>> {
+        let stream = TcpStream::connect(env::var("BOLT_TEST_ADDR").unwrap()).await?;
+        // Choose between TCP and secure TCP at runtime
+        match env::var("BOLT_TEST_DOMAIN") {
+            Ok(domain) => {
+                let mut config = ClientConfig::new();
+                config
+                    .root_store
+                    .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
+                let dns_name_ref = DNSNameRef::try_from_ascii_str(&domain).unwrap();
+                let stream = Stream::SecureTcp(
+                    TlsConnector::from(Arc::new(config))
+                        .connect(dns_name_ref, stream)
+                        .await?
+                        .compat(),
+                );
+                Ok(Client::new(stream, &[version, 0, 0, 0]).await?)
+            }
+            Err(_) => Ok(Client::new(Stream::Tcp(stream.compat()), &[version, 0, 0, 0]).await?),
+        }
     }
 
-    pub(crate) async fn initialize_client(client: &mut Client, succeed: bool) -> Result<Message> {
+    pub(crate) async fn initialize_client(
+        client: &mut Client<Stream>,
+        succeed: bool,
+    ) -> Result<Message> {
         let username = env::var("BOLT_TEST_USERNAME").unwrap();
         let password = if succeed {
             env::var("BOLT_TEST_PASSWORD").unwrap()
@@ -220,7 +236,7 @@ pub(crate) mod tests {
             String::from("invalid")
         };
 
-        let version = client.version.unwrap();
+        let version = client.version();
         if [V1_0, V2_0].contains(&version) {
             client
                 .init(
@@ -244,14 +260,14 @@ pub(crate) mod tests {
         }
     }
 
-    pub(crate) async fn get_initialized_client(version: u32) -> Result<Client> {
+    pub(crate) async fn get_initialized_client(version: u32) -> Result<Client<Stream>> {
         let mut client = new_client(version).await?;
         initialize_client(&mut client, true).await?;
         Ok(client)
     }
 
-    pub(crate) async fn run_invalid_query(client: &mut Client) -> Result<Message> {
-        if client.version.unwrap() > V2_0 {
+    pub(crate) async fn run_invalid_query(client: &mut Client<Stream>) -> Result<Message> {
+        if client.version() > V2_0 {
             client
                 .run_with_metadata(
                     "RETURN invalid query oof as n;",
@@ -264,8 +280,8 @@ pub(crate) mod tests {
         }
     }
 
-    pub(crate) async fn run_valid_query(client: &mut Client) -> Result<Message> {
-        if client.version.unwrap() > V2_0 {
+    pub(crate) async fn run_valid_query(client: &mut Client<Stream>) -> Result<Message> {
+        if client.version() > V2_0 {
             client
                 .run_with_metadata(
                     "RETURN $some_val as n;",
@@ -503,7 +519,7 @@ pub(crate) mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert!(match client.commit().await {
-            Err(Error::UnsupportedOperation(Some(1))) => true,
+            Err(Error::UnsupportedOperation(V1_0)) => true,
             _ => false,
         });
     }
