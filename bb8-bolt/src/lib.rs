@@ -206,6 +206,11 @@ mod tests {
             .await
             .unwrap();
         let conn = pool.dedicated_connection().await;
-        assert!(conn.is_err());
+        assert!(match conn {
+            Err(Error::ClientInitFailed(_)) => true,
+            // GrapheneDB will just fail the handshake if it doesn't recognize a version
+            Err(Error::ClientError(bolt_client::error::Error::HandshakeFailed(_))) => true,
+            _ => false,
+        });
     }
 }
