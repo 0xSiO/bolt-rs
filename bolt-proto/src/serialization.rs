@@ -13,11 +13,11 @@ pub trait Serialize: TryInto<Bytes, Error = Error> {
 
 pub trait Deserialize: TryFrom<Arc<Mutex<Bytes>>, Error = Error> {}
 
-pub trait Marker: Serialize + Deserialize {
+pub trait Marker {
     fn get_marker(&self) -> Result<u8>;
 }
 
-pub trait Signature: Marker {
+pub trait Signature {
     fn get_signature(&self) -> u8;
 }
 
