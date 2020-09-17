@@ -1,13 +1,12 @@
-use std::{collections::HashMap, convert::TryFrom, net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
 use async_trait::async_trait;
 use bb8::ManageConnection;
 use thiserror::Error;
 use tokio::{
     io::BufStream,
-    net::{lookup_host, TcpStream, ToSocketAddrs},
+    net::{lookup_host, ToSocketAddrs},
 };
-use tokio_rustls::{rustls::ClientConfig, webpki::DNSNameRef, TlsConnector};
 use tokio_util::compat::*;
 
 use bolt_client::{stream::Stream, *};
@@ -40,34 +39,14 @@ impl BoltConnectionManager {
                 .collect(),
         })
     }
-
-    async fn get_stream(&self) -> Result<Stream, Error> {
-        match self.domain.as_ref() {
-            Some(domain) => {
-                let mut config = ClientConfig::new();
-                config
-                    .root_store
-                    .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
-                let dns_name_ref = DNSNameRef::try_from_ascii_str(domain)
-                    .map_err(|err| Error::ConnectionFailed(err.to_string()))?;
-                let stream = TcpStream::connect(self.addr).await?;
-                Ok(Stream::SecureTcp(
-                    TlsConnector::from(Arc::new(config))
-                        .connect(dns_name_ref, stream)
-                        .await?,
-                ))
-            }
-            None => Ok(Stream::Tcp(TcpStream::connect(self.addr).await?)),
-        }
-    }
 }
 
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("invalid host address")]
     InvalidAddress,
-    #[error("connection failed: {0}")]
-    ConnectionFailed(String),
+    #[error("invalid metadata: {0}")]
+    InvalidMetadata(String),
     #[error("client initialization failed: received {0:?}")]
     ClientInitFailed(bolt_proto::Message),
     #[error("invalid client version: {0:#x}")]
@@ -87,7 +66,7 @@ impl ManageConnection for BoltConnectionManager {
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
         let mut client = Client::new(
-            BufStream::new(self.get_stream().await?).compat(),
+            BufStream::new(Stream::connect(self.addr, self.domain.as_ref()).await?).compat(),
             &self.preferred_versions,
         )
         .await?;
@@ -96,9 +75,7 @@ impl ManageConnection for BoltConnectionManager {
                 let mut metadata = self.metadata.clone();
                 let user_agent: String = metadata
                     .remove("user_agent")
-                    .ok_or_else(|| {
-                        Error::ConnectionFailed("metadata must contain a user_agent".to_string())
-                    })
+                    .ok_or_else(|| Error::InvalidMetadata("must contain a user_agent".to_string()))
                     .map(String::try_from)??;
                 client.init(user_agent, Metadata::from(metadata)).await?
             }

@@ -5,9 +5,9 @@ rust:
   - nightly
 
 script:
-  - cargo build --verbose --all
-  - cargo test --verbose --all
-  - cargo test --verbose --all -- --ignored
+  - cargo build --verbose --workspace
+  - cargo test --verbose --all-features --workspace
+  - cargo test --verbose --all-features --workspace -- --ignored
 
 env:
   global:

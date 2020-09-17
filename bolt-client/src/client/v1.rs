@@ -192,43 +192,31 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::{convert::TryFrom, env, iter::FromIterator, sync::Arc};
+    use std::{convert::TryFrom, env, iter::FromIterator};
 
     use bolt_proto::{message::*, value::*, version::*};
-    use tokio::{io::BufStream, net::TcpStream};
-    use tokio_rustls::{rustls::ClientConfig, webpki::DNSNameRef, TlsConnector};
+    use tokio::io::BufStream;
     use tokio_util::compat::*;
 
     use crate::{skip_if_handshake_failed, stream, Metadata};
 
     use super::*;
 
-    type Stream = Compat<BufStream<crate::stream::Stream>>;
+    type Stream = Compat<BufStream<stream::Stream>>;
 
     pub(crate) async fn new_client(version: u32) -> Result<Client<Stream>> {
-        let stream = TcpStream::connect(env::var("BOLT_TEST_ADDR").unwrap()).await?;
-        // Choose between TCP and secure TCP at runtime
-        match env::var("BOLT_TEST_DOMAIN") {
-            Ok(domain) => {
-                let mut config = ClientConfig::new();
-                config
-                    .root_store
-                    .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
-                let dns_name_ref = DNSNameRef::try_from_ascii_str(&domain).unwrap();
-                let stream = BufStream::new(stream::Stream::SecureTcp(
-                    TlsConnector::from(Arc::new(config))
-                        .connect(dns_name_ref, stream)
-                        .await?,
-                ))
-                .compat();
-                Ok(Client::new(stream, &[version, 0, 0, 0]).await?)
-            }
-            Err(_) => Ok(Client::new(
-                BufStream::new(stream::Stream::Tcp(stream)).compat(),
-                &[version, 0, 0, 0],
+        Client::new(
+            BufStream::new(
+                stream::Stream::connect(
+                    env::var("BOLT_TEST_ADDR").unwrap(),
+                    env::var("BOLT_TEST_DOMAIN").ok(),
+                )
+                .await?,
             )
-            .await?),
-        }
+            .compat(),
+            &[version, 0, 0, 0],
+        )
+        .await
     }
 
     pub(crate) async fn initialize_client(
