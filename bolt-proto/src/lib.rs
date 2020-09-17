@@ -1,5 +1,5 @@
 pub use message::Message;
-pub use serialization::{Deserialize, Marker, Serialize, Signature};
+pub use serialization::{Marker, Signature};
 pub use value::Value;
 
 pub mod error;
