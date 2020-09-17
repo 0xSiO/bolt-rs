@@ -9,22 +9,26 @@
 //! use std::env;
 //! use std::iter::FromIterator;
 //!
-//! use tokio::prelude::*;
+//! use tokio::io::BufStream;
+//! use tokio_util::compat::*;
 //!
-//! use bolt_client::*;
+//! use bolt_client::{*, stream::Stream};
 //! use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     // Create a new connection to the server and perform a handshake to establish a
-//!     // protocol version. In this example, all connection/authentication details are
-//!     // stored in environment variables. A domain is optional - including it will
-//!     // create a client that uses a TLS-secured connection.
-//!     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
+//!     // Let's say you have a type that implements AsyncRead + AsyncWrite. Here's one
+//!     // provided by the `tokio-stream` feature of this library. In this example, all
+//!     // connection/authentication details are stored in environment variables.
+//!     let stream = Stream::connect(env::var("BOLT_TEST_ADDR")?,
 //!                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
-//!     // This example demonstrates usage of the v4.1 or v4 protocol
-//!     let handshake_result = client.handshake(&[V4_1, V4_0, 0, 0]).await;
-//! #   skip_if_handshake_failed!(handshake_result, Ok(()));
+//!     let stream = BufStream::new(stream).compat();
+//!
+//!     // Create a new connection to the server and perform a handshake to establish a
+//!     // protocol version. This example demonstrates usage of the v4.1 or v4 protocol.
+//!     let mut result = Client::new(stream, &[V4_1, V4_0, 0, 0]).await;
+//! #   skip_if_handshake_failed!(result, Ok(()));
+//!     let mut client = result.unwrap();
 //!     
 //!     // Send a HELLO message with authorization details to the server to initialize
 //!     // the session.
@@ -90,17 +94,21 @@
 //! # use std::env;
 //! # use std::iter::FromIterator;
 //! #
-//! # use tokio::prelude::*;
+//! # use tokio::io::BufStream;
+//! # use tokio_util::compat::*;
 //! #
-//! # use bolt_client::*;
+//! # use bolt_client::{*, stream::Stream};
 //! # use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //! #
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! #     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
+//! #     let stream = Stream::connect(env::var("BOLT_TEST_ADDR")?,
 //! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
-//! #     let handshake_result = client.handshake(&[V3_0, 0, 0, 0]).await;
-//! #     skip_if_handshake_failed!(handshake_result, Ok(()));
+//! #     let stream = BufStream::new(stream).compat();
+//! // Now we only want Bolt v3
+//! let mut result = Client::new(stream, &[V3_0, 0, 0, 0]).await;
+//! #     skip_if_handshake_failed!(result, Ok(()));
+//! #     let mut client = result.unwrap();
 //! #
 //! #     let response: Message = client.hello(
 //! #         Some(Metadata::from_iter(vec![
@@ -113,6 +121,8 @@
 //! #
 //! #     let response = client.run_with_metadata("RETURN 1 as num;", None, None).await?;
 //! #     assert!(Success::try_from(response).is_ok());
+//!
+//! // PULL_ALL instead of PULL
 //! let (response, records) = client.pull_all().await?;
 //! #     assert!(Success::try_from(response).is_ok());
 //! #
@@ -146,18 +156,21 @@
 //! # use std::env;
 //! # use std::iter::FromIterator;
 //! #
-//! # use tokio::prelude::*;
+//! # use tokio::io::BufStream;
+//! # use tokio_util::compat::*;
 //! #
-//! # use bolt_client::*;
+//! # use bolt_client::{*, stream::Stream};
 //! # use bolt_proto::{message::*, value::*, version::*, Message, Value};
 //! #
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! #     let mut client = Client::new(env::var("BOLT_TEST_ADDR")?,
+//! #     let stream = Stream::connect(env::var("BOLT_TEST_ADDR")?,
 //! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
+//! #     let stream = BufStream::new(stream).compat();
 //! // For the handshake we want to support versions 1 and 2 only, preferring version 2.
-//! let handshake_result = client.handshake(&[V2_0, V1_0, 0, 0]).await;
-//! #     skip_if_handshake_failed!(handshake_result, Ok(()));
+//! let mut result = Client::new(stream, &[V2_0, V1_0, 0, 0]).await;
+//! #     skip_if_handshake_failed!(result, Ok(()));
+//! #     let mut client = result.unwrap();
 //!     
 //! // Instead of `hello`, we call `init`, and the user agent string is provided separately.
 //! let response: Message = client.init(
