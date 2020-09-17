@@ -19,4 +19,8 @@ thiserror = "1.0.20"
 
 [dev-dependencies]
 chrono = { version = "0.4.15", default-features = false, features = ["std"] }
-tokio = { version = "0.2.22", features = ["dns", "macros", "rt-threaded"] }
+pin-project = "0.4.23"
+tokio = { version = "0.2.22", features = ["dns", "macros", "rt-threaded", "tcp"] }
+tokio-rustls = "0.14.1"
+tokio-util = { version = "0.3.1", features = ["compat"] }
+webpki-roots = "0.20.0"
