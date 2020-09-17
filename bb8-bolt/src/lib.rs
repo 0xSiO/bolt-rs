@@ -9,7 +9,7 @@ use tokio::{
 };
 use tokio_util::compat::*;
 
-use bolt_client::{stream::Stream, *};
+use bolt_client::*;
 use bolt_proto::{version::*, *};
 
 pub struct BoltConnectionManager {
