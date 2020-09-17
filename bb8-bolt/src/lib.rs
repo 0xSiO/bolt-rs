@@ -1,52 +1,71 @@
-use std::{collections::HashMap, convert::TryFrom, sync::Arc};
+use std::{collections::HashMap, convert::TryFrom, net::SocketAddr, sync::Arc};
 
 use async_trait::async_trait;
 use bb8::ManageConnection;
-use futures_util::{
-    io::{AsyncRead, AsyncWrite},
-    lock::Mutex,
-    stream::{Stream, TryStreamExt},
-};
 use thiserror::Error;
+use tokio::{
+    io::BufStream,
+    net::{lookup_host, TcpStream, ToSocketAddrs},
+};
+use tokio_rustls::{rustls::ClientConfig, webpki::DNSNameRef, TlsConnector};
+use tokio_util::compat::*;
 
-use bolt_client::*;
+use bolt_client::{stream::Stream, *};
 use bolt_proto::{version::*, *};
 
-pub struct BoltConnectionManager<F, S, E>
-where
-    F: Stream<Item = Result<S, E>> + Unpin + Send + Sync + 'static,
-    S: AsyncRead + AsyncWrite + Unpin + Send + Sync + 'static,
-    E: std::error::Error + Send + 'static,
-{
-    stream_factory: Arc<Mutex<F>>,
+pub struct BoltConnectionManager {
+    addr: SocketAddr,
+    domain: Option<String>,
     preferred_versions: [u32; 4],
     metadata: HashMap<String, Value>,
 }
 
-impl<F, S, E> BoltConnectionManager<F, S, E>
-where
-    F: Stream<Item = Result<S, E>> + Unpin + Send + Sync + 'static,
-    S: AsyncRead + AsyncWrite + Unpin + Send + Sync + 'static,
-    E: std::error::Error + Send + 'static,
-{
-    pub fn new(
-        stream_factory: F,
+impl BoltConnectionManager {
+    pub async fn new(
+        addr: impl ToSocketAddrs,
+        domain: Option<String>,
         preferred_versions: [u32; 4],
-        metadata: HashMap<impl ToString, impl Into<Value>>,
-    ) -> Self {
-        Self {
-            stream_factory: Arc::new(Mutex::new(stream_factory)),
+        metadata: HashMap<impl Into<String>, impl Into<Value>>,
+    ) -> Result<Self, Error> {
+        Ok(Self {
+            addr: lookup_host(addr)
+                .await?
+                .next()
+                .ok_or_else(|| Error::InvalidAddress)?,
+            domain,
             preferred_versions,
             metadata: metadata
                 .into_iter()
-                .map(|(k, v)| (k.to_string(), v.into()))
+                .map(|(k, v)| (k.into(), v.into()))
                 .collect(),
+        })
+    }
+
+    async fn get_stream(&self) -> Result<Stream, Error> {
+        match self.domain.as_ref() {
+            Some(domain) => {
+                let mut config = ClientConfig::new();
+                config
+                    .root_store
+                    .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
+                let dns_name_ref = DNSNameRef::try_from_ascii_str(domain)
+                    .map_err(|err| Error::ConnectionFailed(err.to_string()))?;
+                let stream = TcpStream::connect(self.addr).await?;
+                Ok(Stream::SecureTcp(
+                    TlsConnector::from(Arc::new(config))
+                        .connect(dns_name_ref, stream)
+                        .await?,
+                ))
+            }
+            None => Ok(Stream::Tcp(TcpStream::connect(self.addr).await?)),
         }
     }
 }
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("invalid host address")]
+    InvalidAddress,
     #[error("connection failed: {0}")]
     ConnectionFailed(String),
     #[error("client initialization failed: received {0:?}")]
@@ -57,35 +76,21 @@ pub enum Error {
     ClientError(#[from] bolt_client::error::Error),
     #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
 }
 
 #[async_trait]
-impl<F, S, E> ManageConnection for BoltConnectionManager<F, S, E>
-where
-    F: Stream<Item = Result<S, E>> + Unpin + Send + Sync + 'static,
-    S: AsyncRead + AsyncWrite + Unpin + Send + Sync + 'static,
-    E: std::error::Error + Send + 'static,
-{
-    type Connection = Client<S>;
+impl ManageConnection for BoltConnectionManager {
+    type Connection = Client<Compat<BufStream<Stream>>>;
     type Error = Error;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        let stream = self
-            .stream_factory
-            .lock()
-            .await
-            .try_next()
-            .await
-            .map_or_else(
-                |err| Err(Error::ConnectionFailed(err.to_string())),
-                |c| {
-                    c.ok_or_else(|| {
-                        Error::ConnectionFailed(String::from("stream factory terminated"))
-                    })
-                },
-            )?;
-
-        let mut client = Client::new(stream, &self.preferred_versions).await?;
+        let mut client = Client::new(
+            BufStream::new(self.get_stream().await?).compat(),
+            &self.preferred_versions,
+        )
+        .await?;
         let response = match client.version() {
             V1_0 | V2_0 => {
                 let mut metadata = self.metadata.clone();
@@ -137,52 +142,52 @@ mod tests {
 
     use super::*;
 
-    fn get_connection_manager(supported_versions: [u32; 4]) -> BoltConnectionManager {
+    async fn get_connection_manager(
+        preferred_versions: [u32; 4],
+        succeed: bool,
+    ) -> BoltConnectionManager {
+        let credentials = if succeed {
+            env::var("BOLT_TEST_PASSWORD").unwrap()
+        } else {
+            String::from("invalid")
+        };
+
         BoltConnectionManager::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok(),
-            supported_versions,
+            preferred_versions,
             HashMap::from_iter(vec![
                 ("user_agent", "bolt-client/X.Y.Z"),
                 ("scheme", "basic"),
                 ("principal", &env::var("BOLT_TEST_USERNAME").unwrap()),
-                ("credentials", &env::var("BOLT_TEST_PASSWORD").unwrap()),
+                ("credentials", &credentials),
             ]),
         )
+        .await
         .unwrap()
-    }
-
-    async fn is_server_compatible(bolt_version: u32) -> Result<bool, Error> {
-        let mut client = Client::new(
-            env::var("BOLT_TEST_ADDR").unwrap(),
-            env::var("BOLT_TEST_DOMAIN").ok(),
-        )
-        .await?;
-        Ok(client.handshake(&[bolt_version, 0, 0, 0]).await.is_ok())
     }
 
     #[tokio::test]
     async fn basic_pool() {
         for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1] {
+            let manager = get_connection_manager([bolt_version, 0, 0, 0], true).await;
             // Don't even test connection pool if server doesn't support this Bolt version
-            if !is_server_compatible(bolt_version).await.unwrap() {
+            if manager.connect().await.is_err() {
                 println!(
                     "Skipping test: server doesn't support Bolt version {:#x}.",
                     bolt_version
                 );
                 continue;
             }
-
-            let manager = get_connection_manager([bolt_version, 0, 0, 0]);
             let pool = Pool::builder().max_size(15).build(manager).await.unwrap();
 
             let mut tasks = Vec::with_capacity(50);
             for i in 1..=tasks.capacity() {
                 let pool = pool.clone();
-                tasks.push(tokio::spawn(async move {
+                tasks.push(async move {
                     let mut client = pool.get().await.unwrap();
                     let statement = format!("RETURN {} as num;", i);
-                    let version = client.version().unwrap();
+                    let version = client.version();
                     let (response, records) = match version {
                         V1_0 | V2_0 => {
                             client.run(statement, None).await.unwrap();
@@ -209,7 +214,7 @@ mod tests {
                     };
                     assert!(message::Success::try_from(response).is_ok());
                     assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
-                }));
+                });
             }
             join_all(tasks).await;
         }
@@ -217,18 +222,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_init_fails() {
-        let invalid_manager = BoltConnectionManager::new(
-            "127.0.0.1:7687",
-            None,
-            [V4_1, V4_0, V3_0, V2_0],
-            HashMap::from_iter(vec![
-                ("user_agent", "bolt-client/X.Y.Z"),
-                ("scheme", "basic"),
-                ("principal", "neo4j"),
-                ("credentials", "invalid"),
-            ]),
-        )
-        .unwrap();
+        let invalid_manager = get_connection_manager([V4_1, V4_0, V3_0, V2_0], false).await;
         let pool = Pool::builder()
             .max_size(2)
             .build(invalid_manager)

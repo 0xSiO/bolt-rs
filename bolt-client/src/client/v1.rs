@@ -195,13 +195,15 @@ pub(crate) mod tests {
     use std::{convert::TryFrom, env, iter::FromIterator, sync::Arc};
 
     use bolt_proto::{message::*, value::*, version::*};
-    use tokio::net::TcpStream;
+    use tokio::{io::BufStream, net::TcpStream};
     use tokio_rustls::{rustls::ClientConfig, webpki::DNSNameRef, TlsConnector};
     use tokio_util::compat::*;
 
-    use crate::{skip_if_handshake_failed, stream::Stream, Metadata};
+    use crate::{skip_if_handshake_failed, stream, Metadata};
 
     use super::*;
+
+    type Stream = Compat<BufStream<crate::stream::Stream>>;
 
     pub(crate) async fn new_client(version: u32) -> Result<Client<Stream>> {
         let stream = TcpStream::connect(env::var("BOLT_TEST_ADDR").unwrap()).await?;
@@ -213,15 +215,19 @@ pub(crate) mod tests {
                     .root_store
                     .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
                 let dns_name_ref = DNSNameRef::try_from_ascii_str(&domain).unwrap();
-                let stream = Stream::SecureTcp(
+                let stream = BufStream::new(stream::Stream::SecureTcp(
                     TlsConnector::from(Arc::new(config))
                         .connect(dns_name_ref, stream)
-                        .await?
-                        .compat(),
-                );
+                        .await?,
+                ))
+                .compat();
                 Ok(Client::new(stream, &[version, 0, 0, 0]).await?)
             }
-            Err(_) => Ok(Client::new(Stream::Tcp(stream.compat()), &[version, 0, 0, 0]).await?),
+            Err(_) => Ok(Client::new(
+                BufStream::new(stream::Stream::Tcp(stream)).compat(),
+                &[version, 0, 0, 0],
+            )
+            .await?),
         }
     }
 
