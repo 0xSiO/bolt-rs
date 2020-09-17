@@ -14,8 +14,8 @@ async-trait = "0.1.40"
 bolt-client = { path = "../bolt-client", version = "0.7.0" }
 bolt-proto = { path = "../bolt-proto", version = "0.8.0" }
 bb8 = "0.4.2"
+futures-util = { version = "0.3.5", default-features = false, features = ["io"] }
 thiserror = "1.0.20"
 
 [dev-dependencies]
 tokio = { version = "0.2.22", features = ["dns", "macros", "rt-threaded"] }
-futures-util = { version = "0.3.5", default-features = false, features = ["alloc"] }
