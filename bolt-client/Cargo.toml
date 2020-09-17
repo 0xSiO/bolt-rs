@@ -11,7 +11,7 @@ license = "MIT"
 edition = "2018"
 
 [features]
-tokio-streams = ["pin-project", "tokio", "tokio-rustls", "webpki-roots"]
+tokio-stream = ["pin-project", "tokio", "tokio-rustls", "webpki-roots"]
 
 [dependencies]
 bolt-client-macros = { path = "../bolt-client-macros", version = "0.1.1" }

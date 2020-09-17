@@ -209,7 +209,7 @@ mod client;
 mod define_value_map;
 pub mod error;
 
-#[cfg(feature = "tokio-streams")]
+#[cfg(feature = "tokio-stream")]
 pub mod stream;
 
 define_value_map!(Metadata);
