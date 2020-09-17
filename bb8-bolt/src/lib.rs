@@ -1,53 +1,58 @@
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc};
 
 use async_trait::async_trait;
 use bb8::ManageConnection;
+use futures_util::{
+    io::{AsyncRead, AsyncWrite},
+    lock::Mutex,
+    stream::{Stream, TryStreamExt},
+};
 use thiserror::Error;
 
 use bolt_client::*;
 use bolt_proto::{version::*, *};
 
-pub struct BoltConnectionManager {
-    addr: SocketAddr,
-    domain: Option<String>,
-    supported_versions: [u32; 4],
+pub struct BoltConnectionManager<F, S, E>
+where
+    F: Stream<Item = Result<S, E>> + Unpin + Send + Sync + 'static,
+    S: AsyncRead + AsyncWrite + Unpin + Send + Sync + 'static,
+    E: std::error::Error + Send + 'static,
+{
+    stream_factory: Arc<Mutex<F>>,
+    preferred_versions: [u32; 4],
     metadata: HashMap<String, Value>,
 }
 
-impl BoltConnectionManager {
+impl<F, S, E> BoltConnectionManager<F, S, E>
+where
+    F: Stream<Item = Result<S, E>> + Unpin + Send + Sync + 'static,
+    S: AsyncRead + AsyncWrite + Unpin + Send + Sync + 'static,
+    E: std::error::Error + Send + 'static,
+{
     pub fn new(
-        addr: impl ToSocketAddrs,
-        domain: Option<String>,
-        supported_versions: [u32; 4],
-        metadata: HashMap<impl Into<String>, impl Into<Value>>,
-    ) -> Result<Self, Error> {
-        Ok(Self {
-            addr: addr
-                .to_socket_addrs()?
-                .next()
-                .ok_or_else(|| Error::InvalidAddress)?,
-            domain,
-            supported_versions,
+        stream_factory: F,
+        preferred_versions: [u32; 4],
+        metadata: HashMap<impl ToString, impl Into<Value>>,
+    ) -> Self {
+        Self {
+            stream_factory: Arc::new(Mutex::new(stream_factory)),
+            preferred_versions,
             metadata: metadata
                 .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
+                .map(|(k, v)| (k.to_string(), v.into()))
                 .collect(),
-        })
+        }
     }
 }
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error(transparent)]
-    IOError(#[from] std::io::Error),
-    #[error("invalid host address.")]
-    InvalidAddress,
+    #[error("connection failed: {0}")]
+    ConnectionFailed(String),
+    #[error("client initialization failed: received {0:?}")]
+    ClientInitFailed(bolt_proto::Message),
     #[error("invalid client version: {0:#x}")]
     InvalidClientVersion(u32),
-    #[error("initialization of client failed: {0}")]
-    ClientInitFailed(String),
     #[error(transparent)]
     ClientError(#[from] bolt_client::error::Error),
     #[error(transparent)]
@@ -55,20 +60,39 @@ pub enum Error {
 }
 
 #[async_trait]
-impl ManageConnection for BoltConnectionManager {
-    type Connection = Client;
+impl<F, S, E> ManageConnection for BoltConnectionManager<F, S, E>
+where
+    F: Stream<Item = Result<S, E>> + Unpin + Send + Sync + 'static,
+    S: AsyncRead + AsyncWrite + Unpin + Send + Sync + 'static,
+    E: std::error::Error + Send + 'static,
+{
+    type Connection = Client<S>;
     type Error = Error;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        let mut client = Client::new(self.addr, self.domain.as_ref()).await?;
-        let version = client.handshake(&self.supported_versions).await?;
-        let response = match version {
+        let stream = self
+            .stream_factory
+            .lock()
+            .await
+            .try_next()
+            .await
+            .map_or_else(
+                |err| Err(Error::ConnectionFailed(err.to_string())),
+                |c| {
+                    c.ok_or_else(|| {
+                        Error::ConnectionFailed(String::from("stream factory terminated"))
+                    })
+                },
+            )?;
+
+        let mut client = Client::new(stream, &self.preferred_versions).await?;
+        let response = match client.version() {
             V1_0 | V2_0 => {
                 let mut metadata = self.metadata.clone();
                 let user_agent: String = metadata
                     .remove("user_agent")
                     .ok_or_else(|| {
-                        Error::ClientInitFailed("metadata must contain a user_agent".to_string())
+                        Error::ConnectionFailed("metadata must contain a user_agent".to_string())
                     })
                     .map(String::try_from)??;
                 client.init(user_agent, Metadata::from(metadata)).await?
@@ -78,12 +102,12 @@ impl ManageConnection for BoltConnectionManager {
                     .hello(Some(Metadata::from(self.metadata.clone())))
                     .await?
             }
-            _ => return Err(Error::InvalidClientVersion(version)),
+            _ => return Err(Error::InvalidClientVersion(client.version())),
         };
 
         match response {
             Message::Success(_) => Ok(client),
-            _ => Err(Error::ClientInitFailed(format!("{:?}", response))),
+            other => Err(Error::ClientInitFailed(other)),
         }
     }
 
