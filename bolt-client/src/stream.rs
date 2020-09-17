@@ -5,17 +5,18 @@ use std::{
     task::{Context, Poll},
 };
 
-use futures_util::io::{AsyncRead, AsyncWrite};
 use pin_project::pin_project;
-use tokio::net::TcpStream;
+use tokio::{
+    io::{AsyncRead, AsyncWrite},
+    net::TcpStream,
+};
 use tokio_rustls::client::TlsStream;
-use tokio_util::compat::Compat;
 
 #[pin_project(project = StreamProj)]
 #[derive(Debug)]
-pub(crate) enum Stream {
-    Tcp(#[pin] Compat<TcpStream>),
-    SecureTcp(#[pin] Compat<TlsStream<TcpStream>>),
+pub enum Stream {
+    Tcp(#[pin] TcpStream),
+    SecureTcp(#[pin] TlsStream<TcpStream>),
 }
 
 impl AsyncRead for Stream {
@@ -42,10 +43,10 @@ impl AsyncWrite for Stream {
         }
     }
 
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<()>> {
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<()>> {
         match self.project() {
-            StreamProj::Tcp(tcp_stream) => AsyncWrite::poll_close(tcp_stream, cx),
-            StreamProj::SecureTcp(tls_stream) => AsyncWrite::poll_close(tls_stream, cx),
+            StreamProj::Tcp(tcp_stream) => AsyncWrite::poll_shutdown(tcp_stream, cx),
+            StreamProj::SecureTcp(tls_stream) => AsyncWrite::poll_shutdown(tls_stream, cx),
         }
     }
 }

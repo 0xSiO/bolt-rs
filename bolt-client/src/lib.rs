@@ -208,8 +208,9 @@ pub use self::client::Client;
 mod client;
 mod define_value_map;
 pub mod error;
-#[cfg(test)]
-pub(crate) mod stream;
+
+#[cfg(feature = "tokio-streams")]
+pub mod stream;
 
 define_value_map!(Metadata);
 define_value_map!(Params);
