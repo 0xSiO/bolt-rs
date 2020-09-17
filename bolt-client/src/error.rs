@@ -5,7 +5,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[cfg(feature = "tokio-streams")]
+    #[cfg(feature = "tokio-stream")]
     #[error("invalid DNS name: {0}")]
     InvalidDNSName(String),
     #[error(transparent)]

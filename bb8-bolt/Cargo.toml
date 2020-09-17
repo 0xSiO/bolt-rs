@@ -11,7 +11,7 @@ edition = "2018"
 
 [dependencies]
 async-trait = "0.1.40"
-bolt-client = { path = "../bolt-client", version = "0.7.0", features = ["tokio-streams"] }
+bolt-client = { path = "../bolt-client", version = "0.7.0", features = ["tokio-stream"] }
 bolt-proto = { path = "../bolt-proto", version = "0.8.0" }
 bb8 = "0.4.2"
 thiserror = "1.0.20"
