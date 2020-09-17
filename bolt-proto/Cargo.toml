@@ -17,6 +17,3 @@ chrono = { version = "0.4.15", default-features = false, features = ["std"] }
 chrono-tz = "0.5.3"
 futures-util = { version = "0.3.5", default-features = false, features = ["io"] }
 thiserror = "1.0.20"
-
-[dev-dependencies]
-tokio = { version = "0.2.22", features = ["macros", "rt-threaded"] }

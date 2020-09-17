@@ -79,22 +79,22 @@ pub enum Message {
 }
 
 impl Message {
-    pub async fn from_stream(mut buf_stream: impl AsyncRead + Unpin) -> Result<Message> {
+    pub async fn from_stream(mut stream: impl AsyncRead + Unpin) -> Result<Message> {
         let mut bytes = BytesMut::new();
         let mut chunk_len = 0;
         // Ignore any no-op messages
         while chunk_len == 0 {
             let mut u16_bytes = [0, 0];
-            buf_stream.read_exact(&mut u16_bytes).await?;
+            stream.read_exact(&mut u16_bytes).await?;
             chunk_len = u16::from_be_bytes(u16_bytes);
         }
         // Messages end in a 0_u16
         while chunk_len > 0 {
             let mut buf = vec![0; chunk_len as usize];
-            buf_stream.read_exact(&mut buf).await?;
+            stream.read_exact(&mut buf).await?;
             bytes.put_slice(&buf);
             let mut u16_bytes = [0, 0];
-            buf_stream.read_exact(&mut u16_bytes).await?;
+            stream.read_exact(&mut u16_bytes).await?;
             chunk_len = u16::from_be_bytes(u16_bytes);
         }
         Message::try_from(Arc::new(Mutex::new(bytes.freeze())))
