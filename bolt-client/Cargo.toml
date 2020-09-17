@@ -20,12 +20,13 @@ bytes = "0.5.6"
 futures-util = { version = "0.3.5", default-features = false, features = ["io"] }
 thiserror = "1.0.20"
 
+# Feature: tokio-stream
 pin-project = { version = "0.4.23", optional = true }
-tokio = { version = "0.2.22", features = ["dns", "io-util", "tcp"], optional = true }
+tokio = { version = "0.2.22", features = ["io-util", "tcp"], optional = true }
 tokio-rustls = { version = "0.14.1", optional = true }
 webpki-roots = { version = "0.20.0", optional = true }
 
 [dev-dependencies]
 chrono = { version = "0.4.15", default-features = false, features = ["std"] }
-tokio = { version = "0.2.22", features = ["macros", "rt-threaded"] }
+tokio = { version = "0.2.22", features = ["dns", "macros", "rt-threaded"] }
 tokio-util = { version = "0.3.1", features = ["compat"] }
