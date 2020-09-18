@@ -1,6 +1,6 @@
 [package]
 name = "bolt-client"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "A client that sends messages using the Bolt protocol.\n"
 readme = "README.md"
@@ -14,8 +14,8 @@ edition = "2018"
 tokio-stream = ["pin-project", "tokio", "tokio-rustls", "webpki-roots"]
 
 [dependencies]
-bolt-client-macros = { path = "../bolt-client-macros", version = "0.1.1" }
-bolt-proto = { path = "../bolt-proto", version = "0.8.0" }
+bolt-client-macros = { path = "../bolt-client-macros", version = "0.2.0" }
+bolt-proto = { path = "../bolt-proto", version = "0.9.0" }
 bytes = "0.5.6"
 futures-util = { version = "0.3.5", default-features = false, features = ["io"] }
 thiserror = "1.0.20"
