@@ -1,6 +1,7 @@
-This crate contains the traits and primitives used in the [Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29)
-protocol. The `Message` and `Value` enums are of particular importance, and are the primary units of information sent and 
-consumed by Bolt clients/servers.
+This crate contains the traits and primitives used in the
+[Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29)
+protocol. The `Message` and `Value` enums are of particular importance, and are the primary units of
+information sent and consumed by Bolt clients/servers.
 
 The `Message` enum encapsulates all possible messages that can be sent between client and server.
 ```rust
@@ -30,10 +31,11 @@ pub enum Message {
     Pull(Pull),
 }
 ```
-See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/message/enum.Message.html) for more details.
+See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/message/enum.Message.html) for more
+details.
 
-The `Value` enum encapsulates all possible values that can be stored in data from each kind of `Message`. 
-Structures like `List` and `Map` allow `Value`s to be nested with arbitrary complexity.
+The `Value` enum encapsulates all possible values that can be stored in data from each kind of
+`Message`. Structures like `List` and `Map` allow `Value`s to be nested with arbitrary complexity.
 ```rust
 pub enum Value {
     // V1-compatible value types
@@ -62,9 +64,9 @@ pub enum Value {
     Point3D(Point3D),
 }
 ```
-You should rarely ever have to construct variants directly (with the exception of `Value::Null`). Instead, you should
-typically use `Value::from` on the type you wish to convert.
-See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/value/enum.Value.html) for more details.
+You should rarely ever have to construct variants directly (with the exception of `Value::Null`).
+Instead, you should typically use `Value::from` on the type you wish to convert. See the
+[documentation](https://docs.rs/bolt-proto/*/bolt_proto/value/enum.Value.html) for more details.
 
-The `Serialize` and `Deserialize` traits provide interfaces for converting `Message` and `Value` types to and from 
-streams of bytes, to be consumed by a compatible Bolt server.
+The `Serialize` and `Deserialize` traits provide interfaces for converting `Message` and `Value`
+types to and from streams of bytes, to be consumed by a compatible Bolt server.
