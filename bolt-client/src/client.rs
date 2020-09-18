@@ -24,7 +24,7 @@ mod v4_1;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 
-/// A tokio-based client for Bolt servers.
+/// An asynchronous client for Bolt servers.
 #[derive(Debug)]
 pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
     stream: S,
