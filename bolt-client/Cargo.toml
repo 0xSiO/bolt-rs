@@ -30,3 +30,7 @@ webpki-roots = { version = "0.20.0", optional = true }
 chrono = { version = "0.4.15", default-features = false, features = ["std"] }
 tokio = { version = "0.2.22", features = ["dns", "macros", "rt-threaded"] }
 tokio-util = { version = "0.3.1", features = ["compat"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
