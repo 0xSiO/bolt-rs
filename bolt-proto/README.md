@@ -67,6 +67,3 @@ pub enum Value {
 You should rarely ever have to construct variants directly (with the exception of `Value::Null`).
 Instead, you should typically use `Value::from` on the type you wish to convert. See the
 [documentation](https://docs.rs/bolt-proto/*/bolt_proto/value/enum.Value.html) for more details.
-
-The `Serialize` and `Deserialize` traits provide interfaces for converting `Message` and `Value`
-types to and from streams of bytes, to be consumed by a compatible Bolt server.
