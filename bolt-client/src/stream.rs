@@ -15,6 +15,7 @@ use tokio_rustls::{client::TlsStream, rustls::ClientConfig, webpki::DNSNameRef, 
 
 use crate::error::*;
 
+#[cfg_attr(docsrs, doc(cfg(feature = "tokio-stream")))]
 #[pin_project(project = StreamProj)]
 #[derive(Debug)]
 pub enum Stream {
@@ -23,6 +24,7 @@ pub enum Stream {
 }
 
 impl Stream {
+    #[cfg_attr(docsrs, doc(cfg(feature = "tokio-stream")))]
     pub async fn connect(
         addr: impl ToSocketAddrs,
         domain: Option<impl AsRef<str>>,
