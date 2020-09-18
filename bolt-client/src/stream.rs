@@ -15,6 +15,8 @@ use tokio_rustls::{client::TlsStream, rustls::ClientConfig, webpki::DNSNameRef, 
 
 use crate::error::*;
 
+/// A convenient wrapper around a [`TcpStream`](tokio::net::TcpStream) or a
+/// [`TlsStream`](tokio_rustls::client::TlsStream).
 #[cfg_attr(docsrs, doc(cfg(feature = "tokio-stream")))]
 #[pin_project(project = StreamProj)]
 #[derive(Debug)]
@@ -24,6 +26,8 @@ pub enum Stream {
 }
 
 impl Stream {
+    /// Establish a connection with a remote socket. If a domain is provided, TLS
+    /// negotiation will be attempted.
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio-stream")))]
     pub async fn connect(
         addr: impl ToSocketAddrs,
