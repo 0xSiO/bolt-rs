@@ -209,6 +209,12 @@ mod tests {
             .await
             .unwrap();
         let conn = pool.dedicated_connection().await;
-        assert!(matches!(conn, Err(Error::ClientInitFailed(_))));
+        assert!(matches!(
+            conn,
+            Err(Error::ClientInitFailed(_))
+                | Err(Error::ClientError(
+                    bolt_client::error::Error::HandshakeFailed(_)
+                ))
+        ));
     }
 }
