@@ -98,7 +98,6 @@ impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Value::Float(_)
-            | Value::Bytes(_)
             | Value::Map(_)
             | Value::Node(_)
             | Value::Relationship(_)
@@ -108,6 +107,7 @@ impl Hash for Value {
             | Value::Point3D(_) => panic!("Cannot hash a {:?}", self),
             Value::Boolean(boolean) => boolean.hash(state),
             Value::Integer(integer) => integer.hash(state),
+            Value::Bytes(bytes) => bytes.hash(state),
             Value::List(list) => list.hash(state),
             Value::Null => Null.hash(state),
             Value::String(string) => string.hash(state),

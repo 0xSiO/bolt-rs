@@ -12,7 +12,7 @@ pub(crate) const MARKER_SMALL: u8 = 0xCC;
 pub(crate) const MARKER_MEDIUM: u8 = 0xCD;
 pub(crate) const MARKER_LARGE: u8 = 0xCE;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ByteArray {
     pub(crate) value: Vec<u8>,
 }
