@@ -6,4 +6,5 @@ members = [
     "bolt-proto",
     "bolt-proto-derive",
     "bb8-bolt",
+    "deadpool-bolt",
 ]
