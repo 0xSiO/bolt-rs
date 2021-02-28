@@ -309,10 +309,10 @@ pub(crate) mod tests {
         // The current behavior is to simply close the connection on a failed INIT.
         // Messages now fail to send since connection was closed
         let response = initialize_client(&mut client, true).await;
-        assert!(match response {
-            Err(Error::ProtocolError(bolt_proto::error::Error::IOError(_))) => true,
-            _ => false,
-        })
+        assert!(matches!(
+            response,
+            Err(Error::ProtocolError(bolt_proto::error::Error::IOError(_)))
+        ))
     }
 
     #[tokio::test]
@@ -336,10 +336,7 @@ pub(crate) mod tests {
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
-        assert!(match response {
-            Message::Ignored => true,
-            _ => false,
-        });
+        assert!(matches!(response, Message::Ignored));
         let response = client.ack_failure().await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
@@ -483,10 +480,7 @@ pub(crate) mod tests {
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
-        assert!(match response {
-            Message::Ignored => true,
-            _ => false,
-        });
+        assert!(matches!(response, Message::Ignored));
         let response = client.reset().await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
@@ -501,10 +495,7 @@ pub(crate) mod tests {
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
-        assert!(match response {
-            Message::Ignored => true,
-            _ => false,
-        });
+        assert!(matches!(response, Message::Ignored));
     }
 
     #[tokio::test]
@@ -512,10 +503,10 @@ pub(crate) mod tests {
         let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        assert!(match client.commit().await {
-            Err(Error::UnsupportedOperation(V1_0)) => true,
-            _ => false,
-        });
+        assert!(matches!(
+            client.commit().await,
+            Err(Error::UnsupportedOperation(V1_0))
+        ));
     }
 
     #[tokio::test]
@@ -524,10 +515,9 @@ pub(crate) mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client.send_message(Message::Commit).await.unwrap();
-        assert!(match client.read_message().await {
-            // Local server just closes connection, but GrapheneDB sends a FAILURE message
-            Err(Error::ProtocolError(_)) | Ok(Message::Failure(_)) => true,
-            _ => false,
-        });
+        assert!(matches!(
+            client.read_message().await,
+            Err(Error::ProtocolError(_))
+        ));
     }
 }

@@ -31,10 +31,10 @@ mod tests {
         // The current behavior is to simply close the connection on a failed INIT.
         // Messages now fail to send since connection was closed
         let response = initialize_client(&mut client, true).await;
-        assert!(match response {
-            Err(Error::ProtocolError(bolt_proto::error::Error::IOError(_))) => true,
-            _ => false,
-        })
+        assert!(matches!(
+            response,
+            Err(Error::ProtocolError(bolt_proto::error::Error::IOError(_)))
+        ))
     }
 
     #[tokio::test]
@@ -58,10 +58,7 @@ mod tests {
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
-        assert!(match response {
-            Message::Ignored => true,
-            _ => false,
-        });
+        assert!(matches!(response, Message::Ignored));
         let response = client.ack_failure().await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
@@ -239,10 +236,7 @@ mod tests {
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
-        assert!(match response {
-            Message::Ignored => true,
-            _ => false,
-        });
+        assert!(matches!(response, Message::Ignored));
         let response = client.reset().await.unwrap();
         assert!(Success::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
@@ -257,9 +251,6 @@ mod tests {
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
         let response = run_valid_query(&mut client).await.unwrap();
-        assert!(match response {
-            Message::Ignored => true,
-            _ => false,
-        });
+        assert!(matches!(response, Message::Ignored));
     }
 }

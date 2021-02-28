@@ -277,11 +277,8 @@ mod tests {
             )]))),
         ];
         for response in client.pipeline(messages).await.unwrap() {
-            assert!(match response {
-                Message::Success(_) => true,
-                // There should be no RECORD messages
-                _ => false,
-            });
+            // There should be no RECORD messages
+            assert!(matches!(response, Message::Success(_)));
         }
     }
 

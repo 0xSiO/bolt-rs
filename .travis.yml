@@ -23,7 +23,6 @@ env:
     - NEO4J_VERSION=3.5
     - NEO4J_VERSION=4.0
     - NEO4J_VERSION=4.1
-    - secure: "FMZiSmk6dptG8isSzCq+9GGVlxkRDq328ZLi79g/JjgzoiHbhTuyQFLQkB69pIMyVpfbdheagZlmQXOuJLTi1PfGvgDsHjIg93ieVHR2N1qqLDNbnSTXQaHvkgTQpP6+cKp2YBQiHakiKV2mbaV0AnReFLmpsi+7lF0o+Iny5SCbbhvCQtigJLiFO+qwidejvPEkZwqKKbUKIpzPE1MAYhzigKZcQZ8zwzGYqMbMLjvW69TZfvM8HkzQoK/Kwq5aZNf2O8JBoweiATkrA7JGjdwziNt+oIwBVOpT7BE6tGvxYEt903Ekpnq0ojR2FUvmsjRhWMin8ocTCvlZYz7C9M5F0cyxvQ8uxk4LP0L/APvbWIzyF8rQNBmjElJByyMRLWq2Nt7ZrzzZZQFcf31pabiXifZatZHx4XsWBh+sBFQPyz0gMS67sJ1ftZd7URO3EcfFAEp6vA1IzR44uTHVaUIWvHa2Kk2Pye/5qtHzRlEa1lhyDBitUR9qiu6uwtXS35L08zjPoQ+AKSksZDn/vXgeWVZdmSDbvRqWMNPUcNBadzZ35DE4jiuVYNcRmeBFR/+4lSnaDpf22RkmJPwHdvqy/30aM0HQhBa/Iel1zy9uaHSOdj9zX66tvz9rClZVfzTb9GYfJ3aUuC99t4YsVoMBC21fwZznGrpck+vkAkY="
 
 jobs:
   allow_failures:

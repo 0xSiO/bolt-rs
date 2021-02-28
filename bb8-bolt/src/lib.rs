@@ -206,8 +206,6 @@ mod tests {
             .await
             .unwrap();
         let conn = pool.dedicated_connection().await;
-        assert!(matches!(conn, Err(Error::ClientInitFailed(_)) | 
-            // GrapheneDB will just fail the handshake if it doesn't recognize a version
-            Err(Error::ClientError(bolt_client::error::Error::HandshakeFailed(_)))));
+        assert!(matches!(conn, Err(Error::ClientInitFailed(_))));
     }
 }

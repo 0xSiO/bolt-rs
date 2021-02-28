@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn get_marker() {
-        let tiny = String::from("string".repeat(1));
+        let tiny = String::from("string");
         assert_eq!(
             tiny.get_marker().unwrap(),
             MARKER_TINY | tiny.value.len() as u8
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn try_from_bytes() {
-        let tiny = String::from("string".repeat(1));
+        let tiny = String::from("string");
         assert_eq!(
             String::try_from(Arc::new(Mutex::new(tiny.clone().try_into_bytes().unwrap()))).unwrap(),
             tiny

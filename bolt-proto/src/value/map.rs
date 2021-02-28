@@ -148,7 +148,7 @@ mod tests {
         let empty_map: Map = HashMap::<&str, i8>::new().into();
         assert_eq!(
             empty_map.try_into_bytes().unwrap(),
-            Bytes::from_static(&[MARKER_TINY | 0 as u8])
+            Bytes::from_static(&[MARKER_TINY])
         );
         let tiny_map: Map = HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
         assert_eq!(

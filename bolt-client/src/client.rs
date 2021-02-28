@@ -41,7 +41,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             .iter()
             .for_each(|&v| preferred_versions_bytes.put_u32(v));
         stream.write_all(&PREAMBLE).await?;
-        stream.write_all(&mut preferred_versions_bytes).await?;
+        stream.write_all(&preferred_versions_bytes).await?;
         stream.flush().await?;
 
         let mut u32_bytes = [0, 0, 0, 0];
@@ -73,8 +73,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         println!(">>> {:?}", message);
 
         let chunks: Vec<Bytes> = message.try_into()?;
-        for mut chunk in chunks {
-            self.stream.write_all(&mut chunk).await?;
+        for chunk in chunks {
+            self.stream.write_all(&chunk).await?;
         }
         self.stream.flush().await?;
         Ok(())
@@ -115,8 +115,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             println!(">>> {:?}", message);
 
             let chunks: Vec<Bytes> = message.try_into()?;
-            for mut chunk in chunks {
-                self.stream.write_all(&mut chunk).await?;
+            for chunk in chunks {
+                self.stream.write_all(&chunk).await?;
             }
         }
         self.stream.flush().await?;

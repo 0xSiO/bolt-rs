@@ -421,7 +421,7 @@ mod tests {
 
     #[test]
     fn string_from_bytes() {
-        let tiny = String::from("string".repeat(1));
+        let tiny = String::from("string");
         let tiny_bytes = tiny.clone().try_into_bytes().unwrap();
         let small = String::from("string".repeat(10));
         let small_bytes = small.clone().try_into_bytes().unwrap();
