@@ -12,6 +12,9 @@ use tokio_util::compat::*;
 use bolt_client::*;
 use bolt_proto::{version::*, *};
 
+pub use bolt_client;
+pub use bolt_proto;
+
 pub struct BoltConnectionManager {
     addr: SocketAddr,
     domain: Option<String>,

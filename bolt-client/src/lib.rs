@@ -224,6 +224,8 @@ mod client;
 mod define_value_map;
 pub mod error;
 
+pub use bolt_proto;
+
 #[cfg(feature = "tokio-stream")]
 mod stream;
 
