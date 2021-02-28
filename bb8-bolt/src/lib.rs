@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
 use async_trait::async_trait;
-use bb8::ManageConnection;
+use bb8::{ManageConnection, PooledConnection};
 use thiserror::Error;
 use tokio::{
     io::BufStream,
@@ -30,7 +30,7 @@ impl BoltConnectionManager {
             addr: lookup_host(addr)
                 .await?
                 .next()
-                .ok_or_else(|| Error::InvalidAddress)?,
+                .ok_or(Error::InvalidAddress)?,
             domain,
             preferred_versions,
             metadata: metadata
@@ -93,12 +93,12 @@ impl ManageConnection for BoltConnectionManager {
         }
     }
 
-    async fn is_valid(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
+    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         let response = conn.run("RETURN 1;".to_string(), None).await?;
         message::Success::try_from(response)?;
         let (response, _records) = conn.pull_all().await?;
         message::Success::try_from(response)?;
-        Ok(conn)
+        Ok(())
     }
 
     fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
@@ -206,11 +206,8 @@ mod tests {
             .await
             .unwrap();
         let conn = pool.dedicated_connection().await;
-        assert!(match conn {
-            Err(Error::ClientInitFailed(_)) => true,
+        assert!(matches!(conn, Err(Error::ClientInitFailed(_)) | 
             // GrapheneDB will just fail the handshake if it doesn't recognize a version
-            Err(Error::ClientError(bolt_client::error::Error::HandshakeFailed(_))) => true,
-            _ => false,
-        });
+            Err(Error::ClientError(bolt_client::error::Error::HandshakeFailed(_)))));
     }
 }

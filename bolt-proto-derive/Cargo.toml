@@ -12,5 +12,5 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
-syn = "1.0.41"
-quote = "1.0.7"
+syn = "1.0.60"
+quote = "1.0.9"
