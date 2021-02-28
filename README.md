@@ -31,6 +31,12 @@ tokio-based `Stream` type that supports both insecure and secure TCP streams bac
 
 A bolt-client adapter crate for the [bb8](https://crates.io/crates/bb8) connection pool.
 
+### deadpool-bolt
+[![crates.io](https://img.shields.io/crates/v/deadpool-bolt.svg)](https://crates.io/crates/deadpool-bolt)
+[![Released API docs](https://docs.rs/deadpool-bolt/badge.svg)](https://docs.rs/deadpool-bolt)
+
+A bolt-client manager for the [deadpool](https://crates.io/crates/deadpool) connection pool.
+
 ### bolt-proto-derive
 [![crates.io](https://img.shields.io/crates/v/bolt-proto-derive.svg)](https://crates.io/crates/bolt-proto-derive)
 [![Released API docs](https://docs.rs/bolt-proto-derive/badge.svg)](https://docs.rs/bolt-proto-derive)
