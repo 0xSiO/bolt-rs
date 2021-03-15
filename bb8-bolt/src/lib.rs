@@ -1,3 +1,5 @@
+#![warn(rust_2018_idioms)]
+
 use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
 use async_trait::async_trait;

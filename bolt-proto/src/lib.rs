@@ -1,3 +1,5 @@
+#![warn(rust_2018_idioms)]
+
 pub use message::Message;
 pub use serialization::{Marker, Signature};
 pub use value::Value;

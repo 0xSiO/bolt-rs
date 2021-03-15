@@ -56,8 +56,8 @@ impl Stream {
 impl AsyncRead for Stream {
     fn poll_read(
         self: Pin<&mut Self>,
-        cx: &mut Context,
-        buf: &mut ReadBuf,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>> {
         match self.project() {
             StreamProj::Tcp(tcp_stream) => AsyncRead::poll_read(tcp_stream, cx, buf),
@@ -67,21 +67,21 @@ impl AsyncRead for Stream {
 }
 
 impl AsyncWrite for Stream {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context, buf: &[u8]) -> Poll<io::Result<usize>> {
+    fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
         match self.project() {
             StreamProj::Tcp(tcp_stream) => AsyncWrite::poll_write(tcp_stream, cx, buf),
             StreamProj::SecureTcp(tls_stream) => AsyncWrite::poll_write(tls_stream, cx, buf),
         }
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         match self.project() {
             StreamProj::Tcp(tcp_stream) => AsyncWrite::poll_flush(tcp_stream, cx),
             StreamProj::SecureTcp(tls_stream) => AsyncWrite::poll_flush(tls_stream, cx),
         }
     }
 
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context) -> Poll<io::Result<()>> {
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         match self.project() {
             StreamProj::Tcp(tcp_stream) => AsyncWrite::poll_shutdown(tcp_stream, cx),
             StreamProj::SecureTcp(tls_stream) => AsyncWrite::poll_shutdown(tls_stream, cx),

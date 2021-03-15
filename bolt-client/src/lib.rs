@@ -1,3 +1,4 @@
+#![warn(rust_2018_idioms)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! An asynchronous client for Bolt-compatible servers.
