@@ -1,5 +1,5 @@
 # bolt-rs
-[![Build Status](https://api.travis-ci.com/lucis-fluxum/bolt-rs.svg?branch=master)](https://travis-ci.com/lucis-fluxum/bolt-rs)
+[![CI](https://github.com/lucis-fluxum/bolt-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/lucis-fluxum/bolt-rs/actions/workflows/ci.yml)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 ## Overview
