@@ -1,6 +1,6 @@
 [package]
 name = "bolt-client-macros"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "Procedural macros for bolt-client.\n"
 repository = "https://github.com/lucis-fluxum/bolt-rs"

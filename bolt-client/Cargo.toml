@@ -1,6 +1,6 @@
 [package]
 name = "bolt-client"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "A client that sends messages using the Bolt protocol.\n"
 readme = "README.md"

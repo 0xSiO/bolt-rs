@@ -1,6 +1,6 @@
 [package]
 name = "bolt-proto-derive"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "Procedural macros for bolt-proto.\n"
 repository = "https://github.com/lucis-fluxum/bolt-rs"
