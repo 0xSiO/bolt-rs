@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - nightly
+        neo4j:
+          - 3.1
+          - 3.2
+          - 3.3
+          - 3.4
+          - 3.5
+          - 4.1
+          - 4.2
+
+    env:
+      # Default local config
+      BOLT_TEST_ADDR: 127.0.0.1:7687
+      BOLT_TEST_USERNAME: neo4j
+      BOLT_TEST_PASSWORD: neo4j
+
+    name: Rust ${{ matrix.rust }} / Neo4j ${{ matrix.neo4j }}
+    steps:
+      - name: Start Neo4j
+        env:
+          NEO4J_AUTH: neo4j/neo4j
+        run: |
+          docker pull neo4j:${{ matrix.neo4j }}
+          docker run -d -p 7687:7687 neo4j:${{ matrix.neo4j }} bash -c "neo4j-admin set-initial-password neo4j; neo4j console"
+          docker ps -a
+
+      - uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+
+      - name: cargo build --workspace
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --workspace
+
+      - name: cargo test --all-features --workspace
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --workspace
+
+      - name: cargo test --all-features --workspace -- --ignored
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --workspace -- --ignored
+
+      - name: cargo fmt --all -- --check
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
