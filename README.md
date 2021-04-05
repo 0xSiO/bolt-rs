@@ -53,6 +53,10 @@ Procedural macros used in bolt-client for client version requirements and smarte
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/lucis-fluxum/bolt-rs.
 
+## Donations
+
+- XMR: `87abVq8rrb2QVDz9m63ZXeRB3efHxSWVjGisVWaeviuTU7aMNXEAi4wjoYpSzBn7vY7ikB62vRA8g8L75krFYMPs1ob5reh`
+
 ## License
 
 These crates are available as open source under the terms of the
