@@ -1,10 +1,8 @@
 use bolt_client_macros::*;
-use bolt_proto::message::*;
-use bolt_proto::Message;
+use bolt_proto::{message::*, Message, ServerState};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
-use crate::error::*;
-use crate::{Client, Metadata, Params};
+use crate::{error::*, require_state, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send an `INIT` message to the server.
@@ -29,9 +27,16 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         client_name: impl Into<String>,
         auth_token: Metadata,
     ) -> Result<Message> {
+        require_state!(self, ServerState::Connected);
         let init_msg = Init::new(client_name.into(), auth_token.value);
         self.send_message(Message::Init(init_msg)).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+        match response {
+            Message::Success(_) => self.server_state = ServerState::Ready,
+            Message::Failure(_) => self.server_state = ServerState::Defunct,
+            _ => return Err(Error::InvalidResponse(response)),
+        }
+        Ok(response)
     }
 
     /// Send a `RUN` message to the server.
