@@ -28,14 +28,19 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         auth_token: Metadata,
     ) -> Result<Message> {
         require_state!(self, ServerState::Connected);
+
         let init_msg = Init::new(client_name.into(), auth_token.value);
         self.send_message(Message::Init(init_msg)).await?;
         let response = self.read_message().await?;
-        match response {
-            Message::Success(_) => self.server_state = ServerState::Ready,
-            Message::Failure(_) => self.server_state = ServerState::Defunct,
-            _ => return Err(Error::InvalidResponse(response)),
+
+        match (self.server_state, &response) {
+            (ServerState::Connected, Message::Success(_)) => self.server_state = ServerState::Ready,
+            (ServerState::Connected, Message::Failure(_)) => {
+                self.server_state = ServerState::Defunct
+            }
+            (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
         }
+
         Ok(response)
     }
 
