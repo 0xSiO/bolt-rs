@@ -1,5 +1,5 @@
 use bolt_client_macros::*;
-use bolt_proto::{message::*, Message, ServerState};
+use bolt_proto::{message::*, Message, ServerState::*};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::{error::*, require_state, Client, Metadata, Params};
@@ -27,17 +27,15 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         client_name: impl Into<String>,
         auth_token: Metadata,
     ) -> Result<Message> {
-        require_state!(self, ServerState::Connected);
+        require_state!(self, Connected);
 
         let init_msg = Init::new(client_name.into(), auth_token.value);
         self.send_message(Message::Init(init_msg)).await?;
         let response = self.read_message().await?;
 
         match (self.server_state, &response) {
-            (ServerState::Connected, Message::Success(_)) => self.server_state = ServerState::Ready,
-            (ServerState::Connected, Message::Failure(_)) => {
-                self.server_state = ServerState::Defunct
-            }
+            (Connected, Message::Success(_)) => self.server_state = Ready,
+            (Connected, Message::Failure(_)) => self.server_state = Defunct,
             (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
         }
 
@@ -81,24 +79,17 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         statement: impl Into<String>,
         parameters: Option<Params>,
     ) -> Result<Message> {
-        require_state!(
-            self,
-            ServerState::Ready | ServerState::Failed | ServerState::Interrupted
-        );
+        require_state!(self, Ready | Failed | Interrupted);
 
         let run_msg = Run::new(statement.into(), parameters.unwrap_or_default().value);
         self.send_message(Message::Run(run_msg)).await?;
         let response = self.read_message().await?;
 
         match (self.server_state, &response) {
-            (ServerState::Ready, &Message::Success(_)) => {
-                self.server_state = ServerState::Streaming
-            }
-            (ServerState::Ready, &Message::Failure(_)) => self.server_state = ServerState::Failed,
-            (ServerState::Failed, &Message::Ignored) => self.server_state = ServerState::Failed,
-            (ServerState::Interrupted, &Message::Ignored) => {
-                self.server_state = ServerState::Interrupted
-            }
+            (Ready, &Message::Success(_)) => self.server_state = Streaming,
+            (Ready, &Message::Failure(_)) => self.server_state = Failed,
+            (Failed, &Message::Ignored) => self.server_state = Failed,
+            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
             (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
         }
 
