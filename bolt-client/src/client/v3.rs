@@ -142,8 +142,22 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   if transaction could not be committed
     #[bolt_version(3, 4, 4.1)]
     pub async fn commit(&mut self) -> Result<Message> {
+        require_state!(self, TxReady | Interrupted);
+
         self.send_message(Message::Commit).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+
+        match (self.server_state, &response) {
+            (TxReady, &Message::Success(_)) => self.server_state = Ready,
+            (TxReady, &Message::Failure(_)) => self.server_state = Failed,
+            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
+        }
+
+        Ok(response)
     }
 
     /// Send a `ROLLBACK` message to the server.
