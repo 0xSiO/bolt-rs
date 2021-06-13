@@ -4,7 +4,7 @@ mod tests {
 
     use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
-    use bolt_proto::{message::*, value::*, version::*};
+    use bolt_proto::{message::*, value::*, version::*, ServerState::*};
 
     use crate::client::v1::tests::*;
     use crate::error::*;
@@ -27,14 +27,9 @@ mod tests {
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
 
-        // See https://github.com/neo4j/neo4j/pull/8050.
-        // The current behavior is to simply close the connection on a failed INIT.
         // Messages now fail to send since connection was closed
         let response = initialize_client(&mut client, true).await;
-        assert!(matches!(
-            response,
-            Err(Error::ProtocolError(bolt_proto::error::Error::IOError(_)))
-        ))
+        assert!(matches!(response, Err(Error::InvalidState(Defunct))));
     }
 
     #[tokio::test]
@@ -199,8 +194,10 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client.discard_all().await.unwrap();
-        assert!(Failure::try_from(response).is_ok());
+        assert!(matches!(
+            client.discard_all().await,
+            Err(Error::InvalidState(Ready))
+        ));
     }
 
     #[tokio::test]
@@ -223,9 +220,10 @@ mod tests {
         assert!(Success::try_from(response).is_ok());
         let response = client.discard_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
-        let (response, records) = client.pull_all().await.unwrap();
-        assert!(Failure::try_from(response).is_ok());
-        assert!(records.is_empty());
+        assert!(matches!(
+            client.pull_all().await,
+            Err(Error::InvalidState(Ready))
+        ));
     }
 
     #[tokio::test]
