@@ -2,11 +2,13 @@
 
 pub use message::Message;
 pub use serialization::{Marker, Signature};
+pub use server_state::ServerState;
 pub use value::Value;
 
 pub mod error;
 pub mod message;
 mod serialization;
+mod server_state;
 pub mod value;
 pub mod version;
 

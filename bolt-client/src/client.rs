@@ -12,7 +12,7 @@ use std::convert::TryInto;
 use bytes::*;
 use futures_util::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-use bolt_proto::Message;
+use bolt_proto::{Message, ServerState};
 
 use crate::error::*;
 
@@ -29,6 +29,7 @@ const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
     stream: S,
     version: u32,
+    server_state: ServerState,
 }
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
@@ -48,7 +49,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         stream.read_exact(&mut u32_bytes).await?;
         let version = u32::from_be_bytes(u32_bytes);
         if preferred_versions.contains(&version) && version > 0 {
-            Ok(Self { stream, version })
+            Ok(Self {
+                stream,
+                version,
+                server_state: ServerState::Connected,
+            })
         } else {
             Err(Error::HandshakeFailed(*preferred_versions))
         }
