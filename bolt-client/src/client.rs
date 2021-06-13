@@ -111,6 +111,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// receives the `RESET`/`ACK_FAILURE` message, it will send an `IGNORED` message in
     /// response to any other message from the client, including messages that were sent
     /// in a pipeline.
+    // TODO: Handle immediate state changes for RESET or GOODBYE?
     pub async fn pipeline(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
