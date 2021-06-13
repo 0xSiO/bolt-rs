@@ -262,9 +262,9 @@ macro_rules! skip_if_handshake_failed {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! require_state {
-    ($client:expr, $state:pat) => {
+    ($client:expr, $($state:pat)|+) => {
         match $client.server_state {
-            $state => {}
+            $($state)|+ => {}
             _ => {
                 return Err($crate::error::Error::InvalidState($client.server_state));
             }

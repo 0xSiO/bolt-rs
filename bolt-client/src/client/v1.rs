@@ -76,9 +76,28 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         statement: impl Into<String>,
         parameters: Option<Params>,
     ) -> Result<Message> {
+        require_state!(
+            self,
+            ServerState::Ready | ServerState::Failed | ServerState::Interrupted
+        );
+
         let run_msg = Run::new(statement.into(), parameters.unwrap_or_default().value);
         self.send_message(Message::Run(run_msg)).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+
+        match (self.server_state, &response) {
+            (ServerState::Ready, &Message::Success(_)) => {
+                self.server_state = ServerState::Streaming
+            }
+            (ServerState::Ready, &Message::Failure(_)) => self.server_state = ServerState::Failed,
+            (ServerState::Failed, &Message::Ignored) => self.server_state = ServerState::Failed,
+            (ServerState::Interrupted, &Message::Ignored) => {
+                self.server_state = ServerState::Interrupted
+            }
+            (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
+        }
+
+        Ok(response)
     }
 
     /// Send a `DISCARD_ALL` message to the server.

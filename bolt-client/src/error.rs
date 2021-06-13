@@ -14,10 +14,10 @@ pub enum Error {
     HandshakeFailed([u32; 4]),
     #[error("unsupported operation for client with version = {}", format_version(*.0))]
     UnsupportedOperation(u32),
-    #[error("unsupported operation while server in {0:?} state")]
+    #[error("unsupported operation for server in {0:?} state")]
     InvalidState(bolt_proto::ServerState),
-    #[error("server gave unexpected response: {0:?}")]
-    InvalidResponse(bolt_proto::Message),
+    #[error("server gave unexpected response while in {0:?} state: {1:?}")]
+    InvalidResponse(bolt_proto::ServerState, bolt_proto::Message),
     #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
 }
