@@ -338,8 +338,10 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client.commit().await.unwrap();
-        assert!(Failure::try_from(response).is_ok());
+        assert!(matches!(
+            client.commit().await,
+            Err(Error::InvalidState(Ready))
+        ));
     }
 
     #[tokio::test]
@@ -391,7 +393,9 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client.rollback().await.unwrap();
-        assert!(Failure::try_from(response).is_ok());
+        assert!(matches!(
+            client.rollback().await,
+            Err(Error::InvalidState(Ready))
+        ));
     }
 }
