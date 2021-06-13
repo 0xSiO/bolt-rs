@@ -282,18 +282,23 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         // RESET will jump ahead in the queue
         self.server_state = Interrupted;
 
-        let response = self.read_message().await?;
-
-        match response {
-            Message::Success(_) => self.server_state = Ready,
-            Message::Failure(_) => self.server_state = Defunct,
-            _ => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(self.server_state, response));
+        loop {
+            match self.read_message().await? {
+                Message::Success(success) => {
+                    self.server_state = Ready;
+                    return Ok(Message::Success(success));
+                }
+                Message::Failure(failure) => {
+                    self.server_state = Defunct;
+                    return Ok(Message::Failure(failure));
+                }
+                Message::Ignored => {}
+                msg => {
+                    self.server_state = Defunct;
+                    return Err(Error::InvalidResponse(self.server_state, msg));
+                }
             }
         }
-
-        Ok(response)
     }
 }
 
