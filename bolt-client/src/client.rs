@@ -64,6 +64,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.version
     }
 
+    // TODO: Perhaps we should modify server state here depending on the message
     pub(crate) async fn read_message(&mut self) -> Result<Message> {
         let message = Message::from_stream(&mut self.stream).await?;
 
@@ -73,6 +74,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         Ok(message)
     }
 
+    // TODO: Perhaps we should modify server state here depending on the message
     pub(crate) async fn send_message(&mut self, message: Message) -> Result<()> {
         #[cfg(test)]
         println!(">>> {:?}", message);

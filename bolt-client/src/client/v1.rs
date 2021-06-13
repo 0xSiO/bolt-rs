@@ -272,8 +272,28 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   possible
     #[bolt_version(1, 2, 3, 4, 4.1)]
     pub async fn reset(&mut self) -> Result<Message> {
+        require_state!(
+            self,
+            Ready | Streaming | TxReady | TxStreaming | Failed | Interrupted
+        );
+
         self.send_message(Message::Reset).await?;
-        self.read_message().await
+
+        // RESET will jump ahead in the queue
+        self.server_state = Interrupted;
+
+        let response = self.read_message().await?;
+
+        match response {
+            Message::Success(_) => self.server_state = Ready,
+            Message::Failure(_) => self.server_state = Defunct,
+            _ => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(self.server_state, response));
+            }
+        }
+
+        Ok(response)
     }
 }
 
