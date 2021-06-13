@@ -70,13 +70,32 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         parameters: Option<Params>,
         metadata: Option<Metadata>,
     ) -> Result<Message> {
+        require_state!(self, Ready | TxReady | TxStreaming | Failed | Interrupted);
+
         let run_msg = RunWithMetadata::new(
             statement.into(),
             parameters.unwrap_or_default().value,
             metadata.unwrap_or_default().value,
         );
         self.send_message(Message::RunWithMetadata(run_msg)).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+
+        match (self.server_state, &response) {
+            (Ready, &Message::Success(_)) => self.server_state = Streaming,
+            (Ready, &Message::Failure(_)) => self.server_state = Failed,
+            (TxReady, &Message::Success(_)) => self.server_state = TxStreaming,
+            (TxReady, &Message::Failure(_)) => self.server_state = Failed,
+            (TxStreaming, &Message::Success(_)) => self.server_state = TxStreaming,
+            (TxStreaming, &Message::Failure(_)) => self.server_state = Failed,
+            (Failed, &Message::Ignored) => self.server_state = Failed,
+            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
+        }
+
+        Ok(response)
     }
 
     /// Send a `BEGIN` message to the server.
