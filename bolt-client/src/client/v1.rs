@@ -36,7 +36,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         match (self.server_state, &response) {
             (Connected, Message::Success(_)) => self.server_state = Ready,
             (Connected, Message::Failure(_)) => self.server_state = Defunct,
-            (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
         }
 
         Ok(response)
@@ -90,7 +93,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Ready, &Message::Failure(_)) => self.server_state = Failed,
             (Failed, &Message::Ignored) => self.server_state = Failed,
             (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
         }
 
         Ok(response)
@@ -129,7 +135,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (TxStreaming, &Message::Failure(_)) => self.server_state = Failed,
             (Failed, &Message::Ignored) => self.server_state = Failed,
             (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
         }
 
         Ok(response)
@@ -192,7 +201,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                     self.server_state = Interrupted;
                     return Ok((Message::Ignored, vec![]));
                 }
-                (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
+                (state, msg) => {
+                    self.server_state = Defunct;
+                    return Err(Error::InvalidResponse(state, msg.clone()));
+                }
             }
         }
     }
@@ -224,7 +236,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Failed, &Message::Success(_)) => self.server_state = Ready,
             (Failed, &Message::Failure(_)) => self.server_state = Defunct,
             (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
         }
 
         Ok(response)
