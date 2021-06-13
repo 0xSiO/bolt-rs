@@ -1,6 +1,6 @@
 use bolt_client_macros::*;
 use bolt_proto::{message::*, Message, ServerState::*};
-use futures_util::io::{AsyncRead, AsyncWrite};
+use futures_util::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 
 use crate::error::*;
 use crate::{require_state, Client, Metadata, Params};
@@ -44,7 +44,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// server will end the connection upon receipt of this message.
     #[bolt_version(3, 4, 4.1)]
     pub async fn goodbye(&mut self) -> Result<()> {
+        require_state!(self, Ready);
+
         self.send_message(Message::Goodbye).await?;
+        self.server_state = Defunct;
+        self.stream.close().await?;
+
         Ok(())
     }
 
