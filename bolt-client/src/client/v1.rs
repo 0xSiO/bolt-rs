@@ -215,8 +215,19 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   to be cleared
     #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> Result<Message> {
+        require_state!(self, Failed | Interrupted);
+
         self.send_message(Message::AckFailure).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+
+        match (self.server_state, &response) {
+            (Failed, &Message::Success(_)) => self.server_state = Ready,
+            (Failed, &Message::Failure(_)) => self.server_state = Defunct,
+            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
+            (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
+        }
+
+        Ok(response)
     }
 
     /// Send a `RESET` message to the server.
