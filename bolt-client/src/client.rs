@@ -16,6 +16,7 @@ use bolt_proto::Message;
 
 use crate::error::*;
 
+mod record_stream;
 mod v1;
 mod v2;
 mod v3;
