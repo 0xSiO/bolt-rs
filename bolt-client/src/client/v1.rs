@@ -117,8 +117,22 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   available
     #[bolt_version(1, 2, 3)]
     pub async fn discard_all(&mut self) -> Result<Message> {
+        require_state!(self, Streaming | TxStreaming | Failed | Interrupted);
+
         self.send_message(Message::DiscardAll).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+
+        match (self.server_state, &response) {
+            (Streaming, &Message::Success(_)) => self.server_state = Ready,
+            (Streaming, &Message::Failure(_)) => self.server_state = Failed,
+            (TxStreaming, &Message::Success(_)) => self.server_state = TxReady,
+            (TxStreaming, &Message::Failure(_)) => self.server_state = Failed,
+            (Failed, &Message::Ignored) => self.server_state = Failed,
+            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
+            (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
+        }
+
+        Ok(response)
     }
 
     /// Send a `PULL_ALL` message to the server. Returns a tuple containing a [`Vec`] of
