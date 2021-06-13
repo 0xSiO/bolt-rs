@@ -1,10 +1,9 @@
 use bolt_client_macros::*;
-use bolt_proto::message::*;
-use bolt_proto::Message;
+use bolt_proto::{message::*, Message, ServerState::*};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::error::*;
-use crate::{Client, Metadata, Params};
+use crate::{require_state, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send a `HELLO` message to the server.
@@ -20,9 +19,22 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   failed.
     #[bolt_version(3, 4, 4.1)]
     pub async fn hello(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+        require_state!(self, Connected);
+
         let hello_msg = Hello::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Hello(hello_msg)).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+
+        match (self.server_state, &response) {
+            (Connected, Message::Success(_)) => self.server_state = Ready,
+            (Connected, Message::Failure(_)) => self.server_state = Defunct,
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
+        }
+
+        Ok(response)
     }
 
     /// Send a `GOODBYE` message to the server.
