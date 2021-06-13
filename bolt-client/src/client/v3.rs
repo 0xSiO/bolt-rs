@@ -110,9 +110,23 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   if transaction could not be started
     #[bolt_version(3, 4, 4.1)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+        require_state!(self, Ready | Interrupted);
+
         let begin_msg = Begin::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Begin(begin_msg)).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+
+        match (self.server_state, &response) {
+            (Ready, &Message::Success(_)) => self.server_state = TxReady,
+            (Ready, &Message::Failure(_)) => self.server_state = Failed,
+            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
+        }
+
+        Ok(response)
     }
 
     /// Send a `COMMIT` message to the server.
