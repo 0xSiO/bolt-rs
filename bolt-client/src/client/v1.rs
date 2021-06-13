@@ -160,12 +160,39 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   available or if retrieval fails
     #[bolt_version(1, 2, 3)]
     pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>)> {
+        require_state!(self, Streaming | TxStreaming | Failed | Interrupted);
+
         self.send_message(Message::PullAll).await?;
         let mut records = vec![];
         loop {
-            match self.read_message().await? {
-                Message::Record(record) => records.push(record),
-                other => return Ok((other, records)),
+            match (self.server_state, self.read_message().await?) {
+                (Streaming, Message::Record(record)) => records.push(record),
+                (TxStreaming, Message::Record(record)) => records.push(record),
+                (Streaming, Message::Success(success)) => {
+                    self.server_state = Ready;
+                    return Ok((Message::Success(success), records));
+                }
+                (Streaming, Message::Failure(failure)) => {
+                    self.server_state = Failed;
+                    return Ok((Message::Failure(failure), vec![]));
+                }
+                (TxStreaming, Message::Success(success)) => {
+                    self.server_state = TxReady;
+                    return Ok((Message::Success(success), records));
+                }
+                (TxStreaming, Message::Failure(failure)) => {
+                    self.server_state = Failed;
+                    return Ok((Message::Failure(failure), vec![]));
+                }
+                (Failed, Message::Ignored) => {
+                    self.server_state = Failed;
+                    return Ok((Message::Ignored, vec![]));
+                }
+                (Interrupted, Message::Ignored) => {
+                    self.server_state = Interrupted;
+                    return Ok((Message::Ignored, vec![]));
+                }
+                (state, msg) => return Err(Error::InvalidResponse(state, msg.clone())),
             }
         }
     }
