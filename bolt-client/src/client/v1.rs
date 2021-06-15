@@ -203,7 +203,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 }
                 (state, msg) => {
                     self.server_state = Defunct;
-                    return Err(Error::InvalidResponse(state, msg.clone()));
+                    return Err(Error::InvalidResponse(state, msg));
                 }
             }
         }

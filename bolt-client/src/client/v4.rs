@@ -1,10 +1,8 @@
 use bolt_client_macros::*;
-use bolt_proto::message::*;
-use bolt_proto::Message;
+use bolt_proto::{message::*, Message, ServerState::*, Value};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
-use crate::error::*;
-use crate::{Client, Metadata};
+use crate::{error::*, require_state, Client, Metadata};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send a `DISCARD` message to the server.
@@ -19,9 +17,52 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   available
     #[bolt_version(4, 4.1)]
     pub async fn discard(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+        require_state!(self, Streaming | TxStreaming | Failed | Interrupted);
+
         let discard_msg = Discard::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Discard(discard_msg)).await?;
-        self.read_message().await
+        let response = self.read_message().await?;
+
+        match (self.server_state, &response) {
+            (Streaming, &Message::Success(ref success)) => {
+                // TODO: Build this field into the Success message type
+                let has_more = success
+                    .metadata()
+                    .get("has_more")
+                    .cloned()
+                    .unwrap_or_else(|| Value::from(false));
+
+                if has_more == Value::from(true) {
+                    self.server_state = Streaming;
+                } else {
+                    self.server_state = Ready;
+                }
+            }
+            (Streaming, &Message::Failure(_)) => self.server_state = Failed,
+            (TxStreaming, &Message::Success(ref success)) => {
+                let has_more = success
+                    .metadata()
+                    .get("has_more")
+                    .cloned()
+                    .unwrap_or_else(|| Value::from(false));
+
+                if has_more == Value::from(true) {
+                    self.server_state = TxStreaming;
+                } else {
+                    // TODO: Or TxStreaming, if there are other streams open??
+                    self.server_state = TxReady;
+                }
+            }
+            (TxStreaming, &Message::Failure(_)) => self.server_state = Failed,
+            (Failed, &Message::Ignored) => self.server_state = Failed,
+            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, msg.clone()));
+            }
+        }
+
+        Ok(response)
     }
 
     /// Send a `PULL` message to the server.
