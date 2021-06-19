@@ -13,8 +13,10 @@ mod tests {
         let client = new_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Connected);
         let response = initialize_client(&mut client, true).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
@@ -22,8 +24,10 @@ mod tests {
         let client = new_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Connected);
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Defunct);
     }
 
     #[tokio::test]
@@ -31,7 +35,9 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         assert!(client.goodbye().await.is_ok());
+        assert_eq!(client.server_state(), Defunct);
     }
 
     #[tokio::test]
@@ -39,8 +45,10 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_valid_query(&mut client).await.unwrap();
-        assert!(Success::try_from(response).is_ok())
+        assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
     }
 
     #[tokio::test]
@@ -92,33 +100,42 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
 
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
         let response = client.discard(None).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
 
         let response = client.reset().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
 
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
         let response = client
             .discard(Some(Metadata::from_iter(vec![("n", 1)])))
             .await
             .unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
 
         let response = client.reset().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
 
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
         let response = client
             .discard(Some(Metadata::from_iter(vec![("n", -1)])))
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     // Current Neo4j behavior:
@@ -129,6 +146,7 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
 
         // Try pulling 1 result
         let response = client
@@ -136,12 +154,14 @@ mod tests {
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
 
         let (response, records) = client
             .pull(Some(Metadata::from_iter(vec![("n", 1)])))
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].fields(), &[Value::from(3_458_376)]);
 
@@ -151,12 +171,14 @@ mod tests {
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
 
         let (response, records) = client
             .pull(Some(Metadata::from_iter(vec![("n", -1)])))
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].fields(), &[Value::from(3_458_376)]);
     }
@@ -166,8 +188,10 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = client.begin(None).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), TxReady);
     }
 
     #[tokio::test]
@@ -175,9 +199,12 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let response = client.commit().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
@@ -185,7 +212,9 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
@@ -198,8 +227,10 @@ mod tests {
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
         ];
         client.pipeline(messages).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let response = client.commit().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
@@ -240,9 +271,12 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let response = client.rollback().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
@@ -250,7 +284,9 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
                 "MATCH (n {test: 'v4.1-rollback'}) DETACH DELETE n;".to_string(),
@@ -262,8 +298,10 @@ mod tests {
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
         ];
         client.pipeline(messages).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let response = client.rollback().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
