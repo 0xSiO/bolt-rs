@@ -15,8 +15,10 @@ mod tests {
         let client = new_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Connected);
         let response = initialize_client(&mut client, true).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
@@ -24,8 +26,10 @@ mod tests {
         let client = new_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Connected);
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Defunct);
 
         // Messages now fail to send since connection was closed
         let response = initialize_client(&mut client, true).await;
@@ -37,12 +41,16 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Failed);
         let response = client.ack_failure().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
     }
 
     #[tokio::test]
@@ -50,14 +58,19 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Failed);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(matches!(response, Message::Ignored));
+        assert_eq!(client.server_state(), Failed);
         let response = client.ack_failure().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
     }
 
     #[tokio::test]
@@ -65,8 +78,10 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
     }
 
     #[tokio::test]
@@ -105,6 +120,7 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = client
             .run(
                 "RETURN localdatetime('2010-03-05T12:30:01.000000500');",
@@ -113,9 +129,11 @@ mod tests {
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
 
         let (response, records) = client.pull_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
         assert_eq!(records.len(), 1);
         assert_eq!(
             records[0].fields(),
@@ -130,9 +148,11 @@ mod tests {
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
 
         let (response, records) = client.pull_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
         assert_eq!(records.len(), 1);
         assert_eq!(
             records[0].fields(),
@@ -194,6 +214,7 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         assert!(matches!(
             client.discard_all().await,
             Err(Error::InvalidState(Ready))
@@ -205,10 +226,13 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
         let response = client.discard_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
@@ -216,10 +240,13 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
         let response = client.discard_all().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
         assert!(matches!(
             client.pull_all().await,
             Err(Error::InvalidState(Ready))
@@ -231,14 +258,19 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Failed);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(matches!(response, Message::Ignored));
+        assert_eq!(client.server_state(), Failed);
         let response = client.reset().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
     }
 
     #[tokio::test]
@@ -246,9 +278,12 @@ mod tests {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_invalid_query(&mut client).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Failed);
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(matches!(response, Message::Ignored));
+        assert_eq!(client.server_state(), Failed);
     }
 }
