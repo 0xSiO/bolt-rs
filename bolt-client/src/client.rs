@@ -64,8 +64,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.version
     }
 
-    pub fn server_state(&self) -> &ServerState {
-        &self.server_state
+    pub fn server_state(&self) -> ServerState {
+        self.server_state
     }
 
     pub(crate) async fn read_message(&mut self) -> Result<Message> {

@@ -104,7 +104,7 @@ impl ManageConnection for BoltConnectionManager {
     }
 
     fn has_broken(&self, conn: &mut Self::Connection) -> bool {
-        conn.server_state() == &ServerState::Defunct
+        conn.server_state() == ServerState::Defunct
     }
 }
 
