@@ -14,6 +14,8 @@ use tokio_util::compat::*;
 use bolt_client::*;
 use bolt_proto::{version::*, *};
 
+pub use deadpool::{managed::PoolConfig, Runtime};
+
 pub use bolt_client;
 pub use bolt_proto;
 
@@ -65,12 +67,15 @@ pub enum Error {
 }
 
 type Client = bolt_client::Client<Compat<BufStream<Stream>>>;
-pub type Connection = deadpool::managed::Object<Client, Error>;
-pub type Pool = deadpool::managed::Pool<Client, Error>;
+pub type Connection = deadpool::managed::Object<Manager>;
+pub type Pool = deadpool::managed::Pool<Manager>;
 pub type PoolError = deadpool::managed::PoolError<Error>;
 
 #[async_trait]
-impl deadpool::managed::Manager<Client, Error> for Manager {
+impl deadpool::managed::Manager for Manager {
+    type Type = Client;
+    type Error = Error;
+
     async fn create(&self) -> Result<Client, Error> {
         let mut client = Client::new(
             BufStream::new(Stream::connect(self.addr, self.domain.as_ref()).await?).compat(),
@@ -121,8 +126,6 @@ mod tests {
     use futures_util::{stream::FuturesUnordered, StreamExt};
 
     use super::*;
-
-    type Pool = deadpool::managed::Pool<Client, Error>;
 
     async fn get_connection_manager(preferred_versions: [u32; 4], succeed: bool) -> Manager {
         let credentials = if succeed {
