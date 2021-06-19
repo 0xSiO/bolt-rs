@@ -114,7 +114,7 @@ mod tests {
     use std::iter::FromIterator;
 
     use bb8::*;
-    use futures_util::future::join_all;
+    use futures_util::{stream::FuturesUnordered, StreamExt};
 
     use super::*;
 
@@ -145,8 +145,11 @@ mod tests {
 
     #[tokio::test]
     async fn basic_pool() {
+        const MAX_CONNS: usize = 50;
+
         for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1] {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], true).await;
+
             // Don't even test connection pool if server doesn't support this Bolt version
             if manager.connect().await.is_err() {
                 println!(
@@ -155,44 +158,47 @@ mod tests {
                 );
                 continue;
             }
+
             let pool = Pool::builder().max_size(15).build(manager).await.unwrap();
 
-            let mut tasks = Vec::with_capacity(50);
-            for i in 1..=tasks.capacity() {
-                let pool = pool.clone();
-                tasks.push(async move {
-                    let mut client = pool.get().await.unwrap();
-                    let statement = format!("RETURN {} as num;", i);
-                    let version = client.version();
-                    let (response, records) = match version {
-                        V1_0 | V2_0 => {
-                            client.run(statement, None).await.unwrap();
-                            client.pull_all().await.unwrap()
-                        }
-                        V3_0 => {
-                            client
-                                .run_with_metadata(statement, None, None)
-                                .await
-                                .unwrap();
-                            client.pull_all().await.unwrap()
-                        }
-                        V4_0 | V4_1 => {
-                            client
-                                .run_with_metadata(statement, None, None)
-                                .await
-                                .unwrap();
-                            client
-                                .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
-                                .await
-                                .unwrap()
-                        }
-                        _ => panic!("Unsupported client version: {:#x}", version),
-                    };
-                    assert!(message::Success::try_from(response).is_ok());
-                    assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
-                });
-            }
-            join_all(tasks).await;
+            (0..MAX_CONNS)
+                .map(|i| {
+                    let pool = pool.clone();
+                    async move {
+                        let mut client = pool.get().await.unwrap();
+                        let statement = format!("RETURN {} as num;", i);
+                        let version = client.version();
+                        let (response, records) = match version {
+                            V1_0 | V2_0 => {
+                                client.run(statement, None).await.unwrap();
+                                client.pull_all().await.unwrap()
+                            }
+                            V3_0 => {
+                                client
+                                    .run_with_metadata(statement, None, None)
+                                    .await
+                                    .unwrap();
+                                client.pull_all().await.unwrap()
+                            }
+                            V4_0 | V4_1 => {
+                                client
+                                    .run_with_metadata(statement, None, None)
+                                    .await
+                                    .unwrap();
+                                client
+                                    .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
+                                    .await
+                                    .unwrap()
+                            }
+                            _ => panic!("Unsupported client version: {:#x}", version),
+                        };
+                        assert!(message::Success::try_from(response).is_ok());
+                        assert_eq!(records[0].fields(), &[Value::from(i as i8)]);
+                    }
+                })
+                .collect::<FuturesUnordered<_>>()
+                .collect::<Vec<_>>()
+                .await;
         }
     }
 
