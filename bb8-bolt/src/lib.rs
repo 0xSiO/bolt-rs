@@ -143,7 +143,7 @@ mod tests {
         .unwrap()
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn basic_pool() {
         const MAX_CONNS: usize = 50;
 
