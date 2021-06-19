@@ -99,18 +99,12 @@ impl ManageConnection for BoltConnectionManager {
     }
 
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        let response = conn.run("RETURN 1;".to_string(), None).await?;
-        message::Success::try_from(response)?;
-        let (response, _records) = conn.pull_all().await?;
-        message::Success::try_from(response)?;
+        message::Success::try_from(conn.reset().await?)?;
         Ok(())
     }
 
-    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
-        // There's no good/fast way to check if a tokio TcpStream is still healthy.
-        // However, given that the TcpStream is shut down when the connection object is
-        // dropped, we can assume existing connections aren't broken.
-        false
+    fn has_broken(&self, conn: &mut Self::Connection) -> bool {
+        conn.server_state() == &ServerState::Defunct
     }
 }
 

@@ -77,13 +77,68 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   available or if retrieval fails
     #[bolt_version(4, 4.1)]
     pub async fn pull(&mut self, metadata: Option<Metadata>) -> Result<(Message, Vec<Record>)> {
+        require_state!(self, Streaming | TxStreaming | Failed | Interrupted);
+
         let pull_msg = Pull::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Pull(pull_msg)).await?;
         let mut records = vec![];
         loop {
-            match self.read_message().await? {
-                Message::Record(record) => records.push(record),
-                other => return Ok((other, records)),
+            match (self.server_state, self.read_message().await?) {
+                (Streaming, Message::Record(record)) => records.push(record),
+                (TxStreaming, Message::Record(record)) => records.push(record),
+                (Streaming, Message::Success(success)) => {
+                    // TODO: Build this field into the Success message type
+                    let has_more = success
+                        .metadata()
+                        .get("has_more")
+                        .cloned()
+                        .unwrap_or_else(|| Value::from(false));
+
+                    if has_more == Value::from(true) {
+                        self.server_state = Streaming;
+                    } else {
+                        self.server_state = Ready;
+                    }
+
+                    return Ok((Message::Success(success), records));
+                }
+                (Streaming, Message::Failure(failure)) => {
+                    self.server_state = Failed;
+                    // TODO: Should we return the records, even if they're considered invalid?
+                    return Ok((Message::Failure(failure), vec![]));
+                }
+                (TxStreaming, Message::Success(success)) => {
+                    let has_more = success
+                        .metadata()
+                        .get("has_more")
+                        .cloned()
+                        .unwrap_or_else(|| Value::from(false));
+
+                    if has_more == Value::from(true) {
+                        self.server_state = TxStreaming;
+                    } else {
+                        // TODO: Or TxStreaming, if there are other streams open??
+                        self.server_state = TxReady;
+                    }
+
+                    return Ok((Message::Success(success), records));
+                }
+                (TxStreaming, Message::Failure(failure)) => {
+                    self.server_state = Failed;
+                    return Ok((Message::Failure(failure), vec![]));
+                }
+                (Failed, Message::Ignored) => {
+                    self.server_state = Failed;
+                    return Ok((Message::Ignored, vec![]));
+                }
+                (Interrupted, Message::Ignored) => {
+                    self.server_state = Interrupted;
+                    return Ok((Message::Ignored, vec![]));
+                }
+                (state, msg) => {
+                    self.server_state = Defunct;
+                    return Err(Error::InvalidResponse(state, msg));
+                }
             }
         }
     }
@@ -323,8 +378,10 @@ mod tests {
         let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client.commit().await.unwrap();
-        assert!(Failure::try_from(response).is_ok());
+        assert!(matches!(
+            client.commit().await,
+            Err(Error::InvalidState(Ready))
+        ));
     }
 
     #[tokio::test]
@@ -379,7 +436,9 @@ mod tests {
         let client = get_initialized_client(V4_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client.rollback().await.unwrap();
-        assert!(Failure::try_from(response).is_ok());
+        assert!(matches!(
+            client.rollback().await,
+            Err(Error::InvalidState(Ready))
+        ));
     }
 }

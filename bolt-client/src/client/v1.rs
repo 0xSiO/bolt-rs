@@ -283,6 +283,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.server_state = Interrupted;
 
         loop {
+            // TODO: Make sure this works as expected
             match self.read_message().await? {
                 Message::Success(success) => {
                     self.server_state = Ready;

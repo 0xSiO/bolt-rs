@@ -133,19 +133,19 @@
 //! #     client.run_with_metadata("MATCH (n {test: 'doctest-v3'}) DETACH DELETE n;", None, None).await?;
 //! #     client.pull_all().await?;
 //! #
-//! #     let params = Params::from_iter(vec![("name", "Rust")]);
+//! #     let params = Params::from_iter(vec![("name", "C")]);
 //! #     client.run_with_metadata(
-//! #         "CREATE (:Client {test: 'doctest-v3'})-[:WRITTEN_IN]->(:Language {name: $name, test: 'doctest-v3'});",
+//! #         "CREATE (:Seabolt {test: 'doctest-v3'})-[:WRITTEN_IN]->(:C {name: $name, test: 'doctest-v3'});",
 //! #         Some(params), None).await?;
 //! #     client.pull_all().await?;
 //! #
-//! #     client.run_with_metadata("MATCH (rust:Language {test: 'doctest-v3'}) RETURN rust;", None, None).await?;
+//! #     client.run_with_metadata("MATCH (c:C {test: 'doctest-v3'}) RETURN c;", None, None).await?;
 //! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //! #     assert!(Success::try_from(response).is_ok());
 //! #     let node = Node::try_from(records[0].fields()[0].clone())?;
-//! #     assert_eq!(node.labels(), &[String::from("Language")]);
+//! #     assert_eq!(node.labels(), &[String::from("C")]);
 //! #     assert_eq!(node.properties(),
-//! #                &HashMap::from_iter(vec![(String::from("name"), Value::from("Rust")),
+//! #                &HashMap::from_iter(vec![(String::from("name"), Value::from("C")),
 //! #                                         (String::from("test"), Value::from("doctest-v3"))]));
 //! #     client.goodbye().await?;
 //! #     Ok(())

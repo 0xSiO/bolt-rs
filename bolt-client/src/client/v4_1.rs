@@ -4,11 +4,9 @@ mod tests {
     use std::convert::TryFrom;
     use std::iter::FromIterator;
 
-    use bolt_proto::{message::*, value::*, version::*, Message};
+    use bolt_proto::{message::*, value::*, version::*, Message, ServerState::*};
 
-    use crate::client::v1::tests::*;
-    use crate::skip_if_handshake_failed;
-    use crate::Metadata;
+    use crate::{client::v1::tests::*, error::*, skip_if_handshake_failed, Metadata};
 
     #[tokio::test]
     async fn hello() {
@@ -231,8 +229,10 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client.commit().await.unwrap();
-        assert!(Failure::try_from(response).is_ok());
+        assert!(matches!(
+            client.commit().await,
+            Err(Error::InvalidState(Ready))
+        ));
     }
 
     #[tokio::test]
@@ -287,7 +287,9 @@ mod tests {
         let client = get_initialized_client(V4_1).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        let response = client.rollback().await.unwrap();
-        assert!(Failure::try_from(response).is_ok());
+        assert!(matches!(
+            client.rollback().await,
+            Err(Error::InvalidState(Ready))
+        ));
     }
 }
