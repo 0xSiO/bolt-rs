@@ -107,7 +107,7 @@ mod tests {
         assert_eq!(client.server_state(), Streaming);
         let response = client.discard(None).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
-        assert_eq!(client.server_state(), Ready);
+        assert_eq!(client.server_state(), Failed);
 
         let response = client.reset().await.unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -121,7 +121,7 @@ mod tests {
             .await
             .unwrap();
         assert!(Failure::try_from(response).is_ok());
-        assert_eq!(client.server_state(), Ready);
+        assert_eq!(client.server_state(), Failed);
 
         let response = client.reset().await.unwrap();
         assert!(Success::try_from(response).is_ok());
