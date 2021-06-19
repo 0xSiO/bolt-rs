@@ -207,8 +207,10 @@ mod tests {
         let client = new_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Connected);
         let response = initialize_client(&mut client, true).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
@@ -216,8 +218,10 @@ mod tests {
         let client = new_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Connected);
         let response = initialize_client(&mut client, false).await.unwrap();
         assert!(Failure::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Defunct);
     }
 
     #[tokio::test]
@@ -225,7 +229,9 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         assert!(client.goodbye().await.is_ok());
+        assert_eq!(client.server_state(), Defunct);
     }
 
     #[tokio::test]
@@ -233,8 +239,10 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = run_valid_query(&mut client).await.unwrap();
-        assert!(Success::try_from(response).is_ok())
+        assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
     }
 
     #[tokio::test]
@@ -277,8 +285,10 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         let response = client.begin(None).await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), TxReady);
     }
 
     #[tokio::test]
@@ -286,9 +296,12 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let response = client.commit().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
@@ -296,7 +309,9 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
@@ -309,8 +324,10 @@ mod tests {
             Message::PullAll,
         ];
         client.pipeline(messages).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let response = client.commit().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
@@ -348,9 +365,12 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let response = client.rollback().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
@@ -358,7 +378,9 @@ mod tests {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
         client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
                 "MATCH (n {test: 'v3-rollback'}) DETACH DELETE n;".to_string(),
@@ -370,8 +392,10 @@ mod tests {
             Message::PullAll,
         ];
         client.pipeline(messages).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
         let response = client.rollback().await.unwrap();
         assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(

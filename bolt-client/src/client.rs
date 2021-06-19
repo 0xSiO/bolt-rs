@@ -68,6 +68,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.server_state
     }
 
+    // TODO: Handle state changes here?
     pub(crate) async fn read_message(&mut self) -> Result<Message> {
         let message = Message::from_stream(&mut self.stream).await?;
 
@@ -77,6 +78,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         Ok(message)
     }
 
+    // TODO: Handle state changes here?
     pub(crate) async fn send_message(&mut self, message: Message) -> Result<()> {
         #[cfg(test)]
         println!(">>> {:?}", message);
@@ -115,7 +117,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// receives the `RESET`/`ACK_FAILURE` message, it will send an `IGNORED` message in
     /// response to any other message from the client, including messages that were sent
     /// in a pipeline.
-    // TODO: Handle immediate state changes for RESET or GOODBYE?
     pub async fn pipeline(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
