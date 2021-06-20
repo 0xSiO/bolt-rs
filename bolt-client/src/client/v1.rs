@@ -2,7 +2,7 @@ use bolt_client_macros::*;
 use bolt_proto::{message::*, Message, ServerState::*};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
-use crate::{error::*, require_state, Client, Metadata, Params};
+use crate::{error::*, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send an `INIT` message to the server.
