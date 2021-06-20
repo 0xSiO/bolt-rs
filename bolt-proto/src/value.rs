@@ -6,7 +6,6 @@ use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, Bytes};
 
-pub(crate) use boolean::Boolean;
 pub(crate) use byte_array::ByteArray;
 pub(crate) use date::Date;
 pub(crate) use date_time_offset::DateTimeOffset;
@@ -31,7 +30,6 @@ pub use unbound_relationship::UnboundRelationship;
 use crate::error::*;
 use crate::serialization::*;
 
-pub(crate) mod boolean;
 pub(crate) mod byte_array;
 pub(crate) mod conversions;
 pub(crate) mod date;
@@ -54,6 +52,9 @@ pub(crate) mod string;
 pub(crate) mod time;
 pub(crate) mod unbound_relationship;
 
+pub(crate) const MARKER_FALSE: u8 = 0xC2;
+pub(crate) const MARKER_TRUE: u8 = 0xC3;
+
 /// An enum that can hold values of all Bolt-compatible types.
 ///
 /// Conversions are provided for most types, and are usually pretty intuitive ([`bool`] to
@@ -66,7 +67,7 @@ pub(crate) mod unbound_relationship;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     // V1-compatible value types
-    Boolean(Boolean),
+    Boolean(bool),
     Integer(Integer),
     Float(Float),
     Bytes(ByteArray), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
@@ -105,7 +106,7 @@ impl Hash for Value {
             | Value::Path(_)
             | Value::Point2D(_)
             | Value::Point3D(_) => panic!("Cannot hash a {:?}", self),
-            Value::Boolean(boolean) => boolean.hash(state),
+            Value::Boolean(b) => b.hash(state),
             Value::Integer(integer) => integer.hash(state),
             Value::Bytes(bytes) => bytes.hash(state),
             Value::List(list) => list.hash(state),
@@ -133,7 +134,8 @@ impl Eq for Value {
 impl Marker for Value {
     fn get_marker(&self) -> Result<u8> {
         match self {
-            Value::Boolean(boolean) => boolean.get_marker(),
+            Value::Boolean(true) => Ok(MARKER_TRUE),
+            Value::Boolean(false) => Ok(MARKER_FALSE),
             Value::Integer(integer) => integer.get_marker(),
             Value::Float(float) => float.get_marker(),
             Value::Bytes(byte_array) => byte_array.get_marker(),
@@ -165,7 +167,8 @@ impl TryInto<Bytes> for Value {
 
     fn try_into(self) -> Result<Bytes> {
         match self {
-            Value::Boolean(boolean) => boolean.try_into(),
+            Value::Boolean(true) => Ok(Bytes::from_static(&[MARKER_TRUE])),
+            Value::Boolean(false) => Ok(Bytes::from_static(&[MARKER_FALSE])),
             Value::Integer(integer) => integer.try_into(),
             Value::Float(float) => float.try_into(),
             Value::Bytes(byte_array) => byte_array.try_into(),
@@ -203,13 +206,13 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                     input_arc.lock().unwrap().advance(1);
                     Ok(Value::Null)
                 }
-                boolean::MARKER_FALSE => {
+                MARKER_FALSE => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Boolean(Boolean::from(false)))
+                    Ok(Value::Boolean(false))
                 }
-                boolean::MARKER_TRUE => {
+                MARKER_TRUE => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Boolean(Boolean::from(true)))
+                    Ok(Value::Boolean(true))
                 }
                 // Tiny int
                 marker if (-16..=127).contains(&(marker as i8)) => {
@@ -311,15 +314,15 @@ mod tests {
 
     #[test]
     fn boolean_from_bytes() {
-        let true_bytes = Boolean::from(true).try_into_bytes().unwrap();
-        let false_bytes = Boolean::from(false).try_into_bytes().unwrap();
+        let true_bytes = Bytes::from_static(&[MARKER_TRUE]);
+        let false_bytes = Bytes::from_static(&[MARKER_FALSE]);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(true_bytes))).unwrap(),
-            Value::Boolean(Boolean::from(true))
+            Value::Boolean(true)
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(false_bytes))).unwrap(),
-            Value::Boolean(Boolean::from(false))
+            Value::Boolean(false)
         );
     }
 
@@ -709,7 +712,6 @@ mod tests {
     #[ignore]
     fn value_size() {
         use std::mem::size_of;
-        println!("Boolean: {} bytes", size_of::<Boolean>());
         println!("ByteArray: {} bytes", size_of::<ByteArray>());
         println!("Date: {} bytes", size_of::<Date>());
         println!("DateTimeOffset: {} bytes", size_of::<DateTimeOffset>());

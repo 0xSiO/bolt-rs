@@ -163,7 +163,7 @@ mod tests {
             small_list.try_into_bytes().unwrap(),
             Bytes::from(small_list_expected_bytes)
         );
-        let medium_list_item_bytes = Boolean::from(false).try_into_bytes().unwrap();
+        let medium_list_item_bytes = Value::from(false).try_into_bytes().unwrap();
         let medium_list_expected_bytes: Vec<u8> = vec![MARKER_MEDIUM, 0x03, 0xE8] // marker, size
             .into_iter()
             .chain(medium_list_item_bytes.repeat(1000).into_iter())

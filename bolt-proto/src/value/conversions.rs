@@ -12,7 +12,7 @@ use crate::value::*;
 
 impl From<bool> for Value {
     fn from(value: bool) -> Self {
-        Value::Boolean(Boolean::from(value))
+        Value::Boolean(value)
     }
 }
 
@@ -189,7 +189,7 @@ impl TryFrom<Value> for bool {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Boolean(boolean) => Ok(boolean.value),
+            Value::Boolean(boolean) => Ok(boolean),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }
