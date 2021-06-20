@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
-pub(crate) use byte_array::ByteArray;
 pub(crate) use date::Date;
 pub(crate) use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
@@ -30,7 +29,6 @@ pub use unbound_relationship::UnboundRelationship;
 use crate::error::*;
 use crate::serialization::*;
 
-pub(crate) mod byte_array;
 pub(crate) mod conversions;
 pub(crate) mod date;
 pub(crate) mod date_time_offset;
@@ -51,9 +49,12 @@ pub(crate) mod string;
 pub(crate) mod time;
 pub(crate) mod unbound_relationship;
 
-pub(crate) const MARKER_FLOAT: u8 = 0xC1;
 pub(crate) const MARKER_FALSE: u8 = 0xC2;
 pub(crate) const MARKER_TRUE: u8 = 0xC3;
+pub(crate) const MARKER_FLOAT: u8 = 0xC1;
+pub(crate) const MARKER_SMALL_BYTES: u8 = 0xCC;
+pub(crate) const MARKER_MEDIUM_BYTES: u8 = 0xCD;
+pub(crate) const MARKER_LARGE_BYTES: u8 = 0xCE;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -70,7 +71,7 @@ pub enum Value {
     Boolean(bool),
     Integer(Integer),
     Float(f64),
-    Bytes(ByteArray), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
+    Bytes(Vec<u8>), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
     List(List),
     Map(Map),
     Null,
@@ -108,7 +109,7 @@ impl Hash for Value {
             | Value::Point3D(_) => panic!("Cannot hash a {:?}", self),
             Value::Boolean(b) => b.hash(state),
             Value::Integer(integer) => integer.hash(state),
-            Value::Bytes(bytes) => bytes.hash(state),
+            Value::Bytes(v) => v.hash(state),
             Value::List(list) => list.hash(state),
             Value::Null => Null.hash(state),
             Value::String(string) => string.hash(state),
@@ -138,7 +139,12 @@ impl Marker for Value {
             Value::Boolean(false) => Ok(MARKER_FALSE),
             Value::Integer(integer) => integer.get_marker(),
             Value::Float(_) => Ok(MARKER_FLOAT),
-            Value::Bytes(byte_array) => byte_array.get_marker(),
+            Value::Bytes(bytes) => match bytes.len() {
+                0..=255 => Ok(MARKER_SMALL_BYTES),
+                256..=65_535 => Ok(MARKER_MEDIUM_BYTES),
+                65_536..=2_147_483_647 => Ok(MARKER_LARGE_BYTES),
+                _ => Err(Error::ValueTooLarge(bytes.len())),
+            },
             Value::List(list) => list.get_marker(),
             Value::Map(map) => map.get_marker(),
             Value::Null => Null.get_marker(),
@@ -177,7 +183,29 @@ impl TryInto<Bytes> for Value {
                 bytes.put_f64(f);
                 Ok(bytes.freeze())
             }
-            Value::Bytes(byte_array) => byte_array.try_into(),
+            Value::Bytes(bytes) => {
+                // Worst case is a large ByteArray, with marker byte, 32-bit size value, and length
+                let mut buf = BytesMut::with_capacity(
+                    mem::size_of::<u8>() + mem::size_of::<u32>() + bytes.len(),
+                );
+                match bytes.len() {
+                    0..=255 => {
+                        buf.put_u8(MARKER_SMALL_BYTES);
+                        buf.put_u8(bytes.len() as u8)
+                    }
+                    256..=65_535 => {
+                        buf.put_u8(MARKER_MEDIUM_BYTES);
+                        buf.put_u16(bytes.len() as u16)
+                    }
+                    65_536..=2_147_483_647 => {
+                        buf.put_u8(MARKER_LARGE_BYTES);
+                        buf.put_u32(bytes.len() as u32)
+                    }
+                    _ => return Err(Error::ValueTooLarge(bytes.len())),
+                }
+                buf.put_slice(&bytes);
+                Ok(buf.freeze())
+            }
             Value::List(list) => list.try_into(),
             Value::Map(map) => map.try_into(),
             Value::Null => Null.try_into(),
@@ -234,8 +262,20 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                     input_arc.lock().unwrap().advance(1);
                     Ok(Value::Float(input_arc.lock().unwrap().get_f64()))
                 }
-                byte_array::MARKER_SMALL | byte_array::MARKER_MEDIUM | byte_array::MARKER_LARGE => {
-                    Ok(Value::Bytes(ByteArray::try_from(input_arc)?))
+                MARKER_SMALL_BYTES | MARKER_MEDIUM_BYTES | MARKER_LARGE_BYTES => {
+                    let mut input_bytes = input_arc.lock().unwrap();
+                    let marker = input_bytes.get_u8();
+                    let size = match marker {
+                        MARKER_SMALL_BYTES => input_bytes.get_u8() as usize,
+                        MARKER_MEDIUM_BYTES => input_bytes.get_u16() as usize,
+                        MARKER_LARGE_BYTES => input_bytes.get_u32() as usize,
+                        _ => {
+                            return Err(DeserializationError::InvalidMarkerByte(marker).into());
+                        }
+                    };
+                    let mut bytes = vec![0; size];
+                    input_bytes.copy_to_slice(&mut bytes);
+                    Ok(Value::Bytes(bytes))
                 }
                 // Tiny string
                 marker
@@ -399,29 +439,29 @@ mod tests {
 
     #[test]
     fn byte_array_from_bytes() {
-        let empty_arr: ByteArray = Vec::<u8>::new().into();
+        let empty_arr = Value::Bytes(vec![]);
         let empty_arr_bytes = empty_arr.clone().try_into_bytes().unwrap();
-        let small_arr: ByteArray = vec![1_u8; 100].into();
+        let small_arr = Value::Bytes(vec![1_u8; 100]);
         let small_arr_bytes = small_arr.clone().try_into_bytes().unwrap();
-        let medium_arr: ByteArray = vec![99_u8; 1000].into();
+        let medium_arr = Value::Bytes(vec![99_u8; 1000]);
         let medium_arr_bytes = medium_arr.clone().try_into_bytes().unwrap();
-        let large_arr: ByteArray = vec![1_u8; 100_000].into();
+        let large_arr = Value::Bytes(vec![1_u8; 100_000]);
         let large_arr_bytes = large_arr.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(empty_arr_bytes))).unwrap(),
-            Value::Bytes(empty_arr)
+            empty_arr
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_arr_bytes))).unwrap(),
-            Value::Bytes(small_arr)
+            small_arr
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_arr_bytes))).unwrap(),
-            Value::Bytes(medium_arr)
+            medium_arr
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_arr_bytes))).unwrap(),
-            Value::Bytes(large_arr)
+            large_arr
         );
     }
 
@@ -715,7 +755,6 @@ mod tests {
     #[ignore]
     fn value_size() {
         use std::mem::size_of;
-        println!("ByteArray: {} bytes", size_of::<ByteArray>());
         println!("Date: {} bytes", size_of::<Date>());
         println!("DateTimeOffset: {} bytes", size_of::<DateTimeOffset>());
         println!("DateTimeZoned: {} bytes", size_of::<DateTimeZoned>());

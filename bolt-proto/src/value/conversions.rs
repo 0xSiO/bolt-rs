@@ -37,13 +37,13 @@ impl From<f64> for Value {
 
 impl From<&[u8]> for Value {
     fn from(value: &[u8]) -> Self {
-        Value::Bytes(ByteArray::from(value.to_vec()))
+        Value::Bytes(value.to_vec())
     }
 }
 
 impl From<Vec<u8>> for Value {
     fn from(value: Vec<u8>) -> Self {
-        Value::Bytes(ByteArray::from(value))
+        Value::Bytes(value)
     }
 }
 
@@ -229,7 +229,7 @@ impl TryFrom<Value> for Vec<u8> {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Bytes(byte_array) => Ok(byte_array.value),
+            Value::Bytes(byte_array) => Ok(byte_array),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }
