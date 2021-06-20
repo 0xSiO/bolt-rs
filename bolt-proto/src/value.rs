@@ -51,6 +51,10 @@ pub(crate) mod unbound_relationship;
 
 pub(crate) const MARKER_FALSE: u8 = 0xC2;
 pub(crate) const MARKER_TRUE: u8 = 0xC3;
+pub(crate) const MARKER_INT_8: u8 = 0xC8;
+pub(crate) const MARKER_INT_16: u8 = 0xC9;
+pub(crate) const MARKER_INT_32: u8 = 0xCA;
+pub(crate) const MARKER_INT_64: u8 = 0xCB;
 pub(crate) const MARKER_FLOAT: u8 = 0xC1;
 pub(crate) const MARKER_SMALL_BYTES: u8 = 0xCC;
 pub(crate) const MARKER_MEDIUM_BYTES: u8 = 0xCD;
@@ -69,7 +73,7 @@ pub(crate) const MARKER_LARGE_BYTES: u8 = 0xCE;
 pub enum Value {
     // V1-compatible value types
     Boolean(bool),
-    Integer(Integer),
+    Integer(i64),
     Float(f64),
     Bytes(Vec<u8>), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
     List(List),
@@ -109,7 +113,7 @@ impl Hash for Value {
             | Value::Point3D(_) => panic!("Cannot hash a {:?}", self),
             Value::Boolean(b) => b.hash(state),
             Value::Integer(integer) => integer.hash(state),
-            Value::Bytes(v) => v.hash(state),
+            Value::Bytes(bytes) => bytes.hash(state),
             Value::List(list) => list.hash(state),
             Value::Null => Null.hash(state),
             Value::String(string) => string.hash(state),
@@ -137,7 +141,14 @@ impl Marker for Value {
         match self {
             Value::Boolean(true) => Ok(MARKER_TRUE),
             Value::Boolean(false) => Ok(MARKER_FALSE),
-            Value::Integer(integer) => integer.get_marker(),
+            Value::Integer(integer) => match integer {
+                -9_223_372_036_854_775_808..=-2_147_483_649
+                | 2_147_483_648..=9_223_372_036_854_775_807 => Ok(MARKER_INT_64),
+                -2_147_483_648..=-32_769 | 32_768..=2_147_483_647 => Ok(MARKER_INT_32),
+                -32_768..=-129 | 128..=32_767 => Ok(MARKER_INT_16),
+                -128..=-17 => Ok(MARKER_INT_8),
+                -16..=127 => Ok(*integer as u8),
+            },
             Value::Float(_) => Ok(MARKER_FLOAT),
             Value::Bytes(bytes) => match bytes.len() {
                 0..=255 => Ok(MARKER_SMALL_BYTES),
@@ -175,7 +186,34 @@ impl TryInto<Bytes> for Value {
         match self {
             Value::Boolean(true) => Ok(Bytes::from_static(&[MARKER_TRUE])),
             Value::Boolean(false) => Ok(Bytes::from_static(&[MARKER_FALSE])),
-            Value::Integer(integer) => integer.try_into(),
+            Value::Integer(integer) => {
+                // Worst case is 64-bit int
+                let mut bytes =
+                    BytesMut::with_capacity(mem::size_of::<u8>() + mem::size_of::<i64>());
+
+                match integer {
+                    -9_223_372_036_854_775_808..=-2_147_483_649
+                    | 2_147_483_648..=9_223_372_036_854_775_807 => {
+                        bytes.put_u8(MARKER_INT_64);
+                        bytes.put_i64(integer);
+                    }
+                    -2_147_483_648..=-32_769 | 32_768..=2_147_483_647 => {
+                        bytes.put_u8(MARKER_INT_32);
+                        bytes.put_i32(integer as i32);
+                    }
+                    -32_768..=-129 | 128..=32_767 => {
+                        bytes.put_u8(MARKER_INT_16);
+                        bytes.put_i16(integer as i16);
+                    }
+                    -128..=-17 => {
+                        bytes.put_u8(MARKER_INT_8);
+                        bytes.put_i8(integer as i8);
+                    }
+                    -16..=127 => bytes.put_u8(integer as u8),
+                }
+
+                Ok(bytes.freeze())
+            }
             Value::Float(f) => {
                 let mut bytes =
                     BytesMut::with_capacity(mem::size_of::<u8>() + mem::size_of::<f64>());
@@ -251,13 +289,24 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 // Tiny int
                 marker if (-16..=127).contains(&(marker as i8)) => {
                     input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Integer(Integer::from(marker as i8)))
+                    Ok(Value::Integer(marker as i8 as i64))
                 }
                 // Other int types
                 integer::MARKER_INT_8
                 | integer::MARKER_INT_16
                 | integer::MARKER_INT_32
-                | integer::MARKER_INT_64 => Ok(Value::Integer(Integer::try_from(input_arc)?)),
+                | integer::MARKER_INT_64 => {
+                    let mut input_bytes = input_arc.lock().unwrap();
+                    let marker = input_bytes.get_u8();
+
+                    match marker {
+                        MARKER_INT_8 => Ok(Value::Integer(input_bytes.get_i8() as i64)),
+                        MARKER_INT_16 => Ok(Value::Integer(input_bytes.get_i16() as i64)),
+                        MARKER_INT_32 => Ok(Value::Integer(input_bytes.get_i32() as i64)),
+                        MARKER_INT_64 => Ok(Value::Integer(input_bytes.get_i64() as i64)),
+                        _ => Err(DeserializationError::InvalidMarkerByte(marker).into()),
+                    }
+                }
                 MARKER_FLOAT => {
                     input_arc.lock().unwrap().advance(1);
                     Ok(Value::Float(input_arc.lock().unwrap().get_f64()))
@@ -376,42 +425,75 @@ mod tests {
     }
 
     #[test]
-    fn integer_from_bytes() {
-        let tiny = Integer::from(110_i8);
-        let tiny_bytes = tiny.clone().try_into_bytes().unwrap();
-        let small = Integer::from(-50_i8);
-        let small_bytes = small.clone().try_into_bytes().unwrap();
-        let medium = Integer::from(8000_i16);
-        let medium_bytes = medium.clone().try_into_bytes().unwrap();
-        let medium_negative = Integer::from(-18621_i16);
-        let medium_negative_bytes = medium_negative.clone().try_into_bytes().unwrap();
-        let large = Integer::from(-1_000_000_000_i32);
-        let large_bytes = large.clone().try_into_bytes().unwrap();
-        let very_large = Integer::from(9_000_000_000_000_000_000_i64);
-        let very_large_bytes = very_large.clone().try_into_bytes().unwrap();
+    fn tiny_integer_from_bytes() {
+        let tiny = Value::Integer(110);
+        let tiny_bytes = Bytes::from_static(&[110]);
+        assert_eq!(&tiny.clone().try_into_bytes().unwrap(), &tiny_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
-            Value::Integer(tiny)
+            tiny
         );
+    }
+
+    #[test]
+    fn small_integer_from_bytes() {
+        let small = Value::Integer(-127);
+        let small_bytes = Bytes::from_static(&[0xC8, 0x81]);
+        assert_eq!(&small.clone().try_into_bytes().unwrap(), &small_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
-            Value::Integer(small)
+            small
         );
+    }
+
+    #[test]
+    fn medium_integer_from_bytes() {
+        let medium = Value::Integer(8000);
+        let medium_bytes = Bytes::from_static(&[0xC9, 0x1F, 0x40]);
+        assert_eq!(&medium.clone().try_into_bytes().unwrap(), &medium_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
-            Value::Integer(medium)
+            medium
+        );
+    }
+
+    #[test]
+    fn medium_negative_integer_from_bytes() {
+        let medium_negative = Value::Integer(-18621);
+        let medium_negative_bytes = Bytes::from_static(&[0xC9, 0xB7, 0x43]);
+        assert_eq!(
+            &medium_negative.clone().try_into_bytes().unwrap(),
+            &medium_negative_bytes
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_negative_bytes))).unwrap(),
-            Value::Integer(medium_negative)
+            medium_negative
         );
+    }
+
+    #[test]
+    fn large_integer_from_bytes() {
+        let large = Value::Integer(-1_000_000_000);
+        let large_bytes = Bytes::from_static(&[0xCA, 0xC4, 0x65, 0x36, 0x00]);
+        assert_eq!(&large.clone().try_into_bytes().unwrap(), &large_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
-            Value::Integer(large)
+            large
+        );
+    }
+
+    #[test]
+    fn very_large_integer_from_bytes() {
+        let very_large = Value::Integer(9_000_000_000_000_000_000);
+        let very_large_bytes =
+            Bytes::from_static(&[0xCB, 0x7C, 0xE6, 0x6C, 0x50, 0xE2, 0x84, 0x00, 0x00]);
+        assert_eq!(
+            &very_large.clone().try_into_bytes().unwrap(),
+            &very_large_bytes
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(very_large_bytes))).unwrap(),
-            Value::Integer(very_large)
+            very_large
         );
     }
 
