@@ -77,8 +77,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         println!("<<< {:?}\n", message);
 
         // TODO: Use or-patterns where possible
-        dbg!(&self.sent_queue);
-        match dbg!((self.server_state, self.sent_queue.pop_front(), message)) {
+        match (self.server_state, self.sent_queue.pop_front(), message) {
             // CONNECTED
             (Connected, Some(Message::Init(_)), Message::Success(success)) => {
                 self.server_state = Ready;
@@ -380,6 +379,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Failed, Message::Pull(_)) => {}
             (Failed, Message::DiscardAll) => {}
             (Failed, Message::Discard(_)) => {}
+            (Failed, Message::AckFailure) => {}
             (Failed, Message::Reset) => {}
             (Failed, Message::Goodbye) => {}
             (Interrupted, Message::Run(_)) => {}
@@ -449,16 +449,17 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
 
-        for message in messages {
+        for message in &messages {
             #[cfg(test)]
             println!(">>> {:?}", message);
 
-            let chunks: Vec<Bytes> = message.try_into()?;
+            let chunks: Vec<Bytes> = message.clone().try_into()?;
             for chunk in chunks {
                 self.stream.write_all(&chunk).await?;
             }
         }
         self.stream.flush().await?;
+        self.sent_queue.extend(messages);
 
         for _ in 0..responses.capacity() {
             let mut response = self.read_message().await?;

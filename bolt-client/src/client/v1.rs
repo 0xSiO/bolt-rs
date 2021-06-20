@@ -555,7 +555,8 @@ pub(crate) mod tests {
         let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
-        client.send_message(Message::Commit).await.unwrap();
+        let begin = Begin::new(Default::default());
+        client.send_message(Message::Begin(begin)).await.unwrap();
         assert!(matches!(
             client.read_message().await,
             Err(Error::ProtocolError(_))
