@@ -17,52 +17,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   available
     #[bolt_version(4, 4.1)]
     pub async fn discard(&mut self, metadata: Option<Metadata>) -> Result<Message> {
-        require_state!(self, Streaming | TxStreaming | Failed | Interrupted);
-
         let discard_msg = Discard::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Discard(discard_msg)).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (Streaming, &Message::Success(ref success)) => {
-                // TODO: Build this field into the Success message type
-                let has_more = success
-                    .metadata()
-                    .get("has_more")
-                    .cloned()
-                    .unwrap_or_else(|| Value::from(false));
-
-                if has_more == Value::from(true) {
-                    self.server_state = Streaming;
-                } else {
-                    self.server_state = Ready;
-                }
-            }
-            (Streaming, &Message::Failure(_)) => self.server_state = Failed,
-            (TxStreaming, &Message::Success(ref success)) => {
-                let has_more = success
-                    .metadata()
-                    .get("has_more")
-                    .cloned()
-                    .unwrap_or_else(|| Value::from(false));
-
-                if has_more == Value::from(true) {
-                    self.server_state = TxStreaming;
-                } else {
-                    // TODO: Or TxStreaming, if there are other streams open??
-                    self.server_state = TxReady;
-                }
-            }
-            (TxStreaming, &Message::Failure(_)) => self.server_state = Failed,
-            (Failed, &Message::Ignored) => self.server_state = Failed,
-            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `PULL` message to the server.
@@ -77,68 +34,17 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   available or if retrieval fails
     #[bolt_version(4, 4.1)]
     pub async fn pull(&mut self, metadata: Option<Metadata>) -> Result<(Message, Vec<Record>)> {
-        require_state!(self, Streaming | TxStreaming | Failed | Interrupted);
-
         let pull_msg = Pull::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Pull(pull_msg)).await?;
         let mut records = vec![];
         loop {
-            match (self.server_state, self.read_message().await?) {
-                (Streaming, Message::Record(record)) => records.push(record),
-                (TxStreaming, Message::Record(record)) => records.push(record),
-                (Streaming, Message::Success(success)) => {
-                    // TODO: Build this field into the Success message type
-                    let has_more = success
-                        .metadata()
-                        .get("has_more")
-                        .cloned()
-                        .unwrap_or_else(|| Value::from(false));
-
-                    if has_more == Value::from(true) {
-                        self.server_state = Streaming;
-                    } else {
-                        self.server_state = Ready;
-                    }
-
-                    return Ok((Message::Success(success), records));
-                }
-                (Streaming, Message::Failure(failure)) => {
-                    self.server_state = Failed;
-                    // TODO: Should we return the records, even if they're considered invalid?
-                    return Ok((Message::Failure(failure), vec![]));
-                }
-                (TxStreaming, Message::Success(success)) => {
-                    let has_more = success
-                        .metadata()
-                        .get("has_more")
-                        .cloned()
-                        .unwrap_or_else(|| Value::from(false));
-
-                    if has_more == Value::from(true) {
-                        self.server_state = TxStreaming;
-                    } else {
-                        // TODO: Or TxStreaming, if there are other streams open??
-                        self.server_state = TxReady;
-                    }
-
-                    return Ok((Message::Success(success), records));
-                }
-                (TxStreaming, Message::Failure(failure)) => {
-                    self.server_state = Failed;
-                    return Ok((Message::Failure(failure), vec![]));
-                }
-                (Failed, Message::Ignored) => {
-                    self.server_state = Failed;
-                    return Ok((Message::Ignored, vec![]));
-                }
-                (Interrupted, Message::Ignored) => {
-                    self.server_state = Interrupted;
-                    return Ok((Message::Ignored, vec![]));
-                }
-                (state, msg) => {
-                    self.server_state = Defunct;
-                    return Err(Error::InvalidResponse(state, msg));
-                }
+            match self.read_message().await? {
+                Message::Record(record) => records.push(record),
+                Message::Success(success) => return Ok((Message::Success(success), records)),
+                // TODO: Should we return invalid records?
+                Message::Failure(failure) => return Ok((Message::Failure(failure), vec![])),
+                Message::Ignored => return Ok((Message::Ignored, vec![])),
+                _ => unreachable!(),
             }
         }
     }

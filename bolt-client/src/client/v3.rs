@@ -18,22 +18,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   failed.
     #[bolt_version(3, 4, 4.1)]
     pub async fn hello(&mut self, metadata: Option<Metadata>) -> Result<Message> {
-        require_state!(self, Connected);
-
         let hello_msg = Hello::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Hello(hello_msg)).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (Connected, Message::Success(_)) => self.server_state = Ready,
-            (Connected, Message::Failure(_)) => self.server_state = Defunct,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `GOODBYE` message to the server.
@@ -43,13 +30,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// server will end the connection upon receipt of this message.
     #[bolt_version(3, 4, 4.1)]
     pub async fn goodbye(&mut self) -> Result<()> {
-        require_state!(self, Ready);
-
         self.send_message(Message::Goodbye).await?;
         self.server_state = Defunct;
-        self.stream.close().await?;
-
-        Ok(())
+        Ok(self.stream.close().await?)
     }
 
     /// Send a `RUN_WITH_METADATA` message to the server.
@@ -69,32 +52,13 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         parameters: Option<Params>,
         metadata: Option<Metadata>,
     ) -> Result<Message> {
-        require_state!(self, Ready | TxReady | TxStreaming | Failed | Interrupted);
-
         let run_msg = RunWithMetadata::new(
             statement.into(),
             parameters.unwrap_or_default().value,
             metadata.unwrap_or_default().value,
         );
         self.send_message(Message::RunWithMetadata(run_msg)).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (Ready, &Message::Success(_)) => self.server_state = Streaming,
-            (Ready, &Message::Failure(_)) => self.server_state = Failed,
-            (TxReady, &Message::Success(_)) => self.server_state = TxStreaming,
-            (TxReady, &Message::Failure(_)) => self.server_state = Failed,
-            (TxStreaming, &Message::Success(_)) => self.server_state = TxStreaming,
-            (TxStreaming, &Message::Failure(_)) => self.server_state = Failed,
-            (Failed, &Message::Ignored) => self.server_state = Failed,
-            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `BEGIN` message to the server.
@@ -109,23 +73,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   if transaction could not be started
     #[bolt_version(3, 4, 4.1)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> Result<Message> {
-        require_state!(self, Ready | Interrupted);
-
         let begin_msg = Begin::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Begin(begin_msg)).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (Ready, &Message::Success(_)) => self.server_state = TxReady,
-            (Ready, &Message::Failure(_)) => self.server_state = Failed,
-            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `COMMIT` message to the server.
@@ -141,22 +91,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   if transaction could not be committed
     #[bolt_version(3, 4, 4.1)]
     pub async fn commit(&mut self) -> Result<Message> {
-        require_state!(self, TxReady | Interrupted);
-
         self.send_message(Message::Commit).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (TxReady, &Message::Success(_)) => self.server_state = Ready,
-            (TxReady, &Message::Failure(_)) => self.server_state = Failed,
-            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `ROLLBACK` message to the server.
@@ -172,22 +108,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   if transaction could not be rolled back
     #[bolt_version(3, 4, 4.1)]
     pub async fn rollback(&mut self) -> Result<Message> {
-        require_state!(self, TxReady | Interrupted);
-
         self.send_message(Message::Rollback).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (TxReady, &Message::Success(_)) => self.server_state = Ready,
-            (TxReady, &Message::Failure(_)) => self.server_state = Failed,
-            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 }
 

@@ -7,12 +7,12 @@
 // http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative Commons,
 // PO Box 1866, Mountain View, CA 94042, USA.
 
-use std::convert::TryInto;
+use std::{collections::VecDeque, convert::TryInto};
 
 use bytes::*;
 use futures_util::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-use bolt_proto::{Message, ServerState};
+use bolt_proto::{Message, ServerState, ServerState::*};
 
 use crate::error::*;
 
@@ -30,6 +30,7 @@ pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
     stream: S,
     version: u32,
     server_state: ServerState,
+    sent_queue: VecDeque<Message>,
 }
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
@@ -52,7 +53,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             Ok(Self {
                 stream,
                 version,
-                server_state: ServerState::Connected,
+                server_state: Connected,
+                sent_queue: Default::default(),
             })
         } else {
             Err(Error::HandshakeFailed(*preferred_versions))
@@ -68,26 +70,352 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.server_state
     }
 
-    // TODO: Handle state changes here?
     pub(crate) async fn read_message(&mut self) -> Result<Message> {
         let message = Message::from_stream(&mut self.stream).await?;
 
         #[cfg(test)]
         println!("<<< {:?}\n", message);
 
-        Ok(message)
+        // TODO: Use or-patterns where possible
+        dbg!(&self.sent_queue);
+        match dbg!((self.server_state, self.sent_queue.pop_front(), message)) {
+            // CONNECTED
+            (Connected, Some(Message::Init(_)), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (Connected, Some(Message::Init(_)), Message::Failure(failure)) => {
+                self.server_state = Defunct;
+                Ok(Message::Failure(failure))
+            }
+            (Connected, Some(Message::Hello(_)), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (Connected, Some(Message::Hello(_)), Message::Failure(failure)) => {
+                self.server_state = Defunct;
+                Ok(Message::Failure(failure))
+            }
+
+            // READY
+            (Ready, Some(Message::Run(_)), Message::Success(success)) => {
+                self.server_state = Streaming;
+                Ok(Message::Success(success))
+            }
+            (Ready, Some(Message::Run(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (Ready, Some(Message::RunWithMetadata(_)), Message::Success(success)) => {
+                self.server_state = Streaming;
+                Ok(Message::Success(success))
+            }
+            (Ready, Some(Message::RunWithMetadata(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (Ready, Some(Message::Begin(_)), Message::Success(success)) => {
+                self.server_state = TxReady;
+                Ok(Message::Success(success))
+            }
+            (Ready, Some(Message::Begin(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+
+            // STREAMING
+            (Streaming, Some(Message::PullAll), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (Streaming, Some(Message::PullAll), Message::Record(record)) => {
+                self.server_state = Streaming;
+                // Put the PULL_ALL message back so we can keep consuming records
+                self.sent_queue.push_front(Message::PullAll);
+                Ok(Message::Record(record))
+            }
+            (Streaming, Some(Message::PullAll), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (Streaming, Some(Message::Pull(_)), Message::Success(success)) => {
+                // TODO: Check has_more field
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (Streaming, Some(Message::Pull(pull)), Message::Record(record)) => {
+                self.server_state = Streaming;
+                // Put the PULL message back so we can keep consuming records
+                self.sent_queue.push_front(Message::Pull(pull));
+                Ok(Message::Record(record))
+            }
+            (Streaming, Some(Message::Pull(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (Streaming, Some(Message::DiscardAll), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (Streaming, Some(Message::DiscardAll), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (Streaming, Some(Message::Discard(_)), Message::Success(success)) => {
+                // TODO: Check has_more field
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (Streaming, Some(Message::Discard(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+
+            // TX_READY
+            (TxReady, Some(Message::RunWithMetadata(_)), Message::Success(success)) => {
+                self.server_state = TxStreaming;
+                Ok(Message::Success(success))
+            }
+            (TxReady, Some(Message::RunWithMetadata(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (TxReady, Some(Message::Commit), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (TxReady, Some(Message::Commit), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (TxReady, Some(Message::Rollback), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (TxReady, Some(Message::Rollback), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+
+            // TX_STREAMING
+            (TxStreaming, Some(Message::RunWithMetadata(_)), Message::Success(success)) => {
+                self.server_state = TxStreaming;
+                Ok(Message::Success(success))
+            }
+            (TxStreaming, Some(Message::RunWithMetadata(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (TxStreaming, Some(Message::PullAll), Message::Success(success)) => {
+                self.server_state = TxReady;
+                Ok(Message::Success(success))
+            }
+            (TxStreaming, Some(Message::PullAll), Message::Record(record)) => {
+                self.server_state = TxStreaming;
+                // Put the PULL_ALL message back so we can keep consuming records
+                self.sent_queue.push_front(Message::PullAll);
+                Ok(Message::Record(record))
+            }
+            (TxStreaming, Some(Message::PullAll), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (TxStreaming, Some(Message::Pull(_)), Message::Success(success)) => {
+                // TODO: Check has_more field
+                self.server_state = TxReady;
+                Ok(Message::Success(success))
+            }
+            (TxStreaming, Some(Message::Pull(pull)), Message::Record(record)) => {
+                self.server_state = TxStreaming;
+                // Put the PULL message back so we can keep consuming records
+                self.sent_queue.push_front(Message::Pull(pull));
+                Ok(Message::Record(record))
+            }
+            (TxStreaming, Some(Message::Pull(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (TxStreaming, Some(Message::DiscardAll), Message::Success(success)) => {
+                self.server_state = TxReady;
+                Ok(Message::Success(success))
+            }
+            (TxStreaming, Some(Message::DiscardAll), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+            (TxStreaming, Some(Message::Discard(_)), Message::Success(success)) => {
+                // TODO: Check has_more field
+                self.server_state = TxReady;
+                Ok(Message::Success(success))
+            }
+            (TxStreaming, Some(Message::Discard(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
+
+            // FAILED
+            (Failed, Some(Message::Run(_)), Message::Ignored) => {
+                self.server_state = Failed;
+                Ok(Message::Ignored)
+            }
+            (Failed, Some(Message::RunWithMetadata(_)), Message::Ignored) => {
+                self.server_state = Failed;
+                Ok(Message::Ignored)
+            }
+            (Failed, Some(Message::PullAll), Message::Ignored) => {
+                self.server_state = Failed;
+                Ok(Message::Ignored)
+            }
+            (Failed, Some(Message::Pull(_)), Message::Ignored) => {
+                self.server_state = Failed;
+                Ok(Message::Ignored)
+            }
+            (Failed, Some(Message::DiscardAll), Message::Ignored) => {
+                self.server_state = Failed;
+                Ok(Message::Ignored)
+            }
+            (Failed, Some(Message::Discard(_)), Message::Ignored) => {
+                self.server_state = Failed;
+                Ok(Message::Ignored)
+            }
+            (Failed, Some(Message::AckFailure), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (Failed, Some(Message::AckFailure), Message::Failure(failure)) => {
+                self.server_state = Defunct;
+                Ok(Message::Failure(failure))
+            }
+
+            // INTERRUPTED
+            // TODO: Should we be matching the response to Ignored, or can it be anything?
+            (Interrupted, Some(Message::Run(_)), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::RunWithMetadata(_)), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::PullAll), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::Pull(_)), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::DiscardAll), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::Discard(_)), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::Begin(_)), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::Commit), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::Rollback), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::AckFailure), Message::Ignored) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::Reset), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
+            (Interrupted, Some(Message::Reset), Message::Failure(failure)) => {
+                self.server_state = Defunct;
+                Ok(Message::Failure(failure))
+            }
+
+            (state, sent_msg, received_msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidResponse(state, received_msg));
+            }
+        }
     }
 
-    // TODO: Handle state changes here?
+    // TODO: Handle immediate state changes
     pub(crate) async fn send_message(&mut self, message: Message) -> Result<()> {
+        // TODO: Use or-patterns where possible
+        match (self.server_state, &message) {
+            (Connected, Message::Init(_)) => {}
+            (Connected, Message::Hello(_)) => {}
+            (Ready, Message::Run(_)) => {}
+            (Ready, Message::RunWithMetadata(_)) => {}
+            (Ready, Message::Begin(_)) => {}
+            (Ready, Message::Reset) => {}
+            (Ready, Message::Goodbye) => {}
+            (Streaming, Message::PullAll) => {}
+            (Streaming, Message::Pull(_)) => {}
+            (Streaming, Message::DiscardAll) => {}
+            (Streaming, Message::Discard(_)) => {}
+            (Streaming, Message::Reset) => {}
+            (Streaming, Message::Goodbye) => {}
+            (TxReady, Message::RunWithMetadata(_)) => {}
+            (TxReady, Message::Commit) => {}
+            (TxReady, Message::Rollback) => {}
+            (TxReady, Message::Reset) => {}
+            (TxReady, Message::Goodbye) => {}
+            (TxStreaming, Message::RunWithMetadata(_)) => {}
+            (TxStreaming, Message::PullAll) => {}
+            (TxStreaming, Message::Pull(_)) => {}
+            (TxStreaming, Message::DiscardAll) => {}
+            (TxStreaming, Message::Discard(_)) => {}
+            (TxStreaming, Message::Reset) => {}
+            (TxStreaming, Message::Goodbye) => {}
+            (Failed, Message::Run(_)) => {}
+            (Failed, Message::RunWithMetadata(_)) => {}
+            (Failed, Message::PullAll) => {}
+            (Failed, Message::Pull(_)) => {}
+            (Failed, Message::DiscardAll) => {}
+            (Failed, Message::Discard(_)) => {}
+            (Failed, Message::Reset) => {}
+            (Failed, Message::Goodbye) => {}
+            (Interrupted, Message::Run(_)) => {}
+            (Interrupted, Message::RunWithMetadata(_)) => {}
+            (Interrupted, Message::PullAll) => {}
+            (Interrupted, Message::Pull(_)) => {}
+            (Interrupted, Message::DiscardAll) => {}
+            (Interrupted, Message::Discard(_)) => {}
+            (Interrupted, Message::Begin(_)) => {}
+            (Interrupted, Message::Commit) => {}
+            (Interrupted, Message::Rollback) => {}
+            (Interrupted, Message::Reset) => {}
+            (Interrupted, Message::Goodbye) => {}
+            (state, msg) => {
+                self.server_state = Defunct;
+                return Err(Error::InvalidState(state));
+            }
+        }
+
         #[cfg(test)]
         println!(">>> {:?}", message);
 
-        let chunks: Vec<Bytes> = message.try_into()?;
+        let chunks: Vec<Bytes> = message.clone().try_into()?;
         for chunk in chunks {
             self.stream.write_all(&chunk).await?;
         }
         self.stream.flush().await?;
+
+        // Immediate state changes
+        match message {
+            Message::Reset => self.server_state = Interrupted,
+            Message::Goodbye => self.server_state = Disconnected,
+            _ => {}
+        }
+
+        self.sent_queue.push_back(message);
         Ok(())
     }
 

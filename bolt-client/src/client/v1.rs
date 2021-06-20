@@ -27,22 +27,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         client_name: impl Into<String>,
         auth_token: Metadata,
     ) -> Result<Message> {
-        require_state!(self, Connected);
-
         let init_msg = Init::new(client_name.into(), auth_token.value);
         self.send_message(Message::Init(init_msg)).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (Connected, Message::Success(_)) => self.server_state = Ready,
-            (Connected, Message::Failure(_)) => self.server_state = Defunct,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `RUN` message to the server.
@@ -82,24 +69,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         statement: impl Into<String>,
         parameters: Option<Params>,
     ) -> Result<Message> {
-        require_state!(self, Ready | Failed | Interrupted);
-
         let run_msg = Run::new(statement.into(), parameters.unwrap_or_default().value);
         self.send_message(Message::Run(run_msg)).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (Ready, &Message::Success(_)) => self.server_state = Streaming,
-            (Ready, &Message::Failure(_)) => self.server_state = Failed,
-            (Failed, &Message::Ignored) => self.server_state = Failed,
-            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `DISCARD_ALL` message to the server.
@@ -123,25 +95,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   available
     #[bolt_version(1, 2, 3)]
     pub async fn discard_all(&mut self) -> Result<Message> {
-        require_state!(self, Streaming | TxStreaming | Failed | Interrupted);
-
         self.send_message(Message::DiscardAll).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (Streaming, &Message::Success(_)) => self.server_state = Ready,
-            (Streaming, &Message::Failure(_)) => self.server_state = Failed,
-            (TxStreaming, &Message::Success(_)) => self.server_state = TxReady,
-            (TxStreaming, &Message::Failure(_)) => self.server_state = Failed,
-            (Failed, &Message::Ignored) => self.server_state = Failed,
-            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `PULL_ALL` message to the server. Returns a tuple containing a [`Vec`] of
@@ -169,42 +124,16 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   available or if retrieval fails
     #[bolt_version(1, 2, 3)]
     pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>)> {
-        require_state!(self, Streaming | TxStreaming | Failed | Interrupted);
-
         self.send_message(Message::PullAll).await?;
         let mut records = vec![];
         loop {
-            match (self.server_state, self.read_message().await?) {
-                (Streaming, Message::Record(record)) => records.push(record),
-                (TxStreaming, Message::Record(record)) => records.push(record),
-                (Streaming, Message::Success(success)) => {
-                    self.server_state = Ready;
-                    return Ok((Message::Success(success), records));
-                }
-                (Streaming, Message::Failure(failure)) => {
-                    self.server_state = Failed;
-                    return Ok((Message::Failure(failure), vec![]));
-                }
-                (TxStreaming, Message::Success(success)) => {
-                    self.server_state = TxReady;
-                    return Ok((Message::Success(success), records));
-                }
-                (TxStreaming, Message::Failure(failure)) => {
-                    self.server_state = Failed;
-                    return Ok((Message::Failure(failure), vec![]));
-                }
-                (Failed, Message::Ignored) => {
-                    self.server_state = Failed;
-                    return Ok((Message::Ignored, vec![]));
-                }
-                (Interrupted, Message::Ignored) => {
-                    self.server_state = Interrupted;
-                    return Ok((Message::Ignored, vec![]));
-                }
-                (state, msg) => {
-                    self.server_state = Defunct;
-                    return Err(Error::InvalidResponse(state, msg));
-                }
+            match self.read_message().await? {
+                Message::Record(record) => records.push(record),
+                Message::Success(success) => return Ok((Message::Success(success), records)),
+                // TODO: Should we return invalid records?
+                Message::Failure(failure) => return Ok((Message::Failure(failure), vec![])),
+                Message::Ignored => return Ok((Message::Ignored, vec![])),
+                _ => unreachable!(),
             }
         }
     }
@@ -227,22 +156,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   to be cleared
     #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> Result<Message> {
-        require_state!(self, Failed | Interrupted);
-
         self.send_message(Message::AckFailure).await?;
-        let response = self.read_message().await?;
-
-        match (self.server_state, &response) {
-            (Failed, &Message::Success(_)) => self.server_state = Ready,
-            (Failed, &Message::Failure(_)) => self.server_state = Defunct,
-            (Interrupted, &Message::Ignored) => self.server_state = Interrupted,
-            (state, msg) => {
-                self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, msg.clone()));
-            }
-        }
-
-        Ok(response)
+        self.read_message().await
     }
 
     /// Send a `RESET` message to the server.
@@ -272,32 +187,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   possible
     #[bolt_version(1, 2, 3, 4, 4.1)]
     pub async fn reset(&mut self) -> Result<Message> {
-        require_state!(
-            self,
-            Ready | Streaming | TxReady | TxStreaming | Failed | Interrupted
-        );
-
         self.send_message(Message::Reset).await?;
-
-        // RESET will jump ahead in the queue
-        self.server_state = Interrupted;
-
         loop {
             // TODO: Make sure this works as expected
             match self.read_message().await? {
-                Message::Success(success) => {
-                    self.server_state = Ready;
-                    return Ok(Message::Success(success));
-                }
-                Message::Failure(failure) => {
-                    self.server_state = Defunct;
-                    return Ok(Message::Failure(failure));
-                }
+                Message::Success(success) => return Ok(Message::Success(success)),
+                Message::Failure(failure) => return Ok(Message::Failure(failure)),
                 Message::Ignored => {}
-                msg => {
-                    self.server_state = Defunct;
-                    return Err(Error::InvalidResponse(self.server_state, msg));
-                }
+                _ => unreachable!(),
             }
         }
     }
