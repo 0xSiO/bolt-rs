@@ -278,7 +278,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.commit().await,
-            Err(Error::InvalidState(Ready))
+            Err(Error::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -340,7 +340,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.rollback().await,
-            Err(Error::InvalidState(Ready))
+            Err(Error::InvalidState { state: Ready, .. })
         ));
     }
 }

@@ -337,9 +337,13 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Failure(failure))
             }
 
-            (state, sent_msg, received_msg) => {
+            (state, request, response) => {
                 self.server_state = Defunct;
-                return Err(Error::InvalidResponse(state, received_msg));
+                return Err(Error::InvalidResponse {
+                    state,
+                    request,
+                    response,
+                });
             }
         }
     }
@@ -393,9 +397,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Interrupted, Message::Rollback) => {}
             (Interrupted, Message::Reset) => {}
             (Interrupted, Message::Goodbye) => {}
-            (state, msg) => {
+            (state, message) => {
                 self.server_state = Defunct;
-                return Err(Error::InvalidState(state));
+                return Err(Error::InvalidState {
+                    state,
+                    message: message.clone(),
+                });
             }
         }
 

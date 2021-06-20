@@ -1,5 +1,5 @@
 use bolt_client_macros::*;
-use bolt_proto::{message::*, Message, ServerState::*};
+use bolt_proto::{message::*, Message};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::{error::*, Client, Metadata, Params};
@@ -204,7 +204,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 pub(crate) mod tests {
     use std::{convert::TryFrom, env, iter::FromIterator};
 
-    use bolt_proto::{message::*, value::*, version::*};
+    use bolt_proto::{message::*, value::*, version::*, ServerState::*};
     use tokio::io::BufStream;
     use tokio_util::compat::*;
 
@@ -321,7 +321,10 @@ pub(crate) mod tests {
 
         // Messages now fail to send since connection was closed
         let response = initialize_client(&mut client, true).await;
-        assert!(matches!(response, Err(Error::InvalidState(Defunct))));
+        assert!(matches!(
+            response,
+            Err(Error::InvalidState { state: Defunct, .. })
+        ));
     }
 
     #[tokio::test]
@@ -469,7 +472,7 @@ pub(crate) mod tests {
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(
             client.discard_all().await,
-            Err(Error::InvalidState(Ready))
+            Err(Error::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -501,7 +504,7 @@ pub(crate) mod tests {
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(
             client.pull_all().await,
-            Err(Error::InvalidState(Ready))
+            Err(Error::InvalidState { state: Ready, .. })
         ));
     }
 

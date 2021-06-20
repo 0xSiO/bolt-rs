@@ -33,7 +33,10 @@ mod tests {
 
         // Messages now fail to send since connection was closed
         let response = initialize_client(&mut client, true).await;
-        assert!(matches!(response, Err(Error::InvalidState(Defunct))));
+        assert!(matches!(
+            response,
+            Err(Error::InvalidState { state: Defunct, .. })
+        ));
     }
 
     #[tokio::test]
@@ -217,7 +220,7 @@ mod tests {
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(
             client.discard_all().await,
-            Err(Error::InvalidState(Ready))
+            Err(Error::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -249,7 +252,7 @@ mod tests {
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(
             client.pull_all().await,
-            Err(Error::InvalidState(Ready))
+            Err(Error::InvalidState { state: Ready, .. })
         ));
     }
 

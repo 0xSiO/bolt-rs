@@ -1,5 +1,5 @@
 use bolt_client_macros::*;
-use bolt_proto::{message::*, Message, ServerState::*};
+use bolt_proto::{message::*, Message};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::{error::*, Client, Metadata};
@@ -56,7 +56,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::iter::FromIterator;
 
-    use bolt_proto::{value::*, version::*};
+    use bolt_proto::{value::*, version::*, ServerState::*};
 
     use crate::client::v1::tests::*;
     use crate::skip_if_handshake_failed;
@@ -317,7 +317,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.commit().await,
-            Err(Error::InvalidState(Ready))
+            Err(Error::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -382,7 +382,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.rollback().await,
-            Err(Error::InvalidState(Ready))
+            Err(Error::InvalidState { state: Ready, .. })
         ));
     }
 }
