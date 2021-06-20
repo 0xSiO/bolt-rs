@@ -36,7 +36,7 @@ mod tests {
     use bytes::Bytes;
 
     use crate::serialization::*;
-    use crate::value::float::MARKER as FLOAT_MARKER;
+    use crate::value::MARKER_FLOAT;
 
     use super::*;
 
@@ -59,7 +59,7 @@ mod tests {
                 MARKER,
                 SIGNATURE,
                 0x78,
-                FLOAT_MARKER,
+                MARKER_FLOAT,
                 0x41,
                 0x54,
                 0xAE,
@@ -68,7 +68,7 @@ mod tests {
                 0x6F,
                 0xD2,
                 0x8B,
-                FLOAT_MARKER,
+                MARKER_FLOAT,
                 0x3F,
                 0xFE,
                 0xDB,
@@ -86,7 +86,7 @@ mod tests {
         let point = get_point();
         let point_bytes = &[
             0x78,
-            FLOAT_MARKER,
+            MARKER_FLOAT,
             0x41,
             0x54,
             0xAE,
@@ -95,7 +95,7 @@ mod tests {
             0x6F,
             0xD2,
             0x8B,
-            FLOAT_MARKER,
+            MARKER_FLOAT,
             0x3F,
             0xFE,
             0xDB,

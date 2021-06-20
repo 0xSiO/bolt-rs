@@ -31,7 +31,7 @@ impl_from_int!(i8, i16, i32, i64);
 
 impl From<f64> for Value {
     fn from(value: f64) -> Self {
-        Value::Float(Float::from(value))
+        Value::Float(value)
     }
 }
 
@@ -218,7 +218,7 @@ impl TryFrom<Value> for f64 {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Float(float) => Ok(float.value),
+            Value::Float(float) => Ok(float),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }

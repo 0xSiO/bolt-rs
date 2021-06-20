@@ -1,17 +1,17 @@
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
+use std::mem;
 use std::ops::DerefMut;
 use std::panic::catch_unwind;
 use std::sync::{Arc, Mutex};
 
-use bytes::{Buf, Bytes};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 pub(crate) use byte_array::ByteArray;
 pub(crate) use date::Date;
 pub(crate) use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
 pub use duration::Duration;
-pub(crate) use float::Float;
 pub(crate) use integer::Integer;
 pub(crate) use list::List;
 pub(crate) use local_date_time::LocalDateTime;
@@ -36,7 +36,6 @@ pub(crate) mod date;
 pub(crate) mod date_time_offset;
 pub(crate) mod date_time_zoned;
 pub(crate) mod duration;
-pub(crate) mod float;
 pub(crate) mod integer;
 pub(crate) mod list;
 pub(crate) mod local_date_time;
@@ -52,6 +51,7 @@ pub(crate) mod string;
 pub(crate) mod time;
 pub(crate) mod unbound_relationship;
 
+pub(crate) const MARKER_FLOAT: u8 = 0xC1;
 pub(crate) const MARKER_FALSE: u8 = 0xC2;
 pub(crate) const MARKER_TRUE: u8 = 0xC3;
 
@@ -69,7 +69,7 @@ pub enum Value {
     // V1-compatible value types
     Boolean(bool),
     Integer(Integer),
-    Float(Float),
+    Float(f64),
     Bytes(ByteArray), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
     List(List),
     Map(Map),
@@ -137,7 +137,7 @@ impl Marker for Value {
             Value::Boolean(true) => Ok(MARKER_TRUE),
             Value::Boolean(false) => Ok(MARKER_FALSE),
             Value::Integer(integer) => integer.get_marker(),
-            Value::Float(float) => float.get_marker(),
+            Value::Float(_) => Ok(MARKER_FLOAT),
             Value::Bytes(byte_array) => byte_array.get_marker(),
             Value::List(list) => list.get_marker(),
             Value::Map(map) => map.get_marker(),
@@ -170,7 +170,13 @@ impl TryInto<Bytes> for Value {
             Value::Boolean(true) => Ok(Bytes::from_static(&[MARKER_TRUE])),
             Value::Boolean(false) => Ok(Bytes::from_static(&[MARKER_FALSE])),
             Value::Integer(integer) => integer.try_into(),
-            Value::Float(float) => float.try_into(),
+            Value::Float(f) => {
+                let mut bytes =
+                    BytesMut::with_capacity(mem::size_of::<u8>() + mem::size_of::<f64>());
+                bytes.put_u8(MARKER_FLOAT);
+                bytes.put_f64(f);
+                Ok(bytes.freeze())
+            }
             Value::Bytes(byte_array) => byte_array.try_into(),
             Value::List(list) => list.try_into(),
             Value::Map(map) => map.try_into(),
@@ -224,7 +230,10 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 | integer::MARKER_INT_16
                 | integer::MARKER_INT_32
                 | integer::MARKER_INT_64 => Ok(Value::Integer(Integer::try_from(input_arc)?)),
-                float::MARKER => Ok(Value::Float(Float::try_from(input_arc)?)),
+                MARKER_FLOAT => {
+                    input_arc.lock().unwrap().advance(1);
+                    Ok(Value::Float(input_arc.lock().unwrap().get_f64()))
+                }
                 byte_array::MARKER_SMALL | byte_array::MARKER_MEDIUM | byte_array::MARKER_LARGE => {
                     Ok(Value::Bytes(ByteArray::try_from(input_arc)?))
                 }
@@ -368,30 +377,24 @@ mod tests {
 
     #[test]
     fn float_from_bytes() {
-        let min = Float::from(std::f64::MIN_POSITIVE);
+        let min = Value::Float(std::f64::MIN_POSITIVE);
         let min_bytes = min.clone().try_into_bytes().unwrap();
-        let max = Float::from(std::f64::MAX);
+        let max = Value::Float(std::f64::MAX);
         let max_bytes = max.clone().try_into_bytes().unwrap();
-        let e = Float::from(std::f64::consts::E);
+        let e = Value::Float(std::f64::consts::E);
         let e_bytes = e.clone().try_into_bytes().unwrap();
-        let pi = Float::from(std::f64::consts::PI);
+        let pi = Value::Float(std::f64::consts::PI);
         let pi_bytes = pi.clone().try_into_bytes().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(min_bytes))).unwrap(),
-            Value::Float(min)
+            min
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(max_bytes))).unwrap(),
-            Value::Float(max)
+            max
         );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(e_bytes))).unwrap(),
-            Value::Float(e)
-        );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(pi_bytes))).unwrap(),
-            Value::Float(pi)
-        );
+        assert_eq!(Value::try_from(Arc::new(Mutex::new(e_bytes))).unwrap(), e);
+        assert_eq!(Value::try_from(Arc::new(Mutex::new(pi_bytes))).unwrap(), pi);
     }
 
     #[test]
@@ -717,7 +720,6 @@ mod tests {
         println!("DateTimeOffset: {} bytes", size_of::<DateTimeOffset>());
         println!("DateTimeZoned: {} bytes", size_of::<DateTimeZoned>());
         println!("Duration: {} bytes", size_of::<Duration>());
-        println!("Float: {} bytes", size_of::<Float>());
         println!("Integer: {} bytes", size_of::<Integer>());
         println!("List: {} bytes", size_of::<List>());
         println!("LocalDateTime: {} bytes", size_of::<LocalDateTime>());
