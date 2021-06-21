@@ -17,7 +17,6 @@ pub use duration::Duration;
 pub(crate) use local_date_time::LocalDateTime;
 pub(crate) use local_time::LocalTime;
 pub use node::Node;
-pub(crate) use null::Null;
 pub use path::Path;
 pub use point_2d::Point2D;
 pub use point_3d::Point3D;
@@ -37,7 +36,6 @@ pub(crate) mod duration;
 pub(crate) mod local_date_time;
 pub(crate) mod local_time;
 pub(crate) mod node;
-pub(crate) mod null;
 pub(crate) mod path;
 pub(crate) mod point_2d;
 pub(crate) mod point_3d;
@@ -64,6 +62,7 @@ pub(crate) const MARKER_TINY_MAP: u8 = 0xA0;
 pub(crate) const MARKER_SMALL_MAP: u8 = 0xD8;
 pub(crate) const MARKER_MEDIUM_MAP: u8 = 0xD9;
 pub(crate) const MARKER_LARGE_MAP: u8 = 0xDA;
+pub(crate) const MARKER_NULL: u8 = 0xC0;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -105,11 +104,13 @@ pub enum Value {
 #[allow(clippy::derive_hash_xor_eq)]
 // We implement Hash here despite deriving PartialEq because f64 and HashMap cannot be
 // hashed and must panic
+// TODO: Does Value even need to be Hashable?
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Value::Float(_)
             | Value::Map(_)
+            | Value::Null
             | Value::Node(_)
             | Value::Relationship(_)
             | Value::UnboundRelationship(_)
@@ -120,7 +121,6 @@ impl Hash for Value {
             Value::Integer(integer) => integer.hash(state),
             Value::Bytes(bytes) => bytes.hash(state),
             Value::List(list) => list.hash(state),
-            Value::Null => Null.hash(state),
             Value::String(string) => string.hash(state),
             Value::Date(date) => date.hash(state),
             Value::Time(time) => time.hash(state),
@@ -175,7 +175,7 @@ impl Marker for Value {
                 65_536..=4_294_967_295 => Ok(MARKER_LARGE_MAP),
                 _ => Err(Error::ValueTooLarge(map.len())),
             },
-            Value::Null => Null.get_marker(),
+            Value::Null => Ok(MARKER_NULL),
             Value::String(string) => string.get_marker(),
             Value::Node(node) => node.get_marker(),
             Value::Relationship(rel) => rel.get_marker(),
@@ -342,7 +342,7 @@ impl TryInto<Bytes> for Value {
 
                 Ok(bytes.freeze())
             }
-            Value::Null => Null.try_into(),
+            Value::Null => Ok(Bytes::from_static(&[MARKER_NULL])),
             Value::String(string) => string.try_into(),
             Value::Node(node) => node.try_into(),
             Value::Relationship(rel) => rel.try_into(),
@@ -370,10 +370,6 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
         catch_unwind(move || {
             let marker = input_arc.lock().unwrap()[0];
             match marker {
-                null::MARKER => {
-                    input_arc.lock().unwrap().advance(1);
-                    Ok(Value::Null)
-                }
                 MARKER_FALSE => {
                     input_arc.lock().unwrap().advance(1);
                     Ok(Value::Boolean(false))
@@ -480,6 +476,10 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
 
                     Ok(Value::Map(hash_map))
                 }
+                MARKER_NULL => {
+                    input_arc.lock().unwrap().advance(1);
+                    Ok(Value::Null)
+                }
                 // Tiny string
                 marker
                     if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
@@ -543,7 +543,8 @@ mod tests {
 
     #[test]
     fn null_from_bytes() {
-        let null_bytes = Null.try_into_bytes().unwrap();
+        let null_bytes = Bytes::from_static(&[MARKER_NULL]);
+        assert_eq!(Value::Null.try_into_bytes().unwrap(), null_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(null_bytes))).unwrap(),
             Value::Null
@@ -1055,7 +1056,6 @@ mod tests {
         println!("LocalDateTime: {} bytes", size_of::<LocalDateTime>());
         println!("LocalTime: {} bytes", size_of::<LocalTime>());
         println!("Node: {} bytes", size_of::<Node>());
-        println!("Null: {} bytes", size_of::<Null>());
         println!("Path: {} bytes", size_of::<Path>());
         println!("Point2D: {} bytes", size_of::<Point2D>());
         println!("Point3D: {} bytes", size_of::<Point3D>());
