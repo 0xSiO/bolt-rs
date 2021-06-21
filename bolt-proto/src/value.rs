@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
-    hash::{Hash, Hasher},
     mem,
     ops::DerefMut,
     panic::catch_unwind,
@@ -99,38 +98,6 @@ pub enum Value {
     Duration(Duration),
     Point2D(Point2D),
     Point3D(Point3D),
-}
-
-#[allow(clippy::derive_hash_xor_eq)]
-// We implement Hash here despite deriving PartialEq because f64 and HashMap cannot be
-// hashed and must panic
-// TODO: Does Value even need to be Hashable?
-impl Hash for Value {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            Value::Float(_)
-            | Value::Map(_)
-            | Value::Null
-            | Value::Node(_)
-            | Value::Relationship(_)
-            | Value::UnboundRelationship(_)
-            | Value::Path(_)
-            | Value::Point2D(_)
-            | Value::Point3D(_) => panic!("Cannot hash a {:?}", self),
-            Value::Boolean(b) => b.hash(state),
-            Value::Integer(integer) => integer.hash(state),
-            Value::Bytes(bytes) => bytes.hash(state),
-            Value::List(list) => list.hash(state),
-            Value::String(string) => string.hash(state),
-            Value::Date(date) => date.hash(state),
-            Value::Time(time) => time.hash(state),
-            Value::DateTimeOffset(date_time_offset) => date_time_offset.hash(state),
-            Value::DateTimeZoned(date_time_zoned) => date_time_zoned.hash(state),
-            Value::LocalTime(local_time) => local_time.hash(state),
-            Value::LocalDateTime(local_date_time) => local_date_time.hash(state),
-            Value::Duration(duration) => duration.hash(state),
-        }
-    }
 }
 
 impl Eq for Value {
