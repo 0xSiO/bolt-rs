@@ -110,7 +110,7 @@ impl From<UnboundRelationship> for Value {
 
 impl From<NaiveDate> for Value {
     fn from(value: NaiveDate) -> Self {
-        Value::Date(Date::from(value))
+        Value::Date(value)
     }
 }
 
@@ -331,9 +331,7 @@ impl TryFrom<Value> for NaiveDate {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::Date(date) => {
-                Ok(NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(date.days_since_epoch))
-            }
+            Value::Date(date) => Ok(date),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }

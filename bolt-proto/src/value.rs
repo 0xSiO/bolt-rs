@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
+    iter::FromIterator,
     mem,
     ops::DerefMut,
     panic::catch_unwind,
@@ -9,7 +10,7 @@ use std::{
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
-pub(crate) use date::Date;
+use chrono::NaiveDate;
 pub(crate) use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
 pub use duration::Duration;
@@ -27,7 +28,6 @@ use crate::error::*;
 use crate::serialization::*;
 
 pub(crate) mod conversions;
-pub(crate) mod date;
 pub(crate) mod date_time_offset;
 pub(crate) mod date_time_zoned;
 pub(crate) mod duration;
@@ -64,6 +64,11 @@ pub(crate) const MARKER_TINY_STRING: u8 = 0x80;
 pub(crate) const MARKER_SMALL_STRING: u8 = 0xD0;
 pub(crate) const MARKER_MEDIUM_STRING: u8 = 0xD1;
 pub(crate) const MARKER_LARGE_STRING: u8 = 0xD2;
+pub(crate) const MARKER_TINY_STRUCT: u8 = 0xB0;
+pub(crate) const MARKER_SMALL_STRUCT: u8 = 0xDC;
+pub(crate) const MARKER_MEDIUM_STRUCT: u8 = 0xDD;
+
+pub(crate) const SIGNATURE_DATE: u8 = 0x44;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -91,7 +96,7 @@ pub enum Value {
     UnboundRelationship(UnboundRelationship),
 
     // V2+-compatible value types
-    Date(Date),                     // A date without a time zone, a.k.a. LocalDate
+    Date(NaiveDate),                // A date without a time zone, a.k.a. LocalDate
     Time(Time),                     // A time with a UTC offset, a.k.a. OffsetTime
     DateTimeOffset(DateTimeOffset), // A date-time with a UTC offset, a.k.a. OffsetDateTime
     DateTimeZoned(DateTimeZoned),   // A date-time with a time zone ID, a.k.a. ZonedDateTime
@@ -156,7 +161,7 @@ impl Marker for Value {
             Value::Relationship(rel) => rel.get_marker(),
             Value::Path(path) => path.get_marker(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
-            Value::Date(date) => date.get_marker(),
+            Value::Date(_) => Ok(MARKER_TINY_STRUCT | 1),
             Value::Time(time) => time.get_marker(),
             Value::DateTimeOffset(date_time_offset) => date_time_offset.get_marker(),
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.get_marker(),
@@ -348,7 +353,15 @@ impl TryInto<Bytes> for Value {
             Value::Relationship(rel) => rel.try_into(),
             Value::Path(path) => path.try_into(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.try_into(),
-            Value::Date(date) => date.try_into(),
+            Value::Date(date) => Ok(Bytes::from_iter(
+                vec![MARKER_TINY_STRUCT | 1, SIGNATURE_DATE]
+                    .into_iter()
+                    .chain(
+                        // Days since UNIX epoch
+                        Value::from((date - NaiveDate::from_ymd(1970, 1, 1)).num_days())
+                            .try_into_bytes()?,
+                    ),
+            )),
             Value::Time(time) => time.try_into(),
             Value::DateTimeOffset(date_time_offset) => date_time_offset.try_into(),
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.try_into(),
@@ -517,10 +530,10 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                     ))
                 }
                 // Tiny structure
-                marker if (STRUCT_MARKER_TINY..=(STRUCT_MARKER_TINY | 0x0F)).contains(&marker) => {
+                marker if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker) => {
                     deserialize_structure(input_arc)
                 }
-                STRUCT_MARKER_SMALL | STRUCT_MARKER_MEDIUM => deserialize_structure(input_arc),
+                MARKER_SMALL_STRUCT | MARKER_MEDIUM_STRUCT => deserialize_structure(input_arc),
                 _ => Err(DeserializationError::InvalidMarkerByte(marker).into()),
             }
         })
@@ -529,34 +542,32 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
 }
 
 fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
-    catch_unwind(move || {
-        let (_marker, signature) = get_info_from_bytes(input_arc.lock().unwrap().deref_mut())?;
-        match signature {
-            node::SIGNATURE => Ok(Value::Node(Node::try_from(input_arc)?)),
-            relationship::SIGNATURE => Ok(Value::Relationship(Relationship::try_from(input_arc)?)),
-            path::SIGNATURE => Ok(Value::Path(Path::try_from(input_arc)?)),
-            unbound_relationship::SIGNATURE => Ok(Value::UnboundRelationship(
-                UnboundRelationship::try_from(input_arc)?,
-            )),
-            date::SIGNATURE => Ok(Value::Date(Date::try_from(input_arc)?)),
-            time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?)),
-            date_time_offset::SIGNATURE => {
-                Ok(Value::DateTimeOffset(DateTimeOffset::try_from(input_arc)?))
-            }
-            date_time_zoned::SIGNATURE => {
-                Ok(Value::DateTimeZoned(DateTimeZoned::try_from(input_arc)?))
-            }
-            local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
-            local_date_time::SIGNATURE => {
-                Ok(Value::LocalDateTime(LocalDateTime::try_from(input_arc)?))
-            }
-            duration::SIGNATURE => Ok(Value::Duration(Duration::try_from(input_arc)?)),
-            point_2d::SIGNATURE => Ok(Value::Point2D(Point2D::try_from(input_arc)?)),
-            point_3d::SIGNATURE => Ok(Value::Point3D(Point3D::try_from(input_arc)?)),
-            _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
+    let (_marker, signature) = get_info_from_bytes(input_arc.lock().unwrap().deref_mut())?;
+    match signature {
+        node::SIGNATURE => Ok(Value::Node(Node::try_from(input_arc)?)),
+        relationship::SIGNATURE => Ok(Value::Relationship(Relationship::try_from(input_arc)?)),
+        path::SIGNATURE => Ok(Value::Path(Path::try_from(input_arc)?)),
+        unbound_relationship::SIGNATURE => Ok(Value::UnboundRelationship(
+            UnboundRelationship::try_from(input_arc)?,
+        )),
+        SIGNATURE_DATE => {
+            let days_since_epoch: i64 = Value::try_from(input_arc)?.try_into()?;
+            Ok(Value::Date(
+                NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(days_since_epoch),
+            ))
         }
-    })
-    .map_err(|_| DeserializationError::Panicked)?
+        time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?)),
+        date_time_offset::SIGNATURE => {
+            Ok(Value::DateTimeOffset(DateTimeOffset::try_from(input_arc)?))
+        }
+        date_time_zoned::SIGNATURE => Ok(Value::DateTimeZoned(DateTimeZoned::try_from(input_arc)?)),
+        local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
+        local_date_time::SIGNATURE => Ok(Value::LocalDateTime(LocalDateTime::try_from(input_arc)?)),
+        duration::SIGNATURE => Ok(Value::Duration(Duration::try_from(input_arc)?)),
+        point_2d::SIGNATURE => Ok(Value::Point2D(Point2D::try_from(input_arc)?)),
+        point_3d::SIGNATURE => Ok(Value::Point3D(Point3D::try_from(input_arc)?)),
+        _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
+    }
 }
 
 #[cfg(test)]
@@ -1049,11 +1060,60 @@ mod tests {
 
     #[test]
     fn date_from_bytes() {
-        let christmas = Date::from(NaiveDate::from_ymd(2020, 12, 25));
-        let christmas_bytes: Bytes = christmas.clone().try_into_bytes().unwrap();
+        let christmas = Value::Date(NaiveDate::from_ymd(2020, 12, 25));
+        let christmas_bytes = Bytes::from_static(&[
+            MARKER_TINY_STRUCT | 1,
+            SIGNATURE_DATE,
+            MARKER_INT_16,
+            0x48,
+            0xBD,
+        ]);
+        assert_eq!(
+            &christmas.clone().try_into_bytes().unwrap(),
+            &christmas_bytes
+        );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(christmas_bytes))).unwrap(),
-            Value::Date(christmas)
+            christmas
+        );
+    }
+
+    #[test]
+    fn past_date_from_bytes() {
+        let past_date = Value::Date(NaiveDate::from_ymd(1901, 12, 31));
+        let past_bytes = Bytes::from_static(&[
+            MARKER_TINY_STRUCT | 1,
+            SIGNATURE_DATE,
+            MARKER_INT_16,
+            0x9E,
+            0xFA,
+        ]);
+        assert_eq!(&past_date.clone().try_into_bytes().unwrap(), &past_bytes);
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(past_bytes))).unwrap(),
+            past_date
+        );
+    }
+
+    #[test]
+    fn future_date_from_bytes() {
+        let future_date = Value::Date(NaiveDate::from_ymd(3000, 5, 23));
+        let future_bytes = Bytes::from_static(&[
+            MARKER_TINY_STRUCT | 1,
+            SIGNATURE_DATE,
+            MARKER_INT_32,
+            0x00,
+            0x05,
+            0xBE,
+            0x16,
+        ]);
+        assert_eq!(
+            &future_date.clone().try_into_bytes().unwrap(),
+            &future_bytes
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(future_bytes))).unwrap(),
+            future_date
         );
     }
 
@@ -1154,7 +1214,6 @@ mod tests {
     #[ignore]
     fn value_size() {
         use std::mem::size_of;
-        println!("Date: {} bytes", size_of::<Date>());
         println!("DateTimeOffset: {} bytes", size_of::<DateTimeOffset>());
         println!("DateTimeZoned: {} bytes", size_of::<DateTimeZoned>());
         println!("Duration: {} bytes", size_of::<Duration>());
