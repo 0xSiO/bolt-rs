@@ -9,8 +9,8 @@ use std::{
 };
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
+use chrono::{FixedOffset, NaiveDate, NaiveTime, Offset, Timelike};
 
-use chrono::NaiveDate;
 pub(crate) use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
 pub use duration::Duration;
@@ -21,7 +21,6 @@ pub use path::Path;
 pub use point_2d::Point2D;
 pub use point_3d::Point3D;
 pub use relationship::Relationship;
-pub use time::Time;
 pub use unbound_relationship::UnboundRelationship;
 
 use crate::error::*;
@@ -38,7 +37,6 @@ pub(crate) mod path;
 pub(crate) mod point_2d;
 pub(crate) mod point_3d;
 pub(crate) mod relationship;
-pub(crate) mod time;
 pub(crate) mod unbound_relationship;
 
 pub(crate) const MARKER_FALSE: u8 = 0xC2;
@@ -69,6 +67,7 @@ pub(crate) const MARKER_SMALL_STRUCT: u8 = 0xDC;
 pub(crate) const MARKER_MEDIUM_STRUCT: u8 = 0xDD;
 
 pub(crate) const SIGNATURE_DATE: u8 = 0x44;
+pub(crate) const SIGNATURE_TIME: u8 = 0x54;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -97,7 +96,7 @@ pub enum Value {
 
     // V2+-compatible value types
     Date(NaiveDate),                // A date without a time zone, a.k.a. LocalDate
-    Time(Time),                     // A time with a UTC offset, a.k.a. OffsetTime
+    Time(NaiveTime, FixedOffset),   // A time with a UTC offset, a.k.a. OffsetTime
     DateTimeOffset(DateTimeOffset), // A date-time with a UTC offset, a.k.a. OffsetDateTime
     DateTimeZoned(DateTimeZoned),   // A date-time with a time zone ID, a.k.a. ZonedDateTime
     LocalTime(LocalTime),           // A time without a time zone
@@ -162,7 +161,7 @@ impl Marker for Value {
             Value::Path(path) => path.get_marker(),
             Value::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
             Value::Date(_) => Ok(MARKER_TINY_STRUCT | 1),
-            Value::Time(time) => time.get_marker(),
+            Value::Time(_, _) => Ok(MARKER_TINY_STRUCT | 2),
             Value::DateTimeOffset(date_time_offset) => date_time_offset.get_marker(),
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.get_marker(),
             Value::LocalTime(local_time) => local_time.get_marker(),
@@ -362,7 +361,23 @@ impl TryInto<Bytes> for Value {
                             .try_into_bytes()?,
                     ),
             )),
-            Value::Time(time) => time.try_into(),
+            Value::Time(time, offset) => Ok(Bytes::from_iter(
+                vec![MARKER_TINY_STRUCT | 2, SIGNATURE_TIME]
+                    .into_iter()
+                    .chain(
+                        // Nanoseconds since midnight
+                        // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
+                        Value::from(
+                            time.num_seconds_from_midnight() as i64 * 1_000_000_000
+                                + time.nanosecond() as i64,
+                        )
+                        .try_into_bytes()?,
+                    )
+                    .chain(
+                        // Timezone offset
+                        Value::from(offset.fix().local_minus_utc()).try_into_bytes()?,
+                    ),
+            )),
             Value::DateTimeOffset(date_time_offset) => date_time_offset.try_into(),
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.try_into(),
             Value::LocalTime(local_time) => local_time.try_into(),
@@ -556,7 +571,17 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
                 NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(days_since_epoch),
             ))
         }
-        time::SIGNATURE => Ok(Value::Time(Time::try_from(input_arc)?)),
+        SIGNATURE_TIME => {
+            let nanos_since_midnight: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+            let zone_offset: i32 = Value::try_from(input_arc)?.try_into()?;
+            Ok(Value::Time(
+                NaiveTime::from_num_seconds_from_midnight(
+                    (nanos_since_midnight / 1_000_000_000) as u32,
+                    (nanos_since_midnight % 1_000_000_000) as u32,
+                ),
+                FixedOffset::east(zone_offset),
+            ))
+        }
         date_time_offset::SIGNATURE => {
             Ok(Value::DateTimeOffset(DateTimeOffset::try_from(input_arc)?))
         }
@@ -1119,20 +1144,45 @@ mod tests {
 
     #[test]
     fn time_from_bytes() {
-        let midnight_utc = Time::from((NaiveTime::from_hms_nano(0, 0, 0, 0), Utc));
-        let midnight_utc_bytes = midnight_utc.clone().try_into_bytes().unwrap();
-        let about_four_pm_pacific = Time::from((
-            NaiveTime::from_hms_nano(16, 4, 35, 235),
-            FixedOffset::east(-8 * 3600),
-        ));
-        let about_four_pm_pacific_bytes = about_four_pm_pacific.clone().try_into_bytes().unwrap();
+        let midnight_utc = Value::Time(NaiveTime::from_hms_nano(0, 0, 0, 0), Utc.fix());
+        let midnight_utc_bytes =
+            Bytes::from_static(&[MARKER_TINY_STRUCT | 2, SIGNATURE_TIME, 0, 0]);
+        assert_eq!(
+            &midnight_utc.clone().try_into_bytes().unwrap(),
+            &midnight_utc_bytes
+        );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(midnight_utc_bytes))).unwrap(),
-            Value::Time(midnight_utc)
+            midnight_utc
+        );
+
+        let about_four_pm_pacific = Value::Time(
+            NaiveTime::from_hms_nano(16, 4, 35, 235),
+            FixedOffset::east(-8 * 3600),
+        );
+        let about_four_pm_pacific_bytes = Bytes::from_static(&[
+            MARKER_TINY_STRUCT | 2,
+            SIGNATURE_TIME,
+            MARKER_INT_64,
+            0x00,
+            0x00,
+            0x34,
+            0xA3,
+            0x12,
+            0xD0,
+            0xFE,
+            0xEB,
+            MARKER_INT_16,
+            0x8F,
+            0x80,
+        ]);
+        assert_eq!(
+            &about_four_pm_pacific.clone().try_into_bytes().unwrap(),
+            &about_four_pm_pacific_bytes
         );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(about_four_pm_pacific_bytes))).unwrap(),
-            Value::Time(about_four_pm_pacific)
+            about_four_pm_pacific
         );
     }
 
@@ -1224,8 +1274,6 @@ mod tests {
         println!("Point2D: {} bytes", size_of::<Point2D>());
         println!("Point3D: {} bytes", size_of::<Point3D>());
         println!("Relationship: {} bytes", size_of::<Relationship>());
-        println!("String: {} bytes", size_of::<String>());
-        println!("Time: {} bytes", size_of::<Time>());
         println!(
             "UnboundRelationship: {} bytes",
             size_of::<UnboundRelationship>()

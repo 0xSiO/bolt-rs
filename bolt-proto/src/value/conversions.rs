@@ -117,7 +117,7 @@ impl From<NaiveDate> for Value {
 // No timezone-aware time in chrono, so provide a separate conversion
 impl<O: Offset> From<(NaiveTime, O)> for Value {
     fn from(pair: (NaiveTime, O)) -> Self {
-        Value::Time(Time::from(pair))
+        Value::Time(pair.0, pair.1.fix())
     }
 }
 
@@ -336,8 +336,6 @@ impl TryFrom<Value> for NaiveDate {
         }
     }
 }
-
-impl_try_from_value!(Time, Time);
 
 impl TryFrom<Value> for DateTime<FixedOffset> {
     type Error = Error;
