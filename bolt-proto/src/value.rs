@@ -1,9 +1,12 @@
-use std::convert::{TryFrom, TryInto};
-use std::hash::{Hash, Hasher};
-use std::mem;
-use std::ops::DerefMut;
-use std::panic::catch_unwind;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    hash::{Hash, Hasher},
+    mem,
+    ops::DerefMut,
+    panic::catch_unwind,
+    sync::{Arc, Mutex},
+};
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
@@ -13,7 +16,6 @@ pub(crate) use date_time_zoned::DateTimeZoned;
 pub use duration::Duration;
 pub(crate) use local_date_time::LocalDateTime;
 pub(crate) use local_time::LocalTime;
-pub(crate) use map::Map;
 pub use node::Node;
 pub(crate) use null::Null;
 pub use path::Path;
@@ -34,7 +36,6 @@ pub(crate) mod date_time_zoned;
 pub(crate) mod duration;
 pub(crate) mod local_date_time;
 pub(crate) mod local_time;
-pub(crate) mod map;
 pub(crate) mod node;
 pub(crate) mod null;
 pub(crate) mod path;
@@ -59,6 +60,10 @@ pub(crate) const MARKER_TINY_LIST: u8 = 0x90;
 pub(crate) const MARKER_SMALL_LIST: u8 = 0xD4;
 pub(crate) const MARKER_MEDIUM_LIST: u8 = 0xD5;
 pub(crate) const MARKER_LARGE_LIST: u8 = 0xD6;
+pub(crate) const MARKER_TINY_MAP: u8 = 0xA0;
+pub(crate) const MARKER_SMALL_MAP: u8 = 0xD8;
+pub(crate) const MARKER_MEDIUM_MAP: u8 = 0xD9;
+pub(crate) const MARKER_LARGE_MAP: u8 = 0xDA;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -77,7 +82,7 @@ pub enum Value {
     Float(f64),
     Bytes(Vec<u8>),
     List(Vec<Value>),
-    Map(Map),
+    Map(HashMap<std::string::String, Value>),
     Null,
     String(String),
     Node(Node),
@@ -163,7 +168,13 @@ impl Marker for Value {
                 65_536..=4_294_967_295 => Ok(MARKER_LARGE_LIST),
                 len => Err(Error::ValueTooLarge(len)),
             },
-            Value::Map(map) => map.get_marker(),
+            Value::Map(map) => match map.len() {
+                0..=15 => Ok(MARKER_TINY_MAP | map.len() as u8),
+                16..=255 => Ok(MARKER_SMALL_MAP),
+                256..=65_535 => Ok(MARKER_MEDIUM_MAP),
+                65_536..=4_294_967_295 => Ok(MARKER_LARGE_MAP),
+                _ => Err(Error::ValueTooLarge(map.len())),
+            },
             Value::Null => Null.get_marker(),
             Value::String(string) => string.get_marker(),
             Value::Node(node) => node.get_marker(),
@@ -290,7 +301,47 @@ impl TryInto<Bytes> for Value {
 
                 Ok(bytes.freeze())
             }
-            Value::Map(map) => map.try_into(),
+            Value::Map(map) => {
+                let length = map.len();
+
+                let mut total_value_bytes: usize = 0;
+                let mut value_bytes_vec: Vec<Bytes> = Vec::with_capacity(length);
+                for (key, val) in map {
+                    let key_bytes: Bytes = Value::String(String::from(key)).try_into()?;
+                    let val_bytes: Bytes = val.try_into()?;
+                    total_value_bytes += key_bytes.len() + val_bytes.len();
+                    value_bytes_vec.push(key_bytes);
+                    value_bytes_vec.push(val_bytes);
+                }
+                // Worst case is a large Map, with marker byte, 32-bit size value, and all the
+                // Value bytes
+                let mut bytes = BytesMut::with_capacity(
+                    mem::size_of::<u8>() + mem::size_of::<u32>() + total_value_bytes,
+                );
+
+                match length {
+                    0..=15 => bytes.put_u8(MARKER_TINY_MAP | length as u8),
+                    16..=255 => {
+                        bytes.put_u8(MARKER_SMALL_MAP);
+                        bytes.put_u8(length as u8)
+                    }
+                    256..=65_535 => {
+                        bytes.put_u8(MARKER_MEDIUM_MAP);
+                        bytes.put_u16(length as u16);
+                    }
+                    65_536..=4_294_967_295 => {
+                        bytes.put_u8(MARKER_LARGE_MAP);
+                        bytes.put_u32(length as u32)
+                    }
+                    _ => return Err(Error::ValueTooLarge(length)),
+                }
+
+                for value_bytes in value_bytes_vec {
+                    bytes.put(value_bytes);
+                }
+
+                Ok(bytes.freeze())
+            }
             Value::Null => Null.try_into(),
             Value::String(string) => string.try_into(),
             Value::Node(node) => node.try_into(),
@@ -394,6 +445,41 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                     }
                     Ok(Value::List(list))
                 }
+                // Tiny map
+                marker if (MARKER_TINY_MAP..=(MARKER_TINY_MAP | 0x0F)).contains(&marker) => {
+                    let marker = input_arc.lock().unwrap().get_u8();
+                    let size = 0x0F & marker as usize;
+                    let mut hash_map: HashMap<std::string::String, Value> =
+                        HashMap::with_capacity(size);
+                    for _ in 0..size {
+                        let key = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+                        let value = Value::try_from(Arc::clone(&input_arc))?;
+                        hash_map.insert(key, value);
+                    }
+
+                    Ok(Value::Map(hash_map))
+                }
+                MARKER_SMALL_MAP | MARKER_MEDIUM_MAP | MARKER_LARGE_MAP => {
+                    let marker = input_arc.lock().unwrap().get_u8();
+                    let size = match marker {
+                        MARKER_SMALL_MAP => input_arc.lock().unwrap().get_u8() as usize,
+                        MARKER_MEDIUM_MAP => input_arc.lock().unwrap().get_u16() as usize,
+                        MARKER_LARGE_MAP => input_arc.lock().unwrap().get_u32() as usize,
+                        _ => {
+                            return Err(DeserializationError::InvalidMarkerByte(marker).into());
+                        }
+                    };
+
+                    let mut hash_map: HashMap<std::string::String, Value> =
+                        HashMap::with_capacity(size);
+                    for _ in 0..size {
+                        let key = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+                        let value = Value::try_from(Arc::clone(&input_arc))?;
+                        hash_map.insert(key, value);
+                    }
+
+                    Ok(Value::Map(hash_map))
+                }
                 // Tiny string
                 marker
                     if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
@@ -402,13 +488,6 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 }
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
                     Ok(Value::String(String::try_from(input_arc)?))
-                }
-                // Tiny map
-                marker if (map::MARKER_TINY..=(map::MARKER_TINY | 0x0F)).contains(&marker) => {
-                    Ok(Value::Map(Map::try_from(input_arc)?))
-                }
-                map::MARKER_SMALL | map::MARKER_MEDIUM | map::MARKER_LARGE => {
-                    Ok(Value::Map(Map::try_from(input_arc)?))
                 }
                 // Tiny structure
                 marker if (STRUCT_MARKER_TINY..=(STRUCT_MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -740,12 +819,28 @@ mod tests {
     }
 
     #[test]
-    fn map_from_bytes() {
-        let empty_map: Map = HashMap::<&str, i8>::new().into();
+    fn empty_map_from_bytes() {
+        let empty_map = Value::from(HashMap::<&str, i8>::new());
         let empty_map_bytes = empty_map.clone().try_into_bytes().unwrap();
-        let tiny_map: Map = HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]).into();
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),
+            empty_map
+        );
+    }
+
+    #[test]
+    fn tiny_map_from_bytes() {
+        let tiny_map = Value::from(HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]));
         let tiny_map_bytes = tiny_map.clone().try_into_bytes().unwrap();
-        let small_map: Map = HashMap::<&str, i8>::from_iter(vec![
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(tiny_map_bytes))).unwrap(),
+            tiny_map
+        );
+    }
+
+    #[test]
+    fn small_map_from_bytes() {
+        let small_map = Value::from(HashMap::<&str, i8>::from_iter(vec![
             ("a", 1_i8),
             ("b", 1_i8),
             ("c", 3_i8),
@@ -762,20 +857,11 @@ mod tests {
             ("n", 4_i8),
             ("o", 5_i8),
             ("p", 6_i8),
-        ])
-        .into();
+        ]));
         let small_map_bytes = small_map.clone().try_into_bytes().unwrap();
         assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),
-            Value::Map(empty_map)
-        );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(tiny_map_bytes))).unwrap(),
-            Value::Map(tiny_map)
-        );
-        assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_map_bytes))).unwrap(),
-            Value::Map(small_map)
+            small_map
         );
     }
 
@@ -968,7 +1054,6 @@ mod tests {
         println!("Duration: {} bytes", size_of::<Duration>());
         println!("LocalDateTime: {} bytes", size_of::<LocalDateTime>());
         println!("LocalTime: {} bytes", size_of::<LocalTime>());
-        println!("Map: {} bytes", size_of::<Map>());
         println!("Node: {} bytes", size_of::<Node>());
         println!("Null: {} bytes", size_of::<Null>());
         println!("Path: {} bytes", size_of::<Path>());

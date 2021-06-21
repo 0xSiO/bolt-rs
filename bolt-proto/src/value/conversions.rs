@@ -58,12 +58,17 @@ where
 
 impl<K, V, S> From<HashMap<K, V, S>> for Value
 where
-    K: Into<String>,
+    K: Into<std::string::String>,
     V: Into<Value>,
     S: BuildHasher,
 {
     fn from(value: HashMap<K, V, S>) -> Self {
-        Value::Map(Map::from(value))
+        Value::Map(
+            value
+                .into_iter()
+                .map(|(k, v)| (K::into(k), V::into(v)))
+                .collect(),
+        )
     }
 }
 
@@ -271,10 +276,9 @@ where
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Map(map) => {
-                let mut new_map =
-                    HashMap::with_capacity_and_hasher(map.value.len(), Default::default());
-                for (k, v) in map.value {
-                    new_map.insert(k.value, V::try_from(v)?);
+                let mut new_map = HashMap::with_capacity_and_hasher(map.len(), Default::default());
+                for (k, v) in map {
+                    new_map.insert(k, V::try_from(v)?);
                 }
                 Ok(new_map)
             }
@@ -292,10 +296,9 @@ where
     fn try_from(value: Value) -> Result<Self> {
         match value {
             Value::Map(map) => {
-                let mut new_map =
-                    HashMap::with_capacity_and_hasher(map.value.len(), Default::default());
-                for (k, v) in map.value {
-                    new_map.insert(k.value, v);
+                let mut new_map = HashMap::with_capacity_and_hasher(map.len(), Default::default());
+                for (k, v) in map {
+                    new_map.insert(k, v);
                 }
                 Ok(new_map)
             }
