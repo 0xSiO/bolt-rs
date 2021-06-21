@@ -34,7 +34,7 @@ mod tests {
     use chrono::NaiveDate;
 
     use crate::serialization::*;
-    use crate::value::{string, MARKER_INT_32, MARKER_INT_64};
+    use crate::value::{MARKER_INT_32, MARKER_INT_64, MARKER_SMALL_STRING};
 
     use super::*;
 
@@ -73,7 +73,7 @@ mod tests {
                 0x01,
                 0xE2,
                 0x40,
-                string::MARKER_SMALL,
+                MARKER_SMALL_STRING,
                 18,
                 b'A',
                 b'n',
@@ -115,7 +115,7 @@ mod tests {
             0x01,
             0xE2,
             0x40,
-            string::MARKER_SMALL,
+            MARKER_SMALL_STRING,
             18,
             b'A',
             b'n',

@@ -78,9 +78,9 @@ impl From<&str> for Value {
     }
 }
 
-impl From<std::string::String> for Value {
-    fn from(value: std::string::String) -> Self {
-        Value::String(String::from(value))
+impl From<String> for Value {
+    fn from(value: String) -> Self {
+        Value::String(value)
     }
 }
 
@@ -312,7 +312,7 @@ impl TryFrom<Value> for std::string::String {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::String(string) => Ok(string.value),
+            Value::String(string) => Ok(string),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }

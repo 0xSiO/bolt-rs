@@ -20,7 +20,6 @@ pub use path::Path;
 pub use point_2d::Point2D;
 pub use point_3d::Point3D;
 pub use relationship::Relationship;
-pub(crate) use string::String;
 pub use time::Time;
 pub use unbound_relationship::UnboundRelationship;
 
@@ -39,7 +38,6 @@ pub(crate) mod path;
 pub(crate) mod point_2d;
 pub(crate) mod point_3d;
 pub(crate) mod relationship;
-pub(crate) mod string;
 pub(crate) mod time;
 pub(crate) mod unbound_relationship;
 
@@ -62,6 +60,10 @@ pub(crate) const MARKER_SMALL_MAP: u8 = 0xD8;
 pub(crate) const MARKER_MEDIUM_MAP: u8 = 0xD9;
 pub(crate) const MARKER_LARGE_MAP: u8 = 0xDA;
 pub(crate) const MARKER_NULL: u8 = 0xC0;
+pub(crate) const MARKER_TINY_STRING: u8 = 0x80;
+pub(crate) const MARKER_SMALL_STRING: u8 = 0xD0;
+pub(crate) const MARKER_MEDIUM_STRING: u8 = 0xD1;
+pub(crate) const MARKER_LARGE_STRING: u8 = 0xD2;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -143,7 +145,13 @@ impl Marker for Value {
                 _ => Err(Error::ValueTooLarge(map.len())),
             },
             Value::Null => Ok(MARKER_NULL),
-            Value::String(string) => string.get_marker(),
+            Value::String(string) => match string.len() {
+                0..=15 => Ok(MARKER_TINY_STRING | string.len() as u8),
+                16..=255 => Ok(MARKER_SMALL_STRING),
+                256..=65_535 => Ok(MARKER_MEDIUM_STRING),
+                65_536..=4_294_967_295 => Ok(MARKER_LARGE_STRING),
+                _ => Err(Error::ValueTooLarge(string.len())),
+            },
             Value::Node(node) => node.get_marker(),
             Value::Relationship(rel) => rel.get_marker(),
             Value::Path(path) => path.get_marker(),
@@ -274,7 +282,7 @@ impl TryInto<Bytes> for Value {
                 let mut total_value_bytes: usize = 0;
                 let mut value_bytes_vec: Vec<Bytes> = Vec::with_capacity(length);
                 for (key, val) in map {
-                    let key_bytes: Bytes = Value::String(String::from(key)).try_into()?;
+                    let key_bytes: Bytes = Value::String(key).try_into()?;
                     let val_bytes: Bytes = val.try_into()?;
                     total_value_bytes += key_bytes.len() + val_bytes.len();
                     value_bytes_vec.push(key_bytes);
@@ -310,7 +318,32 @@ impl TryInto<Bytes> for Value {
                 Ok(bytes.freeze())
             }
             Value::Null => Ok(Bytes::from_static(&[MARKER_NULL])),
-            Value::String(string) => string.try_into(),
+            Value::String(string) => {
+                let length = string.len();
+                // Worst case is a large string, with marker byte, 32-bit size value, and length
+                let mut bytes =
+                    BytesMut::with_capacity(mem::size_of::<u8>() + mem::size_of::<u32>() + length);
+
+                match length {
+                    0..=15 => bytes.put_u8(MARKER_TINY_STRING | length as u8),
+                    16..=255 => {
+                        bytes.put_u8(MARKER_SMALL_STRING);
+                        bytes.put_u8(length as u8)
+                    }
+                    256..=65_535 => {
+                        bytes.put_u8(MARKER_MEDIUM_STRING);
+                        bytes.put_u16(length as u16);
+                    }
+                    65_536..=4_294_967_295 => {
+                        bytes.put_u8(MARKER_LARGE_STRING);
+                        bytes.put_u32(length as u32)
+                    }
+                    _ => return Err(Error::ValueTooLarge(length)),
+                }
+
+                bytes.put_slice(string.as_bytes());
+                Ok(bytes.freeze())
+            }
             Value::Node(node) => node.try_into(),
             Value::Relationship(rel) => rel.try_into(),
             Value::Path(path) => path.try_into(),
@@ -448,13 +481,40 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                     Ok(Value::Null)
                 }
                 // Tiny string
-                marker
-                    if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
-                {
-                    Ok(Value::String(String::try_from(input_arc)?))
+                marker if (MARKER_TINY_STRING..=(MARKER_TINY_STRING | 0x0F)).contains(&marker) => {
+                    let mut input_bytes = input_arc.lock().unwrap();
+                    let marker = input_bytes.get_u8();
+                    // Lower-order nibble of tiny string marker
+                    let size = 0x0F & marker as usize;
+
+                    let mut string_bytes = vec![0; size];
+                    // We resize here so that the length of string_bytes is nonzero, which allows
+                    // us to use copy_to_slice
+                    input_bytes.copy_to_slice(&mut string_bytes);
+                    Ok(Value::String(
+                        std::string::String::from_utf8(string_bytes.to_vec())
+                            .map_err(DeserializationError::InvalidUTF8)?,
+                    ))
                 }
-                string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
-                    Ok(Value::String(String::try_from(input_arc)?))
+                MARKER_SMALL_STRING | MARKER_MEDIUM_STRING | MARKER_LARGE_STRING => {
+                    let mut input_bytes = input_arc.lock().unwrap();
+                    let marker = input_bytes.get_u8();
+                    let size = match marker {
+                        MARKER_SMALL_STRING => input_bytes.get_u8() as usize,
+                        MARKER_MEDIUM_STRING => input_bytes.get_u16() as usize,
+                        MARKER_LARGE_STRING => input_bytes.get_u32() as usize,
+                        _ => {
+                            return Err(DeserializationError::InvalidMarkerByte(marker).into());
+                        }
+                    };
+                    let mut string_bytes = vec![0; size];
+                    // We resize here so that the length of string_bytes is nonzero, which allows
+                    // us to use copy_to_slice
+                    input_bytes.copy_to_slice(&mut string_bytes);
+                    Ok(Value::String(
+                        std::string::String::from_utf8(string_bytes.to_vec())
+                            .map_err(DeserializationError::InvalidUTF8)?,
+                    ))
                 }
                 // Tiny structure
                 marker if (STRUCT_MARKER_TINY..=(STRUCT_MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -705,7 +765,7 @@ mod tests {
         let small_list = Value::from(vec!["item"; 100]);
         let small_list_bytes = Bytes::from_iter(
             vec![MARKER_SMALL_LIST, 100].into_iter().chain(
-                iter::repeat(&[string::MARKER_TINY | 4, 0x69, 0x74, 0x65, 0x6D])
+                iter::repeat(&[MARKER_TINY_STRING | 4, 0x69, 0x74, 0x65, 0x6D])
                     .take(100)
                     .flatten()
                     .copied(),
@@ -759,30 +819,108 @@ mod tests {
     }
 
     #[test]
-    fn string_from_bytes() {
-        let tiny = String::from("string");
-        let tiny_bytes = tiny.clone().try_into_bytes().unwrap();
-        let small = String::from("string".repeat(10));
-        let small_bytes = small.clone().try_into_bytes().unwrap();
-        let medium = String::from("string".repeat(1000));
-        let medium_bytes = medium.clone().try_into_bytes().unwrap();
-        let large = String::from("string".repeat(100_000));
-        let large_bytes = large.clone().try_into_bytes().unwrap();
+    fn tiny_string_from_bytes() {
+        let tiny = Value::from("string");
+        let tiny_bytes =
+            Bytes::from_static(&[MARKER_TINY_STRING | 6, b's', b't', b'r', b'i', b'n', b'g']);
+        assert_eq!(&tiny.clone().try_into_bytes().unwrap(), &tiny_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
-            Value::String(tiny)
+            tiny
         );
+    }
+
+    #[test]
+    fn small_string_from_bytes() {
+        let small = Value::from("string".repeat(10));
+        let small_bytes = Bytes::from_iter(
+            vec![MARKER_SMALL_STRING, 60].into_iter().chain(
+                iter::repeat(&[b's', b't', b'r', b'i', b'n', b'g'])
+                    .take(10)
+                    .flatten()
+                    .copied(),
+            ),
+        );
+        assert_eq!(small.clone().try_into_bytes().unwrap(), &small_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
-            Value::String(small)
+            small
         );
+    }
+
+    #[test]
+    fn medium_string_from_bytes() {
+        let medium = Value::from("string".repeat(1000));
+        let medium_bytes = Bytes::from_iter(
+            vec![MARKER_MEDIUM_STRING, 0x17, 0x70].into_iter().chain(
+                iter::repeat(&[b's', b't', b'r', b'i', b'n', b'g'])
+                    .take(1000)
+                    .flatten()
+                    .copied(),
+            ),
+        );
+        assert_eq!(medium.clone().try_into_bytes().unwrap(), &medium_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
-            Value::String(medium)
+            medium
         );
+    }
+
+    #[test]
+    fn large_string_from_bytes() {
+        let large = Value::from("string".repeat(100_000));
+        let large_bytes = Bytes::from_iter(
+            vec![MARKER_LARGE_STRING, 0x00, 0x09, 0x27, 0xC0]
+                .into_iter()
+                .chain(
+                    iter::repeat(&[b's', b't', b'r', b'i', b'n', b'g'])
+                        .take(100_000)
+                        .flatten()
+                        .copied(),
+                ),
+        );
+        assert_eq!(large.clone().try_into_bytes().unwrap(), &large_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
-            Value::String(large)
+            large
+        );
+    }
+
+    #[test]
+    fn special_string_from_bytes() {
+        let special = Value::from("En å flöt över ängen");
+        let special_bytes = Bytes::from_static(&[
+            MARKER_SMALL_STRING,
+            24,
+            0x45,
+            0x6e,
+            0x20,
+            0xc3,
+            0xa5,
+            0x20,
+            0x66,
+            0x6c,
+            0xc3,
+            0xb6,
+            0x74,
+            0x20,
+            0xc3,
+            0xb6,
+            0x76,
+            0x65,
+            0x72,
+            0x20,
+            0xc3,
+            0xa4,
+            0x6e,
+            0x67,
+            0x65,
+            0x6e,
+        ]);
+        assert_eq!(special.clone().try_into_bytes().unwrap(), &special_bytes);
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(special_bytes))).unwrap(),
+            special
         );
     }
 

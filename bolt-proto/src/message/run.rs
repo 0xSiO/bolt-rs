@@ -70,7 +70,7 @@ mod tests {
             Bytes::from_static(&[
                 MARKER,
                 SIGNATURE,
-                string::MARKER_TINY | 14,
+                MARKER_TINY_STRING | 14,
                 b'R',
                 b'E',
                 b'T',
@@ -86,7 +86,7 @@ mod tests {
                 b'm',
                 b';',
                 MARKER_TINY_MAP | 1,
-                string::MARKER_TINY | 5,
+                MARKER_TINY_STRING | 5,
                 b'p',
                 b'a',
                 b'r',
@@ -109,7 +109,7 @@ mod tests {
     fn try_from_bytes() {
         let msg = new_msg();
         let msg_bytes = &[
-            string::MARKER_TINY | 14,
+            MARKER_TINY_STRING | 14,
             b'R',
             b'E',
             b'T',
@@ -125,7 +125,7 @@ mod tests {
             b'm',
             b';',
             MARKER_TINY_MAP | 1,
-            string::MARKER_TINY | 5,
+            MARKER_TINY_STRING | 5,
             b'p',
             b'a',
             b'r',

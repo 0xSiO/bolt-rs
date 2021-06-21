@@ -1,4 +1,4 @@
-use std::str::Utf8Error;
+use std::string::FromUtf8Error;
 
 use thiserror::Error;
 
@@ -35,5 +35,5 @@ pub enum DeserializationError {
     #[error("invalid signature byte: {0:x}")]
     InvalidSignatureByte(u8),
     #[error("string deserialization failed: {0}")]
-    InvalidUTF8(#[from] Utf8Error),
+    InvalidUTF8(#[from] FromUtf8Error),
 }

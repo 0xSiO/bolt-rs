@@ -55,7 +55,7 @@ mod tests {
                 MARKER,
                 SIGNATURE,
                 MARKER_TINY_MAP | 1,
-                string::MARKER_TINY | 13,
+                MARKER_TINY_STRING | 13,
                 b'f',
                 b'a',
                 b'i',
@@ -83,7 +83,7 @@ mod tests {
         let msg = new_msg();
         let msg_bytes = &[
             MARKER_TINY_MAP | 1,
-            string::MARKER_TINY | 13,
+            MARKER_TINY_STRING | 13,
             b'f',
             b'a',
             b'i',
