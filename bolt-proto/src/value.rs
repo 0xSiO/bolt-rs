@@ -9,9 +9,8 @@ use std::{
 };
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use chrono::{FixedOffset, NaiveDate, NaiveTime, Offset, Timelike};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, Timelike};
 
-pub(crate) use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
 pub use duration::Duration;
 pub(crate) use local_date_time::LocalDateTime;
@@ -27,7 +26,6 @@ use crate::error::*;
 use crate::serialization::*;
 
 pub(crate) mod conversions;
-pub(crate) mod date_time_offset;
 pub(crate) mod date_time_zoned;
 pub(crate) mod duration;
 pub(crate) mod local_date_time;
@@ -68,6 +66,7 @@ pub(crate) const MARKER_MEDIUM_STRUCT: u8 = 0xDD;
 
 pub(crate) const SIGNATURE_DATE: u8 = 0x44;
 pub(crate) const SIGNATURE_TIME: u8 = 0x54;
+pub(crate) const SIGNATURE_DATE_TIME_OFFSET: u8 = 0x46;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -95,12 +94,12 @@ pub enum Value {
     UnboundRelationship(UnboundRelationship),
 
     // V2+-compatible value types
-    Date(NaiveDate),                // A date without a time zone, a.k.a. LocalDate
-    Time(NaiveTime, FixedOffset),   // A time with a UTC offset, a.k.a. OffsetTime
-    DateTimeOffset(DateTimeOffset), // A date-time with a UTC offset, a.k.a. OffsetDateTime
-    DateTimeZoned(DateTimeZoned),   // A date-time with a time zone ID, a.k.a. ZonedDateTime
-    LocalTime(LocalTime),           // A time without a time zone
-    LocalDateTime(LocalDateTime),   // A date-time without a time zone
+    Date(NaiveDate),              // A date without a time zone, a.k.a. LocalDate
+    Time(NaiveTime, FixedOffset), // A time with a UTC offset, a.k.a. OffsetTime
+    DateTimeOffset(DateTime<FixedOffset>), // A date-time with a UTC offset, a.k.a. OffsetDateTime
+    DateTimeZoned(DateTimeZoned), // A date-time with a time zone ID, a.k.a. ZonedDateTime
+    LocalTime(LocalTime),         // A time without a time zone
+    LocalDateTime(LocalDateTime), // A date-time without a time zone
     Duration(Duration),
     Point2D(Point2D),
     Point3D(Point3D),
@@ -162,7 +161,7 @@ impl Marker for Value {
             Value::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
             Value::Date(_) => Ok(MARKER_TINY_STRUCT | 1),
             Value::Time(_, _) => Ok(MARKER_TINY_STRUCT | 2),
-            Value::DateTimeOffset(date_time_offset) => date_time_offset.get_marker(),
+            Value::DateTimeOffset(_) => Ok(MARKER_TINY_STRUCT | 3),
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.get_marker(),
             Value::LocalTime(local_time) => local_time.get_marker(),
             Value::LocalDateTime(local_date_time) => local_date_time.get_marker(),
@@ -378,7 +377,23 @@ impl TryInto<Bytes> for Value {
                         Value::from(offset.fix().local_minus_utc()).try_into_bytes()?,
                     ),
             )),
-            Value::DateTimeOffset(date_time_offset) => date_time_offset.try_into(),
+            Value::DateTimeOffset(date_time_offset) => Ok(Bytes::from_iter(
+                vec![MARKER_TINY_STRUCT | 3, SIGNATURE_DATE_TIME_OFFSET]
+                    .into_iter()
+                    .chain(
+                        // Seconds since UNIX epoch
+                        Value::from(date_time_offset.timestamp()).try_into_bytes()?,
+                    )
+                    .chain(
+                        // Nanoseconds
+                        Value::from(date_time_offset.nanosecond() as i64).try_into_bytes()?,
+                    )
+                    .chain(
+                        // Timezone offset
+                        Value::from(date_time_offset.offset().fix().local_minus_utc())
+                            .try_into_bytes()?,
+                    ),
+            )),
             Value::DateTimeZoned(date_time_zoned) => date_time_zoned.try_into(),
             Value::LocalTime(local_time) => local_time.try_into(),
             Value::LocalDateTime(local_date_time) => local_date_time.try_into(),
@@ -582,8 +597,14 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
                 FixedOffset::east(zone_offset),
             ))
         }
-        date_time_offset::SIGNATURE => {
-            Ok(Value::DateTimeOffset(DateTimeOffset::try_from(input_arc)?))
+        SIGNATURE_DATE_TIME_OFFSET => {
+            let epoch_seconds: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+            let nanos: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+            let offset_seconds: i32 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+            Ok(Value::DateTimeOffset(DateTime::from_utc(
+                NaiveDateTime::from_timestamp(epoch_seconds, nanos as u32),
+                FixedOffset::east(offset_seconds),
+            )))
         }
         date_time_zoned::SIGNATURE => Ok(Value::DateTimeZoned(DateTimeZoned::try_from(input_arc)?)),
         local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
@@ -1188,14 +1209,34 @@ mod tests {
 
     #[test]
     fn date_time_offset_from_bytes() {
-        let date_time = DateTimeOffset::from(
+        let date_time = Value::DateTimeOffset(
             FixedOffset::east(-5 * 3600)
                 .from_utc_datetime(&NaiveDate::from_ymd(2050, 12, 31).and_hms_nano(23, 59, 59, 10)),
         );
-        let date_time_bytes = date_time.clone().try_into_bytes().unwrap();
+        let date_time_bytes = Bytes::from_static(&[
+            MARKER_TINY_STRUCT | 3,
+            SIGNATURE_DATE_TIME_OFFSET,
+            MARKER_INT_64,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x98,
+            0x5B,
+            0xA9,
+            0x7F,
+            0x0A,
+            MARKER_INT_16,
+            0xB9,
+            0xB0,
+        ]);
+        assert_eq!(
+            &date_time.clone().try_into_bytes().unwrap(),
+            &date_time_bytes
+        );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
-            Value::DateTimeOffset(date_time)
+            date_time
         );
     }
 
@@ -1264,7 +1305,6 @@ mod tests {
     #[ignore]
     fn value_size() {
         use std::mem::size_of;
-        println!("DateTimeOffset: {} bytes", size_of::<DateTimeOffset>());
         println!("DateTimeZoned: {} bytes", size_of::<DateTimeZoned>());
         println!("Duration: {} bytes", size_of::<Duration>());
         println!("LocalDateTime: {} bytes", size_of::<LocalDateTime>());
