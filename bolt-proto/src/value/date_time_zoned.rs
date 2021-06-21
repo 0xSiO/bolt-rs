@@ -34,8 +34,7 @@ mod tests {
     use chrono::NaiveDate;
 
     use crate::serialization::*;
-    use crate::value::integer::{MARKER_INT_32, MARKER_INT_64};
-    use crate::value::string;
+    use crate::value::{string, MARKER_INT_32, MARKER_INT_64};
 
     use super::*;
 

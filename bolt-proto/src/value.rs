@@ -11,8 +11,6 @@ pub(crate) use date::Date;
 pub(crate) use date_time_offset::DateTimeOffset;
 pub(crate) use date_time_zoned::DateTimeZoned;
 pub use duration::Duration;
-pub(crate) use integer::Integer;
-pub(crate) use list::List;
 pub(crate) use local_date_time::LocalDateTime;
 pub(crate) use local_time::LocalTime;
 pub(crate) use map::Map;
@@ -34,8 +32,6 @@ pub(crate) mod date;
 pub(crate) mod date_time_offset;
 pub(crate) mod date_time_zoned;
 pub(crate) mod duration;
-pub(crate) mod integer;
-pub(crate) mod list;
 pub(crate) mod local_date_time;
 pub(crate) mod local_time;
 pub(crate) mod map;
@@ -59,6 +55,10 @@ pub(crate) const MARKER_FLOAT: u8 = 0xC1;
 pub(crate) const MARKER_SMALL_BYTES: u8 = 0xCC;
 pub(crate) const MARKER_MEDIUM_BYTES: u8 = 0xCD;
 pub(crate) const MARKER_LARGE_BYTES: u8 = 0xCE;
+pub(crate) const MARKER_TINY_LIST: u8 = 0x90;
+pub(crate) const MARKER_SMALL_LIST: u8 = 0xD4;
+pub(crate) const MARKER_MEDIUM_LIST: u8 = 0xD5;
+pub(crate) const MARKER_LARGE_LIST: u8 = 0xD6;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -75,8 +75,8 @@ pub enum Value {
     Boolean(bool),
     Integer(i64),
     Float(f64),
-    Bytes(Vec<u8>), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
-    List(List),
+    Bytes(Vec<u8>),
+    List(Vec<Value>),
     Map(Map),
     Null,
     String(String),
@@ -156,7 +156,13 @@ impl Marker for Value {
                 65_536..=2_147_483_647 => Ok(MARKER_LARGE_BYTES),
                 _ => Err(Error::ValueTooLarge(bytes.len())),
             },
-            Value::List(list) => list.get_marker(),
+            Value::List(list) => match list.len() {
+                0..=15 => Ok(MARKER_TINY_LIST | list.len() as u8),
+                16..=255 => Ok(MARKER_SMALL_LIST),
+                256..=65_535 => Ok(MARKER_MEDIUM_LIST),
+                65_536..=4_294_967_295 => Ok(MARKER_LARGE_LIST),
+                len => Err(Error::ValueTooLarge(len)),
+            },
             Value::Map(map) => map.get_marker(),
             Value::Null => Null.get_marker(),
             Value::String(string) => string.get_marker(),
@@ -244,7 +250,46 @@ impl TryInto<Bytes> for Value {
                 buf.put_slice(&bytes);
                 Ok(buf.freeze())
             }
-            Value::List(list) => list.try_into(),
+            Value::List(list) => {
+                let length = list.len();
+
+                let mut total_value_bytes: usize = 0;
+                let mut value_bytes_vec: Vec<Bytes> = Vec::with_capacity(length);
+                for value in list {
+                    let value_bytes: Bytes = value.try_into()?;
+                    total_value_bytes += value_bytes.len();
+                    value_bytes_vec.push(value_bytes);
+                }
+
+                // Worst case is a large List, with marker byte, 32-bit size value, and all the
+                // Value bytes
+                let mut bytes = BytesMut::with_capacity(
+                    mem::size_of::<u8>() + mem::size_of::<u32>() + total_value_bytes,
+                );
+
+                match length {
+                    0..=15 => bytes.put_u8(MARKER_TINY_LIST | length as u8),
+                    16..=255 => {
+                        bytes.put_u8(MARKER_SMALL_LIST);
+                        bytes.put_u8(length as u8)
+                    }
+                    256..=65_535 => {
+                        bytes.put_u8(MARKER_MEDIUM_LIST);
+                        bytes.put_u16(length as u16);
+                    }
+                    65_536..=4_294_967_295 => {
+                        bytes.put_u8(MARKER_LARGE_LIST);
+                        bytes.put_u32(length as u32)
+                    }
+                    _ => return Err(Error::ValueTooLarge(length)),
+                }
+
+                for value_bytes in value_bytes_vec {
+                    bytes.put(value_bytes);
+                }
+
+                Ok(bytes.freeze())
+            }
             Value::Map(map) => map.try_into(),
             Value::Null => Null.try_into(),
             Value::String(string) => string.try_into(),
@@ -292,10 +337,7 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                     Ok(Value::Integer(marker as i8 as i64))
                 }
                 // Other int types
-                integer::MARKER_INT_8
-                | integer::MARKER_INT_16
-                | integer::MARKER_INT_32
-                | integer::MARKER_INT_64 => {
+                MARKER_INT_8 | MARKER_INT_16 | MARKER_INT_32 | MARKER_INT_64 => {
                     let mut input_bytes = input_arc.lock().unwrap();
                     let marker = input_bytes.get_u8();
 
@@ -326,6 +368,32 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                     input_bytes.copy_to_slice(&mut bytes);
                     Ok(Value::Bytes(bytes))
                 }
+                // Tiny list
+                marker if (MARKER_TINY_LIST..=(MARKER_TINY_LIST | 0x0F)).contains(&marker) => {
+                    let marker = input_arc.lock().unwrap().get_u8();
+                    let size = 0x0F & marker as usize;
+                    let mut list: Vec<Value> = Vec::with_capacity(size);
+                    for _ in 0..size {
+                        list.push(Value::try_from(Arc::clone(&input_arc))?);
+                    }
+                    Ok(Value::List(list))
+                }
+                MARKER_SMALL_LIST | MARKER_MEDIUM_LIST | MARKER_LARGE_LIST => {
+                    let marker = input_arc.lock().unwrap().get_u8();
+                    let size = match marker {
+                        MARKER_SMALL_LIST => input_arc.lock().unwrap().get_u8() as usize,
+                        MARKER_MEDIUM_LIST => input_arc.lock().unwrap().get_u16() as usize,
+                        MARKER_LARGE_LIST => input_arc.lock().unwrap().get_u32() as usize,
+                        _ => {
+                            return Err(DeserializationError::InvalidMarkerByte(marker).into());
+                        }
+                    };
+                    let mut list: Vec<Value> = Vec::with_capacity(size);
+                    for _ in 0..size {
+                        list.push(Value::try_from(Arc::clone(&input_arc))?);
+                    }
+                    Ok(Value::List(list))
+                }
                 // Tiny string
                 marker
                     if (string::MARKER_TINY..=(string::MARKER_TINY | 0x0F)).contains(&marker) =>
@@ -334,13 +402,6 @@ impl TryFrom<Arc<Mutex<Bytes>>> for Value {
                 }
                 string::MARKER_SMALL | string::MARKER_MEDIUM | string::MARKER_LARGE => {
                     Ok(Value::String(String::try_from(input_arc)?))
-                }
-                // Tiny list
-                marker if (list::MARKER_TINY..=(list::MARKER_TINY | 0x0F)).contains(&marker) => {
-                    Ok(Value::List(List::try_from(input_arc)?))
-                }
-                list::MARKER_SMALL | list::MARKER_MEDIUM | list::MARKER_LARGE => {
-                    Ok(Value::List(List::try_from(input_arc)?))
                 }
                 // Tiny map
                 marker if (map::MARKER_TINY..=(map::MARKER_TINY | 0x0F)).contains(&marker) => {
@@ -395,7 +456,7 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    use std::iter::FromIterator;
+    use std::iter::{self, FromIterator};
 
     use chrono::{FixedOffset, NaiveDate, NaiveTime, TimeZone, Utc};
 
@@ -548,6 +609,109 @@ mod tests {
     }
 
     #[test]
+    fn empty_list_from_bytes() {
+        let empty_list = Value::List(vec![]);
+        let empty_list_bytes = Bytes::from_static(&[MARKER_TINY_LIST | 0]);
+        assert_eq!(
+            &empty_list.clone().try_into_bytes().unwrap(),
+            &empty_list_bytes
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(empty_list_bytes))).unwrap(),
+            empty_list
+        );
+    }
+
+    #[test]
+    fn tiny_list_from_bytes() {
+        let tiny_list = Value::from(vec![100_000; 3]);
+        let tiny_list_bytes = Bytes::from_static(&[
+            MARKER_TINY_LIST | 3,
+            MARKER_INT_32,
+            0x00,
+            0x01,
+            0x86,
+            0xA0,
+            MARKER_INT_32,
+            0x00,
+            0x01,
+            0x86,
+            0xA0,
+            MARKER_INT_32,
+            0x00,
+            0x01,
+            0x86,
+            0xA0,
+        ]);
+        assert_eq!(
+            &tiny_list.clone().try_into_bytes().unwrap(),
+            &tiny_list_bytes
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(tiny_list_bytes))).unwrap(),
+            tiny_list
+        );
+    }
+
+    #[test]
+    fn small_list_from_bytes() {
+        let small_list = Value::from(vec!["item"; 100]);
+        let small_list_bytes = Bytes::from_iter(
+            vec![MARKER_SMALL_LIST, 100].into_iter().chain(
+                iter::repeat(&[string::MARKER_TINY | 4, 0x69, 0x74, 0x65, 0x6D])
+                    .take(100)
+                    .flatten()
+                    .copied(),
+            ),
+        );
+        assert_eq!(
+            &small_list.clone().try_into_bytes().unwrap(),
+            &small_list_bytes
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(small_list_bytes))).unwrap(),
+            small_list
+        );
+    }
+
+    #[test]
+    fn medium_list_from_bytes() {
+        let medium_list = Value::from(vec![false; 1000]);
+        let medium_list_bytes = Bytes::from_iter(
+            vec![MARKER_MEDIUM_LIST, 0x03, 0xE8]
+                .into_iter()
+                .chain(vec![MARKER_FALSE; 1000]),
+        );
+        assert_eq!(
+            &medium_list.clone().try_into_bytes().unwrap(),
+            &medium_list_bytes
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(medium_list_bytes))).unwrap(),
+            medium_list
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn large_list_from_bytes() {
+        let large_list = Value::from(vec![1_i8; 70_000]);
+        let large_list_bytes = Bytes::from_iter(
+            vec![MARKER_LARGE_LIST, 0x00, 0x01, 0x11, 0x70]
+                .into_iter()
+                .chain(vec![1; 70_000]),
+        );
+        assert_eq!(
+            &large_list.clone().try_into_bytes().unwrap(),
+            &large_list_bytes
+        );
+        assert_eq!(
+            Value::try_from(Arc::new(Mutex::new(large_list_bytes))).unwrap(),
+            large_list
+        );
+    }
+
+    #[test]
     fn string_from_bytes() {
         let tiny = String::from("string");
         let tiny_bytes = tiny.clone().try_into_bytes().unwrap();
@@ -572,45 +736,6 @@ mod tests {
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
             Value::String(large)
-        );
-    }
-
-    #[test]
-    fn list_from_bytes() {
-        let empty_list: List = Vec::<i32>::new().into();
-        let empty_list_bytes = empty_list.clone().try_into_bytes().unwrap();
-        let tiny_list: List = vec![100_000_000_000_i64; 10].into();
-        let tiny_list_bytes = tiny_list.clone().try_into_bytes().unwrap();
-        let small_list: List = vec!["item"; 100].into();
-        let small_list_bytes = small_list.clone().try_into_bytes().unwrap();
-        let medium_list: List = vec![false; 1000].into();
-        let medium_list_bytes = medium_list.clone().try_into_bytes().unwrap();
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(empty_list_bytes))).unwrap(),
-            Value::List(empty_list)
-        );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(tiny_list_bytes))).unwrap(),
-            Value::List(tiny_list)
-        );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(small_list_bytes))).unwrap(),
-            Value::List(small_list)
-        );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(medium_list_bytes))).unwrap(),
-            Value::List(medium_list)
-        );
-    }
-
-    #[test]
-    #[ignore]
-    fn large_list_from_bytes() {
-        let large_list: List = vec![1_i8; 70_000].into();
-        let large_list_bytes = large_list.clone().try_into_bytes().unwrap();
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(large_list_bytes))).unwrap(),
-            Value::List(large_list)
         );
     }
 
@@ -841,8 +966,6 @@ mod tests {
         println!("DateTimeOffset: {} bytes", size_of::<DateTimeOffset>());
         println!("DateTimeZoned: {} bytes", size_of::<DateTimeZoned>());
         println!("Duration: {} bytes", size_of::<Duration>());
-        println!("Integer: {} bytes", size_of::<Integer>());
-        println!("List: {} bytes", size_of::<List>());
         println!("LocalDateTime: {} bytes", size_of::<LocalDateTime>());
         println!("LocalTime: {} bytes", size_of::<LocalTime>());
         println!("Map: {} bytes", size_of::<Map>());

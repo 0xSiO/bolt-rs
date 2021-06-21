@@ -71,7 +71,7 @@ mod tests {
                 b'e',
                 date::MARKER,
                 date::SIGNATURE,
-                integer::MARKER_INT_16,
+                MARKER_INT_16,
                 0x16,
                 0x17,
             ])
@@ -99,7 +99,7 @@ mod tests {
             b'e',
             date::MARKER,
             date::SIGNATURE,
-            integer::MARKER_INT_16,
+            MARKER_INT_16,
             0x16,
             0x17,
         ];

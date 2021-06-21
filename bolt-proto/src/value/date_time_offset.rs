@@ -31,7 +31,7 @@ mod tests {
     use chrono::{DateTime, FixedOffset, NaiveDateTime};
 
     use crate::serialization::*;
-    use crate::value::integer::MARKER_INT_16;
+    use crate::value::MARKER_INT_16;
 
     use super::*;
 

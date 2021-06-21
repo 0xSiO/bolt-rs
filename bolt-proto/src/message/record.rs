@@ -65,8 +65,8 @@ mod tests {
             Bytes::from_static(&[
                 MARKER,
                 SIGNATURE,
-                list::MARKER_TINY | 3,
-                integer::MARKER_INT_16,
+                MARKER_TINY_LIST | 3,
+                MARKER_INT_16,
                 0x04,
                 0xB0,
                 string::MARKER_TINY | 8,
@@ -97,8 +97,8 @@ mod tests {
     fn try_from_bytes() {
         let msg = new_msg();
         let msg_bytes = &[
-            list::MARKER_TINY | 3,
-            integer::MARKER_INT_16,
+            MARKER_TINY_LIST | 3,
+            MARKER_INT_16,
             0x04,
             0xB0,
             string::MARKER_TINY | 8,

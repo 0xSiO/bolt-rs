@@ -52,7 +52,7 @@ where
     T: Into<Value>,
 {
     fn from(value: Vec<T>) -> Self {
-        Value::List(List::from(value))
+        Value::List(value.into_iter().map(T::into).collect())
     }
 }
 
@@ -244,7 +244,7 @@ where
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::List(list) => list.value.into_iter().map(T::try_from).collect(),
+            Value::List(list) => list.into_iter().map(T::try_from).collect(),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }
@@ -255,7 +255,7 @@ impl TryFrom<Value> for Vec<Value> {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::List(list) => Ok(list.value),
+            Value::List(list) => Ok(list),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }
