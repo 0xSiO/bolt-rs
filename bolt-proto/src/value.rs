@@ -16,7 +16,6 @@ use chrono_tz::Tz;
 
 pub use duration::Duration;
 pub(crate) use local_date_time::LocalDateTime;
-pub(crate) use local_time::LocalTime;
 pub use node::Node;
 pub use path::Path;
 pub use point_2d::Point2D;
@@ -30,7 +29,6 @@ use crate::serialization::*;
 pub(crate) mod conversions;
 pub(crate) mod duration;
 pub(crate) mod local_date_time;
-pub(crate) mod local_time;
 pub(crate) mod node;
 pub(crate) mod path;
 pub(crate) mod point_2d;
@@ -69,6 +67,7 @@ pub(crate) const SIGNATURE_DATE: u8 = 0x44;
 pub(crate) const SIGNATURE_TIME: u8 = 0x54;
 pub(crate) const SIGNATURE_DATE_TIME_OFFSET: u8 = 0x46;
 pub(crate) const SIGNATURE_DATE_TIME_ZONED: u8 = 0x66;
+pub(crate) const SIGNATURE_LOCAL_TIME: u8 = 0x74;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -100,7 +99,7 @@ pub enum Value {
     Time(NaiveTime, FixedOffset), // A time with a UTC offset, a.k.a. OffsetTime
     DateTimeOffset(DateTime<FixedOffset>), // A date-time with a UTC offset, a.k.a. OffsetDateTime
     DateTimeZoned(DateTime<Tz>),  // A date-time with a time zone ID, a.k.a. ZonedDateTime
-    LocalTime(LocalTime),         // A time without a time zone
+    LocalTime(NaiveTime),         // A time without a time zone
     LocalDateTime(LocalDateTime), // A date-time without a time zone
     Duration(Duration),
     Point2D(Point2D),
@@ -165,7 +164,7 @@ impl Marker for Value {
             Value::Time(_, _) => Ok(MARKER_TINY_STRUCT | 2),
             Value::DateTimeOffset(_) => Ok(MARKER_TINY_STRUCT | 3),
             Value::DateTimeZoned(_) => Ok(MARKER_TINY_STRUCT | 3),
-            Value::LocalTime(local_time) => local_time.get_marker(),
+            Value::LocalTime(_) => Ok(MARKER_TINY_STRUCT | 1),
             Value::LocalDateTime(local_date_time) => local_date_time.get_marker(),
             Value::Duration(duration) => duration.get_marker(),
             Value::Point2D(point_2d) => point_2d.get_marker(),
@@ -415,7 +414,18 @@ impl TryInto<Bytes> for Value {
                         ),
                 ))
             }
-            Value::LocalTime(local_time) => local_time.try_into(),
+            Value::LocalTime(local_time) => Ok(Bytes::from_iter(
+                vec![MARKER_TINY_STRUCT | 1, SIGNATURE_LOCAL_TIME]
+                    .into_iter()
+                    .chain(
+                        Value::from(
+                            // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
+                            local_time.num_seconds_from_midnight() as i64 * 1_000_000_000
+                                + local_time.nanosecond() as i64,
+                        )
+                        .try_into_bytes()?,
+                    ),
+            )),
             Value::LocalDateTime(local_date_time) => local_date_time.try_into(),
             Value::Duration(duration) => duration.try_into(),
             Value::Point2D(point_2d) => point_2d.try_into(),
@@ -635,7 +645,13 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
                 timezone.timestamp(epoch_seconds, nanos as u32),
             ))
         }
-        local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
+        SIGNATURE_LOCAL_TIME => {
+            let nanos_since_midnight: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+            Ok(Value::LocalTime(NaiveTime::from_num_seconds_from_midnight(
+                (nanos_since_midnight / 1_000_000_000) as u32,
+                (nanos_since_midnight % 1_000_000_000) as u32,
+            )))
+        }
         local_date_time::SIGNATURE => Ok(Value::LocalDateTime(LocalDateTime::try_from(input_arc)?)),
         duration::SIGNATURE => Ok(Value::Duration(Duration::try_from(input_arc)?)),
         point_2d::SIGNATURE => Ok(Value::Point2D(Point2D::try_from(input_arc)?)),
@@ -1319,11 +1335,27 @@ mod tests {
 
     #[test]
     fn local_time_from_bytes() {
-        let local_time = LocalTime::from(NaiveTime::from_hms_nano(23, 59, 59, 999));
-        let local_time_bytes = local_time.clone().try_into_bytes().unwrap();
+        let local_time = Value::LocalTime(NaiveTime::from_hms_nano(23, 59, 59, 999));
+        let local_time_bytes = Bytes::from_static(&[
+            MARKER_TINY_STRUCT | 1,
+            SIGNATURE_LOCAL_TIME,
+            MARKER_INT_64,
+            0x00,
+            0x00,
+            0x4E,
+            0x94,
+            0x55,
+            0xB4,
+            0x39,
+            0xE7,
+        ]);
+        assert_eq!(
+            &local_time.clone().try_into_bytes().unwrap(),
+            &local_time_bytes
+        );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(local_time_bytes))).unwrap(),
-            Value::LocalTime(local_time)
+            local_time
         );
     }
 
@@ -1371,7 +1403,6 @@ mod tests {
         use std::mem::size_of;
         println!("Duration: {} bytes", size_of::<Duration>());
         println!("LocalDateTime: {} bytes", size_of::<LocalDateTime>());
-        println!("LocalTime: {} bytes", size_of::<LocalTime>());
         println!("Node: {} bytes", size_of::<Node>());
         println!("Path: {} bytes", size_of::<Path>());
         println!("Point2D: {} bytes", size_of::<Point2D>());

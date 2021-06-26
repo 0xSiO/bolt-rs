@@ -137,7 +137,7 @@ impl From<(NaiveDateTime, chrono_tz::Tz)> for Value {
 
 impl From<NaiveTime> for Value {
     fn from(value: NaiveTime) -> Self {
-        Value::LocalTime(LocalTime::from(value))
+        Value::LocalTime(value)
     }
 }
 
@@ -367,13 +367,7 @@ impl TryFrom<Value> for NaiveTime {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            Value::LocalTime(local_time) => {
-                let seconds = (local_time.nanos_since_midnight / 1_000_000_000) as u32;
-                let nanos = (local_time.nanos_since_midnight % 1_000_000_000) as u32;
-                // We created the LocalTime from a NaiveTime, so it can easily be
-                // converted back without worrying about a panic occurring
-                Ok(NaiveTime::from_num_seconds_from_midnight(seconds, nanos))
-            }
+            Value::LocalTime(local_time) => Ok(local_time),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }
