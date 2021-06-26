@@ -9,9 +9,11 @@ use std::{
 };
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, Timelike};
+use chrono::{
+    DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone, Timelike,
+};
+use chrono_tz::Tz;
 
-pub(crate) use date_time_zoned::DateTimeZoned;
 pub use duration::Duration;
 pub(crate) use local_date_time::LocalDateTime;
 pub(crate) use local_time::LocalTime;
@@ -26,7 +28,6 @@ use crate::error::*;
 use crate::serialization::*;
 
 pub(crate) mod conversions;
-pub(crate) mod date_time_zoned;
 pub(crate) mod duration;
 pub(crate) mod local_date_time;
 pub(crate) mod local_time;
@@ -67,6 +68,7 @@ pub(crate) const MARKER_MEDIUM_STRUCT: u8 = 0xDD;
 pub(crate) const SIGNATURE_DATE: u8 = 0x44;
 pub(crate) const SIGNATURE_TIME: u8 = 0x54;
 pub(crate) const SIGNATURE_DATE_TIME_OFFSET: u8 = 0x46;
+pub(crate) const SIGNATURE_DATE_TIME_ZONED: u8 = 0x66;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -97,7 +99,7 @@ pub enum Value {
     Date(NaiveDate),              // A date without a time zone, a.k.a. LocalDate
     Time(NaiveTime, FixedOffset), // A time with a UTC offset, a.k.a. OffsetTime
     DateTimeOffset(DateTime<FixedOffset>), // A date-time with a UTC offset, a.k.a. OffsetDateTime
-    DateTimeZoned(DateTimeZoned), // A date-time with a time zone ID, a.k.a. ZonedDateTime
+    DateTimeZoned(DateTime<Tz>),  // A date-time with a time zone ID, a.k.a. ZonedDateTime
     LocalTime(LocalTime),         // A time without a time zone
     LocalDateTime(LocalDateTime), // A date-time without a time zone
     Duration(Duration),
@@ -162,7 +164,7 @@ impl Marker for Value {
             Value::Date(_) => Ok(MARKER_TINY_STRUCT | 1),
             Value::Time(_, _) => Ok(MARKER_TINY_STRUCT | 2),
             Value::DateTimeOffset(_) => Ok(MARKER_TINY_STRUCT | 3),
-            Value::DateTimeZoned(date_time_zoned) => date_time_zoned.get_marker(),
+            Value::DateTimeZoned(_) => Ok(MARKER_TINY_STRUCT | 3),
             Value::LocalTime(local_time) => local_time.get_marker(),
             Value::LocalDateTime(local_date_time) => local_date_time.get_marker(),
             Value::Duration(duration) => duration.get_marker(),
@@ -394,7 +396,25 @@ impl TryInto<Bytes> for Value {
                             .try_into_bytes()?,
                     ),
             )),
-            Value::DateTimeZoned(date_time_zoned) => date_time_zoned.try_into(),
+            Value::DateTimeZoned(date_time_zoned) => {
+                Ok(Bytes::from_iter(
+                    vec![MARKER_TINY_STRUCT | 3, SIGNATURE_DATE_TIME_ZONED]
+                        .into_iter()
+                        .chain(
+                            // Seconds since UNIX epoch
+                            Value::from(date_time_zoned.timestamp()).try_into_bytes()?,
+                        )
+                        .chain(
+                            // Nanoseconds
+                            Value::from(date_time_zoned.nanosecond() as i64).try_into_bytes()?,
+                        )
+                        .chain(
+                            // Timezone ID
+                            Value::from(date_time_zoned.timezone().name().to_string())
+                                .try_into_bytes()?,
+                        ),
+                ))
+            }
             Value::LocalTime(local_time) => local_time.try_into(),
             Value::LocalDateTime(local_date_time) => local_date_time.try_into(),
             Value::Duration(duration) => duration.try_into(),
@@ -606,7 +626,15 @@ fn deserialize_structure(input_arc: Arc<Mutex<Bytes>>) -> Result<Value> {
                 FixedOffset::east(offset_seconds),
             )))
         }
-        date_time_zoned::SIGNATURE => Ok(Value::DateTimeZoned(DateTimeZoned::try_from(input_arc)?)),
+        SIGNATURE_DATE_TIME_ZONED => {
+            let epoch_seconds: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+            let nanos: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+            let timezone_id: String = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+            let timezone: Tz = timezone_id.parse().unwrap();
+            Ok(Value::DateTimeZoned(
+                timezone.timestamp(epoch_seconds, nanos as u32),
+            ))
+        }
         local_time::SIGNATURE => Ok(Value::LocalTime(LocalTime::try_from(input_arc)?)),
         local_date_time::SIGNATURE => Ok(Value::LocalDateTime(LocalDateTime::try_from(input_arc)?)),
         duration::SIGNATURE => Ok(Value::Duration(Duration::try_from(input_arc)?)),
@@ -1225,7 +1253,7 @@ mod tests {
             0x5B,
             0xA9,
             0x7F,
-            0x0A,
+            10,
             MARKER_INT_16,
             0xB9,
             0xB0,
@@ -1242,14 +1270,50 @@ mod tests {
 
     #[test]
     fn date_time_zoned_from_bytes() {
-        let date_time = DateTimeZoned::from((
-            NaiveDate::from_ymd(2030, 8, 3).and_hms_milli(14, 30, 1, 2),
-            chrono_tz::Asia::Ulaanbaatar,
-        ));
-        let date_time_bytes = date_time.clone().try_into_bytes().unwrap();
+        let date_time = Value::DateTimeZoned(
+            chrono_tz::Asia::Ulaanbaatar
+                .ymd(2030, 8, 3)
+                .and_hms_milli(14, 30, 1, 2),
+        );
+        let date_time_bytes = Bytes::from_static(&[
+            MARKER_TINY_STRUCT | 3,
+            SIGNATURE_DATE_TIME_ZONED,
+            MARKER_INT_32,
+            0x71,
+            0xF6,
+            0x54,
+            0xE9,
+            MARKER_INT_32,
+            0x00,
+            0x1E,
+            0x84,
+            0x80,
+            MARKER_SMALL_STRING,
+            16,
+            b'A',
+            b's',
+            b'i',
+            b'a',
+            b'/',
+            b'U',
+            b'l',
+            b'a',
+            b'a',
+            b'n',
+            b'b',
+            b'a',
+            b'a',
+            b't',
+            b'a',
+            b'r',
+        ]);
+        assert_eq!(
+            &date_time.clone().try_into_bytes().unwrap(),
+            &date_time_bytes
+        );
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
-            Value::DateTimeZoned(date_time)
+            date_time
         );
     }
 
@@ -1305,7 +1369,6 @@ mod tests {
     #[ignore]
     fn value_size() {
         use std::mem::size_of;
-        println!("DateTimeZoned: {} bytes", size_of::<DateTimeZoned>());
         println!("Duration: {} bytes", size_of::<Duration>());
         println!("LocalDateTime: {} bytes", size_of::<LocalDateTime>());
         println!("LocalTime: {} bytes", size_of::<LocalTime>());
