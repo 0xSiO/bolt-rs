@@ -143,7 +143,7 @@ impl From<NaiveTime> for Value {
 
 impl From<NaiveDateTime> for Value {
     fn from(value: NaiveDateTime) -> Self {
-        Value::LocalDateTime(LocalDateTime::from(value))
+        Value::LocalDateTime(value)
     }
 }
 
@@ -378,12 +378,7 @@ impl TryFrom<Value> for NaiveDateTime {
 
     fn try_from(value: Value) -> Result<Self> {
         match value {
-            // We created the LocalDateTime from a NaiveDateTime, so it can easily be
-            // converted back without worrying about a panic occurring
-            Value::LocalDateTime(local_date_time) => Ok(NaiveDateTime::from_timestamp(
-                local_date_time.epoch_seconds,
-                local_date_time.nanos as u32,
-            )),
+            Value::LocalDateTime(local_date_time) => Ok(local_date_time),
             _ => Err(ConversionError::FromValue(value).into()),
         }
     }
