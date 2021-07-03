@@ -1,9 +1,24 @@
-use std::convert::{TryFrom, TryInto};
-use std::sync::{Arc, Mutex};
+use std::{
+    convert::{TryFrom, TryInto},
+    panic::UnwindSafe,
+    sync::{Arc, Mutex},
+};
 
 use bytes::{Buf, Bytes};
 
 use crate::error::*;
+
+pub(crate) trait BoltValue: Sized {
+    fn marker(&self) -> u8;
+
+    fn serialize(&self) -> Result<Vec<u8>>;
+
+    fn deserialize(bytes: impl IntoIterator<Item = u8> + UnwindSafe) -> Result<Self>;
+}
+
+pub(crate) trait BoltStructure: BoltValue {
+    fn signature(&self) -> u8;
+}
 
 pub(crate) trait Serialize: TryInto<Bytes, Error = Error> {
     fn try_into_bytes(self) -> Result<Bytes> {
