@@ -5,19 +5,19 @@ use bytes::{Buf, Bytes};
 
 use crate::error::*;
 
-pub trait Serialize: TryInto<Bytes, Error = Error> {
+pub(crate) trait Serialize: TryInto<Bytes, Error = Error> {
     fn try_into_bytes(self) -> Result<Bytes> {
         self.try_into()
     }
 }
 
-pub trait Deserialize: TryFrom<Arc<Mutex<Bytes>>, Error = Error> {}
+pub(crate) trait Deserialize: TryFrom<Arc<Mutex<Bytes>>, Error = Error> {}
 
-pub trait Marker {
+pub(crate) trait Marker {
     fn get_marker(&self) -> Result<u8>;
 }
 
-pub trait Signature {
+pub(crate) trait Signature {
     fn get_signature(&self) -> u8;
 }
 

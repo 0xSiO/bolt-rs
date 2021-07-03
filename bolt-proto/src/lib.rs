@@ -1,7 +1,6 @@
 #![warn(rust_2018_idioms)]
 
 pub use message::Message;
-pub use serialization::{Marker, Signature};
 pub use server_state::ServerState;
 pub use value::Value;
 
