@@ -113,6 +113,314 @@ impl Eq for Value {
     }
 }
 
+impl BoltValue for Value {
+    fn marker(&self) -> MarkerResult<u8> {
+        match self {
+            Value::Boolean(true) => Ok(MARKER_TRUE),
+            Value::Boolean(false) => Ok(MARKER_FALSE),
+            Value::Integer(integer) => match integer {
+                -9_223_372_036_854_775_808..=-2_147_483_649
+                | 2_147_483_648..=9_223_372_036_854_775_807 => Ok(MARKER_INT_64),
+                -2_147_483_648..=-32_769 | 32_768..=2_147_483_647 => Ok(MARKER_INT_32),
+                -32_768..=-129 | 128..=32_767 => Ok(MARKER_INT_16),
+                -128..=-17 => Ok(MARKER_INT_8),
+                -16..=127 => Ok(*integer as u8),
+            },
+            Value::Float(_) => Ok(MARKER_FLOAT),
+            Value::Bytes(bytes) => match bytes.len() {
+                0..=255 => Ok(MARKER_SMALL_BYTES),
+                256..=65_535 => Ok(MARKER_MEDIUM_BYTES),
+                65_536..=2_147_483_647 => Ok(MARKER_LARGE_BYTES),
+                _ => Err(MarkerError::ValueTooLarge(bytes.len())),
+            },
+            Value::List(list) => match list.len() {
+                0..=15 => Ok(MARKER_TINY_LIST | list.len() as u8),
+                16..=255 => Ok(MARKER_SMALL_LIST),
+                256..=65_535 => Ok(MARKER_MEDIUM_LIST),
+                65_536..=4_294_967_295 => Ok(MARKER_LARGE_LIST),
+                len => Err(MarkerError::ValueTooLarge(len)),
+            },
+            Value::Map(map) => match map.len() {
+                0..=15 => Ok(MARKER_TINY_MAP | map.len() as u8),
+                16..=255 => Ok(MARKER_SMALL_MAP),
+                256..=65_535 => Ok(MARKER_MEDIUM_MAP),
+                65_536..=4_294_967_295 => Ok(MARKER_LARGE_MAP),
+                _ => Err(MarkerError::ValueTooLarge(map.len())),
+            },
+            Value::Null => Ok(MARKER_NULL),
+            Value::String(string) => match string.len() {
+                0..=15 => Ok(MARKER_TINY_STRING | string.len() as u8),
+                16..=255 => Ok(MARKER_SMALL_STRING),
+                256..=65_535 => Ok(MARKER_MEDIUM_STRING),
+                65_536..=4_294_967_295 => Ok(MARKER_LARGE_STRING),
+                _ => Err(MarkerError::ValueTooLarge(string.len())),
+            },
+            Value::Node(node) => node.marker(),
+            Value::Relationship(rel) => rel.marker(),
+            Value::Path(path) => path.marker(),
+            Value::UnboundRelationship(unbound_rel) => unbound_rel.marker(),
+            Value::Date(_) => Ok(MARKER_TINY_STRUCT | 1),
+            Value::Time(_, _) => Ok(MARKER_TINY_STRUCT | 2),
+            Value::DateTimeOffset(_) => Ok(MARKER_TINY_STRUCT | 3),
+            Value::DateTimeZoned(_) => Ok(MARKER_TINY_STRUCT | 3),
+            Value::LocalTime(_) => Ok(MARKER_TINY_STRUCT | 1),
+            Value::LocalDateTime(_) => Ok(MARKER_TINY_STRUCT | 2),
+            Value::Duration(duration) => duration.marker(),
+            Value::Point2D(point_2d) => point_2d.marker(),
+            Value::Point3D(point_3d) => point_3d.marker(),
+        }
+    }
+
+    fn serialize(self) -> SerializeResult<Vec<u8>> {
+        match self {
+            Value::Boolean(true) => Ok(vec![MARKER_TRUE]),
+            Value::Boolean(false) => Ok(vec![MARKER_FALSE]),
+            Value::Integer(integer) => {
+                // Worst case is 64-bit int
+                let mut bytes = Vec::with_capacity(mem::size_of::<u8>() + mem::size_of::<i64>());
+
+                match integer {
+                    -9_223_372_036_854_775_808..=-2_147_483_649
+                    | 2_147_483_648..=9_223_372_036_854_775_807 => {
+                        bytes.push(MARKER_INT_64);
+                        bytes.extend(&integer.to_be_bytes());
+                    }
+                    -2_147_483_648..=-32_769 | 32_768..=2_147_483_647 => {
+                        bytes.push(MARKER_INT_32);
+                        bytes.extend(&(integer as i32).to_be_bytes());
+                    }
+                    -32_768..=-129 | 128..=32_767 => {
+                        bytes.push(MARKER_INT_16);
+                        bytes.extend(&(integer as i16).to_be_bytes());
+                    }
+                    -128..=-17 => {
+                        bytes.push(MARKER_INT_8);
+                        bytes.extend(&(integer as i8).to_be_bytes());
+                    }
+                    -16..=127 => bytes.push(integer as u8),
+                }
+
+                Ok(bytes)
+            }
+            Value::Float(f) => {
+                let mut bytes = Vec::with_capacity(mem::size_of::<u8>() + mem::size_of::<f64>());
+                bytes.push(MARKER_FLOAT);
+                bytes.extend(&f.to_be_bytes());
+                Ok(bytes)
+            }
+            Value::Bytes(bytes) => {
+                // Worst case is a large ByteArray, with marker byte, 32-bit size value, and length
+                let mut buf =
+                    Vec::with_capacity(mem::size_of::<u8>() + mem::size_of::<u32>() + bytes.len());
+                match bytes.len() {
+                    0..=255 => {
+                        buf.push(MARKER_SMALL_BYTES);
+                        buf.push(bytes.len() as u8);
+                    }
+                    256..=65_535 => {
+                        buf.push(MARKER_MEDIUM_BYTES);
+                        buf.extend(&(bytes.len() as u16).to_be_bytes());
+                    }
+                    65_536..=2_147_483_647 => {
+                        buf.push(MARKER_LARGE_BYTES);
+                        buf.extend(&(bytes.len() as u32).to_be_bytes());
+                    }
+                    _ => return Err(MarkerError::ValueTooLarge(bytes.len()).into()),
+                }
+                buf.extend(bytes);
+                Ok(buf)
+            }
+            Value::List(list) => {
+                let length = list.len();
+
+                let mut total_value_bytes: usize = 0;
+                let mut value_bytes_vec: Vec<Vec<u8>> = Vec::with_capacity(length);
+                for value in list {
+                    let value_bytes = value.serialize()?;
+                    total_value_bytes += value_bytes.len();
+                    value_bytes_vec.push(value_bytes);
+                }
+
+                // Worst case is a large List, with marker byte, 32-bit size value, and all the
+                // Value bytes
+                let mut bytes = Vec::with_capacity(
+                    mem::size_of::<u8>() + mem::size_of::<u32>() + total_value_bytes,
+                );
+
+                match length {
+                    0..=15 => bytes.push(MARKER_TINY_LIST | length as u8),
+                    16..=255 => {
+                        bytes.push(MARKER_SMALL_LIST);
+                        bytes.push(length as u8);
+                    }
+                    256..=65_535 => {
+                        bytes.push(MARKER_MEDIUM_LIST);
+                        bytes.extend(&(length as u16).to_be_bytes());
+                    }
+                    65_536..=4_294_967_295 => {
+                        bytes.push(MARKER_LARGE_LIST);
+                        bytes.extend(&(length as u32).to_be_bytes());
+                    }
+                    _ => return Err(MarkerError::ValueTooLarge(length).into()),
+                }
+
+                for value_bytes in value_bytes_vec {
+                    bytes.extend(value_bytes);
+                }
+
+                Ok(bytes)
+            }
+            Value::Map(map) => {
+                let length = map.len();
+
+                let mut total_value_bytes: usize = 0;
+                let mut value_bytes_vec: Vec<Vec<u8>> = Vec::with_capacity(length);
+                for (key, val) in map {
+                    let key_bytes = Value::String(key).serialize()?;
+                    let val_bytes = val.serialize()?;
+                    total_value_bytes += key_bytes.len() + val_bytes.len();
+                    value_bytes_vec.push(key_bytes);
+                    value_bytes_vec.push(val_bytes);
+                }
+                // Worst case is a large Map, with marker byte, 32-bit size value, and all the
+                // Value bytes
+                let mut bytes = Vec::with_capacity(
+                    mem::size_of::<u8>() + mem::size_of::<u32>() + total_value_bytes,
+                );
+
+                match length {
+                    0..=15 => bytes.push(MARKER_TINY_MAP | length as u8),
+                    16..=255 => {
+                        bytes.push(MARKER_SMALL_MAP);
+                        bytes.push(length as u8);
+                    }
+                    256..=65_535 => {
+                        bytes.push(MARKER_MEDIUM_MAP);
+                        bytes.extend(&(length as u16).to_be_bytes());
+                    }
+                    65_536..=4_294_967_295 => {
+                        bytes.push(MARKER_LARGE_MAP);
+                        bytes.extend(&(length as u32).to_be_bytes());
+                    }
+                    _ => return Err(MarkerError::ValueTooLarge(length).into()),
+                }
+
+                for value_bytes in value_bytes_vec {
+                    bytes.extend(value_bytes);
+                }
+
+                Ok(bytes)
+            }
+            Value::Null => Ok(vec![MARKER_NULL]),
+            Value::String(string) => {
+                let length = string.len();
+                // Worst case is a large string, with marker byte, 32-bit size value, and length
+                let mut bytes =
+                    Vec::with_capacity(mem::size_of::<u8>() + mem::size_of::<u32>() + length);
+
+                match length {
+                    0..=15 => bytes.push(MARKER_TINY_STRING | length as u8),
+                    16..=255 => {
+                        bytes.push(MARKER_SMALL_STRING);
+                        bytes.push(length as u8);
+                    }
+                    256..=65_535 => {
+                        bytes.push(MARKER_MEDIUM_STRING);
+                        bytes.extend(&(length as u16).to_be_bytes());
+                    }
+                    65_536..=4_294_967_295 => {
+                        bytes.push(MARKER_LARGE_STRING);
+                        bytes.extend(&(length as u32).to_be_bytes());
+                    }
+                    _ => return Err(MarkerError::ValueTooLarge(length).into()),
+                }
+
+                bytes.extend(string.as_bytes());
+                Ok(bytes)
+            }
+            Value::Node(node) => node.serialize(),
+            Value::Relationship(rel) => rel.serialize(),
+            Value::Path(path) => path.serialize(),
+            Value::UnboundRelationship(unbound_rel) => unbound_rel.try_into(),
+            Value::Date(date) => Ok(vec![MARKER_TINY_STRUCT | 1, SIGNATURE_DATE]
+                .into_iter()
+                .chain(
+                    // Days since UNIX epoch
+                    Value::from((date - NaiveDate::from_ymd(1970, 1, 1)).num_days()).serialize()?,
+                )
+                .collect()),
+            Value::Time(time, offset) => Ok(vec![MARKER_TINY_STRUCT | 2, SIGNATURE_TIME]
+                .into_iter()
+                .chain(
+                    // Nanoseconds since midnight
+                    // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
+                    Value::from(
+                        time.num_seconds_from_midnight() as i64 * 1_000_000_000
+                            + time.nanosecond() as i64,
+                    )
+                    .serialize()?,
+                )
+                .chain(
+                    // Timezone offset
+                    Value::from(offset.fix().local_minus_utc()).serialize()?,
+                )
+                .collect()),
+            Value::DateTimeOffset(date_time_offset) => {
+                Ok(vec![MARKER_TINY_STRUCT | 3, SIGNATURE_DATE_TIME_OFFSET]
+                    .into_iter()
+                    .chain(
+                        // Seconds since UNIX epoch
+                        Value::from(date_time_offset.timestamp()).serialize()?,
+                    )
+                    .chain(
+                        // Nanoseconds
+                        Value::from(date_time_offset.nanosecond() as i64).serialize()?,
+                    )
+                    .chain(
+                        // Timezone offset
+                        Value::from(date_time_offset.offset().fix().local_minus_utc())
+                            .serialize()?,
+                    )
+                    .collect())
+            }
+            Value::DateTimeZoned(date_time_zoned) => {
+                Ok(vec![MARKER_TINY_STRUCT | 3, SIGNATURE_DATE_TIME_ZONED]
+                    .into_iter()
+                    // Seconds since UNIX epoch
+                    .chain(Value::from(date_time_zoned.timestamp()).serialize()?)
+                    // Nanoseconds
+                    .chain(Value::from(date_time_zoned.nanosecond() as i64).serialize()?)
+                    // Timezone ID
+                    .chain(Value::from(date_time_zoned.timezone().name().to_string()).serialize()?)
+                    .collect())
+            }
+            Value::LocalTime(local_time) => Ok(vec![MARKER_TINY_STRUCT | 1, SIGNATURE_LOCAL_TIME]
+                .into_iter()
+                .chain(
+                    Value::from(
+                        // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
+                        local_time.num_seconds_from_midnight() as i64 * 1_000_000_000
+                            + local_time.nanosecond() as i64,
+                    )
+                    .serialize()?,
+                )
+                .collect()),
+            Value::LocalDateTime(local_date_time) => {
+                Ok(vec![MARKER_TINY_STRUCT | 2, SIGNATURE_LOCAL_DATE_TIME]
+                    .into_iter()
+                    // Seconds since UNIX epoch
+                    .chain(Value::from(local_date_time.timestamp()).serialize()?)
+                    // Nanoseconds
+                    .chain(Value::from(local_date_time.nanosecond() as i64).serialize()?)
+                    .collect())
+            }
+            Value::Duration(duration) => duration.serialize(),
+            Value::Point2D(point_2d) => point_2d.serialize(),
+            Value::Point3D(point_3d) => point_3d.serialize(),
+        }
+    }
+}
+
 impl Marker for Value {
     fn get_marker(&self) -> Result<u8> {
         match self {
