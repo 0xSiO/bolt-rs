@@ -8,12 +8,16 @@ use bytes::{Buf, Bytes};
 
 use crate::error::*;
 
+type MarkerResult<T> = core::result::Result<T, MarkerError>;
+type SerializeResult<T> = core::result::Result<T, SerializationError>;
+type DeserializeResult<T> = core::result::Result<T, DeserializationError>;
+
 pub(crate) trait BoltValue: Sized {
-    fn marker(&self) -> u8;
+    fn marker(&self) -> MarkerResult<u8>;
 
-    fn serialize(&self) -> Result<Vec<u8>>;
+    fn serialize(&self) -> SerializeResult<Vec<u8>>;
 
-    fn deserialize(bytes: impl IntoIterator<Item = u8> + UnwindSafe) -> Result<Self>;
+    fn deserialize(bytes: impl IntoIterator<Item = u8> + UnwindSafe) -> DeserializeResult<Self>;
 }
 
 pub(crate) trait BoltStructure: BoltValue {

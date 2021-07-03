@@ -27,6 +27,18 @@ pub enum ConversionError {
 }
 
 #[derive(Debug, Error)]
+pub enum MarkerError {
+    #[error("value too large (size: {0})")]
+    ValueTooLarge(usize),
+}
+
+#[derive(Debug, Error)]
+pub enum SerializationError {
+    #[error(transparent)]
+    MarkerError(#[from] MarkerError),
+}
+
+#[derive(Debug, Error)]
 pub enum DeserializationError {
     #[error("panicked during deserialization")]
     Panicked,
