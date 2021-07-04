@@ -414,19 +414,14 @@ impl BoltValue for Value {
                     };
                     Ok((Value::Bytes(bytes.copy_to_bytes(size).to_vec()), bytes))
                 }
-                // Tiny list
-                marker if (MARKER_TINY_LIST..=(MARKER_TINY_LIST | 0x0F)).contains(&marker) => {
-                    let size = 0x0F & marker as usize;
-                    let mut list = Vec::with_capacity(size);
-                    for _ in 0..size {
-                        let (v, b) = Value::deserialize(bytes)?;
-                        bytes = b;
-                        list.push(v);
-                    }
-                    Ok((Value::List(list), bytes))
-                }
-                // Larger lists
-                MARKER_SMALL_LIST | MARKER_MEDIUM_LIST | MARKER_LARGE_LIST => {
+                // List
+                marker
+                    if (MARKER_TINY_LIST..=(MARKER_TINY_LIST | 0x0F)).contains(&marker)
+                        || matches!(
+                            marker,
+                            MARKER_SMALL_LIST | MARKER_MEDIUM_LIST | MARKER_LARGE_LIST
+                        ) =>
+                {
                     let size = match marker {
                         MARKER_SMALL_LIST => bytes.get_u8() as usize,
                         MARKER_MEDIUM_LIST => bytes.get_u16() as usize,
@@ -441,28 +436,20 @@ impl BoltValue for Value {
                     }
                     Ok((Value::List(list), bytes))
                 }
-                // Tiny map
-                marker if (MARKER_TINY_MAP..=(MARKER_TINY_MAP | 0x0F)).contains(&marker) => {
-                    let size = 0x0F & marker as usize;
-                    let mut hash_map: HashMap<std::string::String, Value> =
-                        HashMap::with_capacity(size);
-                    for _ in 0..size {
-                        let (value, remaining) = Value::deserialize(bytes)?;
-                        bytes = remaining;
-                        match value {
-                            Value::String(key) => {
-                                let (value, remaining) = Value::deserialize(bytes)?;
-                                bytes = remaining;
-                                hash_map.insert(key, value);
-                            }
-                            other => return Err(ConversionError::FromValue(other).into()),
-                        }
-                    }
-
-                    Ok((Value::Map(hash_map), bytes))
-                }
-                MARKER_SMALL_MAP | MARKER_MEDIUM_MAP | MARKER_LARGE_MAP => {
+                // Map
+                marker
+                    if (MARKER_TINY_MAP..=(MARKER_TINY_MAP | 0x0F)).contains(&marker)
+                        || matches!(
+                            marker,
+                            MARKER_SMALL_MAP | MARKER_MEDIUM_MAP | MARKER_LARGE_MAP
+                        ) =>
+                {
                     let size = match marker {
+                        marker
+                            if (MARKER_TINY_MAP..=(MARKER_TINY_MAP | 0x0F)).contains(&marker) =>
+                        {
+                            0x0F & marker as usize
+                        }
                         MARKER_SMALL_MAP => bytes.get_u8() as usize,
                         MARKER_MEDIUM_MAP => bytes.get_u16() as usize,
                         MARKER_LARGE_MAP => bytes.get_u32() as usize,
@@ -488,17 +475,21 @@ impl BoltValue for Value {
                 }
                 // Null
                 MARKER_NULL => Ok((Value::Null, bytes)),
-                // Strings
-                marker if (MARKER_TINY_STRING..=(MARKER_TINY_STRING | 0x0F)).contains(&marker) => {
-                    // Lower-order nibble of tiny string marker
-                    let size = 0x0F & marker as usize;
-                    Ok((
-                        Value::String(String::from_utf8(bytes.copy_to_bytes(size).to_vec())?),
-                        bytes,
-                    ))
-                }
-                MARKER_SMALL_STRING | MARKER_MEDIUM_STRING | MARKER_LARGE_STRING => {
+                // String
+                marker
+                    if (MARKER_TINY_STRING..=(MARKER_TINY_STRING | 0x0F)).contains(&marker)
+                        || matches!(
+                            marker,
+                            MARKER_SMALL_STRING | MARKER_MEDIUM_STRING | MARKER_LARGE_STRING
+                        ) =>
+                {
                     let size = match marker {
+                        marker
+                            if (MARKER_TINY_STRING..=(MARKER_TINY_STRING | 0x0F))
+                                .contains(&marker) =>
+                        {
+                            0x0F & marker as usize
+                        }
                         MARKER_SMALL_STRING => bytes.get_u8() as usize,
                         MARKER_MEDIUM_STRING => bytes.get_u16() as usize,
                         MARKER_LARGE_STRING => bytes.get_u32() as usize,
@@ -510,12 +501,14 @@ impl BoltValue for Value {
                         bytes,
                     ))
                 }
-                // Structures
-                marker if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker) => {
-                    todo!();
+                // Structure
+                marker
+                    if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker)
+                        || matches!(marker, MARKER_SMALL_STRUCT | MARKER_MEDIUM_STRUCT) =>
+                {
+                    todo!()
                 }
-                MARKER_SMALL_STRUCT | MARKER_MEDIUM_STRUCT => todo!(),
-                _ => Err(DeserializationError::InvalidMarkerByte(marker).into()),
+                _ => Err(DeserializationError::InvalidMarkerByte(marker)),
             }
         })
         .map_err(|_| DeserializationError::Panicked)?
