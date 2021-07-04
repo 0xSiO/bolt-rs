@@ -13,7 +13,7 @@ pub(crate) trait BoltValue: Sized {
 
     fn serialize(self) -> SerializeResult<Bytes>;
 
-    fn deserialize(bytes: impl Buf + UnwindSafe) -> DeserializeResult<Self>;
+    fn deserialize<B: Buf + UnwindSafe>(bytes: B) -> DeserializeResult<(Self, B)>;
 }
 
 pub(crate) trait BoltStructure: BoltValue {

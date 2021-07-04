@@ -386,8 +386,139 @@ impl BoltValue for Value {
         }
     }
 
-    fn deserialize(bytes: impl Buf + UnwindSafe) -> DeserializeResult<Self> {
-        todo!()
+    fn deserialize<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Self, B)> {
+        catch_unwind(move || {
+            let marker = bytes.get_u8();
+            match marker {
+                // Boolean
+                MARKER_TRUE => Ok((Value::Boolean(true), bytes)),
+                MARKER_FALSE => Ok((Value::Boolean(false), bytes)),
+                // Tiny int
+                marker if (-16..=127).contains(&(marker as i8)) => {
+                    Ok((Value::Integer(marker as i8 as i64), bytes))
+                }
+                // Other int types
+                MARKER_INT_8 => Ok((Value::Integer(bytes.get_i8() as i64), bytes)),
+                MARKER_INT_16 => Ok((Value::Integer(bytes.get_i16() as i64), bytes)),
+                MARKER_INT_32 => Ok((Value::Integer(bytes.get_i32() as i64), bytes)),
+                MARKER_INT_64 => Ok((Value::Integer(bytes.get_i64()), bytes)),
+                // Float
+                MARKER_FLOAT => Ok((Value::Float(bytes.get_f64()), bytes)),
+                // Byte array
+                MARKER_SMALL_BYTES | MARKER_MEDIUM_BYTES | MARKER_LARGE_BYTES => {
+                    let size = match marker {
+                        MARKER_SMALL_BYTES => bytes.get_u8() as usize,
+                        MARKER_MEDIUM_BYTES => bytes.get_u16() as usize,
+                        MARKER_LARGE_BYTES => bytes.get_u32() as usize,
+                        _ => unreachable!(),
+                    };
+                    Ok((Value::Bytes(bytes.copy_to_bytes(size).to_vec()), bytes))
+                }
+                // Tiny list
+                marker if (MARKER_TINY_LIST..=(MARKER_TINY_LIST | 0x0F)).contains(&marker) => {
+                    let size = 0x0F & marker as usize;
+                    let mut list = Vec::with_capacity(size);
+                    for _ in 0..size {
+                        let (v, b) = Value::deserialize(bytes)?;
+                        bytes = b;
+                        list.push(v);
+                    }
+                    Ok((Value::List(list), bytes))
+                }
+                // Larger lists
+                MARKER_SMALL_LIST | MARKER_MEDIUM_LIST | MARKER_LARGE_LIST => {
+                    let size = match marker {
+                        MARKER_SMALL_LIST => bytes.get_u8() as usize,
+                        MARKER_MEDIUM_LIST => bytes.get_u16() as usize,
+                        MARKER_LARGE_LIST => bytes.get_u32() as usize,
+                        _ => unreachable!(),
+                    };
+                    let mut list: Vec<Value> = Vec::with_capacity(size);
+                    for _ in 0..size {
+                        let (v, b) = Value::deserialize(bytes)?;
+                        bytes = b;
+                        list.push(v);
+                    }
+                    Ok((Value::List(list), bytes))
+                }
+                // Tiny map
+                marker if (MARKER_TINY_MAP..=(MARKER_TINY_MAP | 0x0F)).contains(&marker) => {
+                    let size = 0x0F & marker as usize;
+                    let mut hash_map: HashMap<std::string::String, Value> =
+                        HashMap::with_capacity(size);
+                    for _ in 0..size {
+                        let (value, remaining) = Value::deserialize(bytes)?;
+                        bytes = remaining;
+                        match value {
+                            Value::String(key) => {
+                                let (value, remaining) = Value::deserialize(bytes)?;
+                                bytes = remaining;
+                                hash_map.insert(key, value);
+                            }
+                            other => return Err(ConversionError::FromValue(other).into()),
+                        }
+                    }
+
+                    Ok((Value::Map(hash_map), bytes))
+                }
+                MARKER_SMALL_MAP | MARKER_MEDIUM_MAP | MARKER_LARGE_MAP => {
+                    let size = match marker {
+                        MARKER_SMALL_MAP => bytes.get_u8() as usize,
+                        MARKER_MEDIUM_MAP => bytes.get_u16() as usize,
+                        MARKER_LARGE_MAP => bytes.get_u32() as usize,
+                        _ => unreachable!(),
+                    };
+
+                    let mut hash_map: HashMap<std::string::String, Value> =
+                        HashMap::with_capacity(size);
+                    for _ in 0..size {
+                        let (value, remaining) = Value::deserialize(bytes)?;
+                        bytes = remaining;
+                        match value {
+                            Value::String(key) => {
+                                let (value, remaining) = Value::deserialize(bytes)?;
+                                bytes = remaining;
+                                hash_map.insert(key, value);
+                            }
+                            other => return Err(ConversionError::FromValue(other).into()),
+                        }
+                    }
+
+                    Ok((Value::Map(hash_map), bytes))
+                }
+                // Null
+                MARKER_NULL => Ok((Value::Null, bytes)),
+                // Strings
+                marker if (MARKER_TINY_STRING..=(MARKER_TINY_STRING | 0x0F)).contains(&marker) => {
+                    // Lower-order nibble of tiny string marker
+                    let size = 0x0F & marker as usize;
+                    Ok((
+                        Value::String(String::from_utf8(bytes.copy_to_bytes(size).to_vec())?),
+                        bytes,
+                    ))
+                }
+                MARKER_SMALL_STRING | MARKER_MEDIUM_STRING | MARKER_LARGE_STRING => {
+                    let size = match marker {
+                        MARKER_SMALL_STRING => bytes.get_u8() as usize,
+                        MARKER_MEDIUM_STRING => bytes.get_u16() as usize,
+                        MARKER_LARGE_STRING => bytes.get_u32() as usize,
+                        _ => unreachable!(),
+                    };
+
+                    Ok((
+                        Value::String(String::from_utf8(bytes.copy_to_bytes(size).to_vec())?),
+                        bytes,
+                    ))
+                }
+                // Structures
+                marker if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker) => {
+                    todo!();
+                }
+                MARKER_SMALL_STRUCT | MARKER_MEDIUM_STRUCT => todo!(),
+                _ => Err(DeserializationError::InvalidMarkerByte(marker).into()),
+            }
+        })
+        .map_err(|_| DeserializationError::Panicked)?
     }
 }
 
