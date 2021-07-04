@@ -69,6 +69,18 @@ pub fn bolt_structure(attr_args: TokenStream, item: TokenStream) -> TokenStream 
             quote!(let #var_name = crate::Value::from(self.#field_name).serialize()?;)
         });
 
+    let deserialize_var_defs = field_names.iter().map(|name| {
+        quote!(
+            let (#name, remaining) = crate::Value::deserialize(bytes)?;
+            bytes = remaining;
+        )
+    });
+
+    let deserialize_fields = field_names
+        .iter()
+        // TODO: Replace unwrap() with ?, after changing the error type to ConversionError
+        .map(|name| quote!(#name: #name.try_into().unwrap(),));
+
     quote!(
         #structure
 
@@ -97,8 +109,12 @@ pub fn bolt_structure(attr_args: TokenStream, item: TokenStream) -> TokenStream 
                 Ok(result_bytes_mut.freeze())
             }
 
-            fn deserialize<B: ::bytes::Buf + ::std::panic::UnwindSafe>(bytes: B) -> crate::error::DeserializeResult<(Self, B)> {
-                todo!()
+            fn deserialize<B>(mut bytes: B) -> crate::error::DeserializeResult<(Self, B)>
+            where B: ::bytes::Buf + ::std::panic::UnwindSafe
+            {
+                use ::std::convert::TryInto;
+                #(#deserialize_var_defs)*
+                Ok((Self { #(#deserialize_fields)* }, bytes))
             }
         }
 
