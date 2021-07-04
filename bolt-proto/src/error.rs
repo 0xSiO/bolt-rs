@@ -19,6 +19,9 @@ pub enum Error {
     ConversionError(#[from] ConversionError),
     #[error(transparent)]
     DeserializationError(#[from] DeserializationError),
+    // TODO: Remove / refactor?
+    #[error(transparent)]
+    MarkerError(#[from] MarkerError),
 }
 
 #[derive(Debug, Error)]

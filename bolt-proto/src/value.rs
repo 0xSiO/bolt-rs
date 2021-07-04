@@ -517,60 +517,7 @@ impl BoltValue for Value {
 
 impl Marker for Value {
     fn get_marker(&self) -> Result<u8> {
-        match self {
-            Value::Boolean(true) => Ok(MARKER_TRUE),
-            Value::Boolean(false) => Ok(MARKER_FALSE),
-            Value::Integer(integer) => match integer {
-                -9_223_372_036_854_775_808..=-2_147_483_649
-                | 2_147_483_648..=9_223_372_036_854_775_807 => Ok(MARKER_INT_64),
-                -2_147_483_648..=-32_769 | 32_768..=2_147_483_647 => Ok(MARKER_INT_32),
-                -32_768..=-129 | 128..=32_767 => Ok(MARKER_INT_16),
-                -128..=-17 => Ok(MARKER_INT_8),
-                -16..=127 => Ok(*integer as u8),
-            },
-            Value::Float(_) => Ok(MARKER_FLOAT),
-            Value::Bytes(bytes) => match bytes.len() {
-                0..=255 => Ok(MARKER_SMALL_BYTES),
-                256..=65_535 => Ok(MARKER_MEDIUM_BYTES),
-                65_536..=2_147_483_647 => Ok(MARKER_LARGE_BYTES),
-                _ => Err(Error::ValueTooLarge(bytes.len())),
-            },
-            Value::List(list) => match list.len() {
-                0..=15 => Ok(MARKER_TINY_LIST | list.len() as u8),
-                16..=255 => Ok(MARKER_SMALL_LIST),
-                256..=65_535 => Ok(MARKER_MEDIUM_LIST),
-                65_536..=4_294_967_295 => Ok(MARKER_LARGE_LIST),
-                len => Err(Error::ValueTooLarge(len)),
-            },
-            Value::Map(map) => match map.len() {
-                0..=15 => Ok(MARKER_TINY_MAP | map.len() as u8),
-                16..=255 => Ok(MARKER_SMALL_MAP),
-                256..=65_535 => Ok(MARKER_MEDIUM_MAP),
-                65_536..=4_294_967_295 => Ok(MARKER_LARGE_MAP),
-                _ => Err(Error::ValueTooLarge(map.len())),
-            },
-            Value::Null => Ok(MARKER_NULL),
-            Value::String(string) => match string.len() {
-                0..=15 => Ok(MARKER_TINY_STRING | string.len() as u8),
-                16..=255 => Ok(MARKER_SMALL_STRING),
-                256..=65_535 => Ok(MARKER_MEDIUM_STRING),
-                65_536..=4_294_967_295 => Ok(MARKER_LARGE_STRING),
-                _ => Err(Error::ValueTooLarge(string.len())),
-            },
-            Value::Node(node) => node.get_marker(),
-            Value::Relationship(rel) => rel.get_marker(),
-            Value::Path(path) => path.get_marker(),
-            Value::UnboundRelationship(unbound_rel) => unbound_rel.get_marker(),
-            Value::Date(_) => Ok(MARKER_TINY_STRUCT | 1),
-            Value::Time(_, _) => Ok(MARKER_TINY_STRUCT | 2),
-            Value::DateTimeOffset(_) => Ok(MARKER_TINY_STRUCT | 3),
-            Value::DateTimeZoned(_) => Ok(MARKER_TINY_STRUCT | 3),
-            Value::LocalTime(_) => Ok(MARKER_TINY_STRUCT | 1),
-            Value::LocalDateTime(_) => Ok(MARKER_TINY_STRUCT | 2),
-            Value::Duration(duration) => duration.get_marker(),
-            Value::Point2D(point_2d) => point_2d.get_marker(),
-            Value::Point3D(point_3d) => point_3d.get_marker(),
-        }
+        Ok(self.marker()?)
     }
 }
 
