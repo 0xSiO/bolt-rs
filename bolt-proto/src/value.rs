@@ -156,19 +156,19 @@ impl BoltValue for Value {
                 65_536..=4_294_967_295 => Ok(MARKER_LARGE_STRING),
                 _ => Err(MarkerError::ValueTooLarge(string.len())),
             },
-            Value::Node(node) => todo!(),
-            Value::Relationship(rel) => todo!(),
-            Value::Path(path) => todo!(),
-            Value::UnboundRelationship(unbound_rel) => todo!(),
+            Value::Node(node) => node.marker(),
+            Value::Relationship(rel) => rel.marker(),
+            Value::Path(path) => path.marker(),
+            Value::UnboundRelationship(unbound_rel) => unbound_rel.marker(),
             Value::Date(_) => Ok(MARKER_TINY_STRUCT | 1),
             Value::Time(_, _) => Ok(MARKER_TINY_STRUCT | 2),
             Value::DateTimeOffset(_) => Ok(MARKER_TINY_STRUCT | 3),
             Value::DateTimeZoned(_) => Ok(MARKER_TINY_STRUCT | 3),
             Value::LocalTime(_) => Ok(MARKER_TINY_STRUCT | 1),
             Value::LocalDateTime(_) => Ok(MARKER_TINY_STRUCT | 2),
-            Value::Duration(duration) => todo!(),
-            Value::Point2D(point_2d) => todo!(),
-            Value::Point3D(point_3d) => todo!(),
+            Value::Duration(duration) => duration.marker(),
+            Value::Point2D(point_2d) => point_2d.marker(),
+            Value::Point3D(point_3d) => point_3d.marker(),
         }
     }
 
@@ -310,10 +310,10 @@ impl BoltValue for Value {
 
                 Ok(bytes.freeze())
             }
-            Value::Node(node) => todo!(),
-            Value::Relationship(rel) => todo!(),
-            Value::Path(path) => todo!(),
-            Value::UnboundRelationship(unbound_rel) => todo!(),
+            Value::Node(node) => node.serialize(),
+            Value::Relationship(rel) => rel.serialize(),
+            Value::Path(path) => path.serialize(),
+            Value::UnboundRelationship(unbound_rel) => unbound_rel.serialize(),
             Value::Date(date) => Ok(vec![marker, SIGNATURE_DATE]
                 .into_iter()
                 .chain(
@@ -381,9 +381,9 @@ impl BoltValue for Value {
                 // Nanoseconds
                 .chain(Value::from(local_date_time.nanosecond() as i64).serialize()?)
                 .collect()),
-            Value::Duration(duration) => todo!(),
-            Value::Point2D(point_2d) => todo!(),
-            Value::Point3D(point_3d) => todo!(),
+            Value::Duration(duration) => duration.serialize(),
+            Value::Point2D(point_2d) => point_2d.serialize(),
+            Value::Point3D(point_3d) => point_3d.serialize(),
         }
     }
 

@@ -3,6 +3,7 @@ use bolt_proto_derive::*;
 pub(crate) const MARKER: u8 = 0xB4;
 pub(crate) const SIGNATURE: u8 = 0x45;
 
+#[bolt_structure(0x45)]
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Duration {
     pub(crate) months: i64,

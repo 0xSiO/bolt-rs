@@ -5,6 +5,7 @@ use crate::value::*;
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x50;
 
+#[bolt_structure(0x50)]
 #[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Path {
     pub(crate) nodes: Vec<Node>,

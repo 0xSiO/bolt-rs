@@ -7,6 +7,7 @@ use crate::Value;
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x72;
 
+#[bolt_structure(0x72)]
 #[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct UnboundRelationship {
     pub(crate) rel_identity: i64,

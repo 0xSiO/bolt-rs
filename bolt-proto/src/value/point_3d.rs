@@ -3,6 +3,7 @@ use bolt_proto_derive::*;
 pub(crate) const MARKER: u8 = 0xB4;
 pub(crate) const SIGNATURE: u8 = 0x59;
 
+#[bolt_structure(0x59)]
 #[derive(Debug, Clone, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Point3D {
     pub(crate) srid: i32,
