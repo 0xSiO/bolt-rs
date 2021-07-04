@@ -7,6 +7,7 @@ use crate::Value;
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x4E;
 
+#[bolt_structure(0x4E)]
 #[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Node {
     pub(crate) node_identity: i64,

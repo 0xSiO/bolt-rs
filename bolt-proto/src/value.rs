@@ -113,6 +113,7 @@ impl Eq for Value {
     }
 }
 
+// TODO: This can be implemented for foreign types and delegated to those impls
 impl BoltValue for Value {
     fn marker(&self) -> MarkerResult<u8> {
         match self {
