@@ -313,79 +313,73 @@ impl BoltValue for Value {
             Value::Relationship(rel) => todo!(),
             Value::Path(path) => todo!(),
             Value::UnboundRelationship(unbound_rel) => todo!(),
-            Value::Date(date) => Ok(Bytes::from_iter(
-                vec![marker, SIGNATURE_DATE].into_iter().chain(
+            Value::Date(date) => Ok(vec![marker, SIGNATURE_DATE]
+                .into_iter()
+                .chain(
                     // Days since UNIX epoch
                     Value::from((date - NaiveDate::from_ymd(1970, 1, 1)).num_days()).serialize()?,
-                ),
-            )),
-            Value::Time(time, offset) => Ok(Bytes::from_iter(
-                vec![marker, SIGNATURE_TIME]
-                    .into_iter()
-                    .chain(
-                        // Nanoseconds since midnight
-                        // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
-                        Value::from(
-                            time.num_seconds_from_midnight() as i64 * 1_000_000_000
-                                + time.nanosecond() as i64,
-                        )
-                        .serialize()?,
+                )
+                .collect()),
+            Value::Time(time, offset) => Ok(vec![marker, SIGNATURE_TIME]
+                .into_iter()
+                .chain(
+                    // Nanoseconds since midnight
+                    // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
+                    Value::from(
+                        time.num_seconds_from_midnight() as i64 * 1_000_000_000
+                            + time.nanosecond() as i64,
                     )
-                    .chain(
-                        // Timezone offset
-                        Value::from(offset.fix().local_minus_utc()).serialize()?,
-                    ),
-            )),
-            Value::DateTimeOffset(date_time_offset) => Ok(Bytes::from_iter(
-                vec![marker, SIGNATURE_DATE_TIME_OFFSET]
-                    .into_iter()
-                    .chain(
-                        // Seconds since UNIX epoch
-                        Value::from(date_time_offset.timestamp()).serialize()?,
-                    )
-                    .chain(
-                        // Nanoseconds
-                        Value::from(date_time_offset.nanosecond() as i64).serialize()?,
-                    )
-                    .chain(
-                        // Timezone offset
-                        Value::from(date_time_offset.offset().fix().local_minus_utc())
-                            .serialize()?,
-                    ),
-            )),
+                    .serialize()?,
+                )
+                .chain(
+                    // Timezone offset
+                    Value::from(offset.fix().local_minus_utc()).serialize()?,
+                )
+                .collect()),
+            Value::DateTimeOffset(date_time_offset) => Ok(vec![marker, SIGNATURE_DATE_TIME_OFFSET]
+                .into_iter()
+                .chain(
+                    // Seconds since UNIX epoch
+                    Value::from(date_time_offset.timestamp()).serialize()?,
+                )
+                .chain(
+                    // Nanoseconds
+                    Value::from(date_time_offset.nanosecond() as i64).serialize()?,
+                )
+                .chain(
+                    // Timezone offset
+                    Value::from(date_time_offset.offset().fix().local_minus_utc()).serialize()?,
+                )
+                .collect()),
             Value::DateTimeZoned(date_time_zoned) => {
-                Ok(Bytes::from_iter(
-                    vec![marker, SIGNATURE_DATE_TIME_ZONED]
-                        .into_iter()
-                        // Seconds since UNIX epoch
-                        .chain(Value::from(date_time_zoned.timestamp()).serialize()?)
-                        // Nanoseconds
-                        .chain(Value::from(date_time_zoned.nanosecond() as i64).serialize()?)
-                        // Timezone ID
-                        .chain(
-                            Value::from(date_time_zoned.timezone().name().to_string())
-                                .serialize()?,
-                        ),
-                ))
+                Ok(vec![marker, SIGNATURE_DATE_TIME_ZONED]
+                    .into_iter()
+                    // Seconds since UNIX epoch
+                    .chain(Value::from(date_time_zoned.timestamp()).serialize()?)
+                    // Nanoseconds
+                    .chain(Value::from(date_time_zoned.nanosecond() as i64).serialize()?)
+                    // Timezone ID
+                    .chain(Value::from(date_time_zoned.timezone().name().to_string()).serialize()?)
+                    .collect())
             }
-            Value::LocalTime(local_time) => Ok(Bytes::from_iter(
-                vec![marker, SIGNATURE_LOCAL_TIME].into_iter().chain(
+            Value::LocalTime(local_time) => Ok(vec![marker, SIGNATURE_LOCAL_TIME]
+                .into_iter()
+                .chain(
                     Value::from(
                         // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
                         local_time.num_seconds_from_midnight() as i64 * 1_000_000_000
                             + local_time.nanosecond() as i64,
                     )
                     .serialize()?,
-                ),
-            )),
-            Value::LocalDateTime(local_date_time) => Ok(Bytes::from_iter(
-                vec![marker, SIGNATURE_LOCAL_DATE_TIME]
-                    .into_iter()
-                    // Seconds since UNIX epoch
-                    .chain(Value::from(local_date_time.timestamp()).serialize()?)
-                    // Nanoseconds
-                    .chain(Value::from(local_date_time.nanosecond() as i64).serialize()?),
-            )),
+                )
+                .collect()),
+            Value::LocalDateTime(local_date_time) => Ok(vec![marker, SIGNATURE_LOCAL_DATE_TIME]
+                .into_iter()
+                // Seconds since UNIX epoch
+                .chain(Value::from(local_date_time.timestamp()).serialize()?)
+                // Nanoseconds
+                .chain(Value::from(local_date_time.nanosecond() as i64).serialize()?)
+                .collect()),
             Value::Duration(duration) => todo!(),
             Value::Point2D(point_2d) => todo!(),
             Value::Point3D(point_3d) => todo!(),
