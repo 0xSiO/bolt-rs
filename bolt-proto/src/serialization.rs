@@ -11,9 +11,9 @@ use crate::error::*;
 pub(crate) trait BoltValue: Sized {
     fn marker(&self) -> MarkerResult<u8>;
 
-    fn serialize(self) -> SerializeResult<Vec<u8>>;
+    fn serialize(self) -> SerializeResult<Bytes>;
 
-    fn deserialize(bytes: impl IntoIterator<Item = u8> + UnwindSafe) -> DeserializeResult<Self>;
+    fn deserialize(bytes: impl Buf + UnwindSafe) -> DeserializeResult<Self>;
 }
 
 pub(crate) trait BoltStructure: BoltValue {
