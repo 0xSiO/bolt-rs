@@ -521,7 +521,7 @@ impl BoltValue for Value {
     }
 }
 
-macro_rules! deserialize {
+macro_rules! deserialize_struct {
     ($name:ident, $bytes:ident) => {{
         let (value, remaining) = $name::deserialize($bytes)?;
         $bytes = remaining;
@@ -529,8 +529,7 @@ macro_rules! deserialize {
     }};
 }
 
-// TODO: Maybe name this differently
-macro_rules! deserialize_into {
+macro_rules! deserialize_variant {
     ($name:ident, $bytes:ident) => {{
         let (value, remaining) = Value::deserialize($bytes)?;
         $bytes = remaining;
@@ -545,12 +544,12 @@ macro_rules! deserialize_into {
 fn deserialize_structure_new<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Value, B)> {
     let signature = bytes.get_u8();
     match signature {
-        node::SIGNATURE => deserialize!(Node, bytes),
-        relationship::SIGNATURE => deserialize!(Relationship, bytes),
-        path::SIGNATURE => deserialize!(Path, bytes),
-        unbound_relationship::SIGNATURE => deserialize!(UnboundRelationship, bytes),
+        node::SIGNATURE => deserialize_struct!(Node, bytes),
+        relationship::SIGNATURE => deserialize_struct!(Relationship, bytes),
+        path::SIGNATURE => deserialize_struct!(Path, bytes),
+        unbound_relationship::SIGNATURE => deserialize_struct!(UnboundRelationship, bytes),
         SIGNATURE_DATE => {
-            let days_since_epoch: i64 = deserialize_into!(Integer, bytes);
+            let days_since_epoch: i64 = deserialize_variant!(Integer, bytes);
             Ok((
                 Value::Date(
                     NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(days_since_epoch),
@@ -603,9 +602,9 @@ fn deserialize_structure_new<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeRe
         //         nanos as u32,
         //     )))
         // }
-        duration::SIGNATURE => deserialize!(Duration, bytes),
-        point_2d::SIGNATURE => deserialize!(Point2D, bytes),
-        point_3d::SIGNATURE => deserialize!(Point3D, bytes),
+        duration::SIGNATURE => deserialize_struct!(Duration, bytes),
+        point_2d::SIGNATURE => deserialize_struct!(Point2D, bytes),
+        point_3d::SIGNATURE => deserialize_struct!(Point3D, bytes),
         _ => Err(DeserializationError::InvalidSignatureByte(signature)),
     }
 }
