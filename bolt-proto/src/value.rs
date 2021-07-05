@@ -529,20 +529,36 @@ macro_rules! deserialize {
     }};
 }
 
+// TODO: Maybe name this differently
+macro_rules! deserialize_into {
+    ($name:ident, $bytes:ident) => {{
+        let (value, remaining) = Value::deserialize($bytes)?;
+        $bytes = remaining;
+        if let Value::$name(inner) = value {
+            inner
+        } else {
+            return Err(ConversionError::FromValue(value).into());
+        }
+    }};
+}
+
 fn deserialize_structure_new<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Value, B)> {
-    let (_, _, signature) = get_structure_info(&mut bytes)?;
+    let signature = bytes.get_u8();
     match signature {
         node::SIGNATURE => deserialize!(Node, bytes),
         relationship::SIGNATURE => deserialize!(Relationship, bytes),
         path::SIGNATURE => deserialize!(Path, bytes),
         unbound_relationship::SIGNATURE => deserialize!(UnboundRelationship, bytes),
+        SIGNATURE_DATE => {
+            let days_since_epoch: i64 = deserialize_into!(Integer, bytes);
+            Ok((
+                Value::Date(
+                    NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(days_since_epoch),
+                ),
+                bytes,
+            ))
+        }
         // TODO
-        // SIGNATURE_DATE => {
-        //     let days_since_epoch: i64 = Value::deserialize(bytes)?.try_into()?;
-        //     Ok(Value::Date(
-        //         NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(days_since_epoch),
-        //     ))
-        // }
         // SIGNATURE_TIME => {
         //     let nanos_since_midnight: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
         //     let zone_offset: i32 = Value::try_from(input_arc)?.try_into()?;
@@ -1255,7 +1271,6 @@ mod tests {
         &[MARKER_FALSE; 1000]
     );
 
-    #[ignore]
     value_test!(
         large_list,
         Value::List(vec![Value::Integer(1); 70_000]),
@@ -1419,58 +1434,32 @@ mod tests {
         );
     }
 
-    #[test]
-    fn date_from_bytes() {
-        let christmas = Value::Date(NaiveDate::from_ymd(2020, 12, 25));
-        let christmas_bytes = Bytes::from_static(&[
-            MARKER_TINY_STRUCT | 1,
-            SIGNATURE_DATE,
-            MARKER_INT_16,
-            0x48,
-            0xBD,
-        ]);
-        assert_eq!(&christmas.clone().serialize().unwrap(), &christmas_bytes);
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(christmas_bytes))).unwrap(),
-            christmas
-        );
-    }
+    value_test!(
+        date,
+        Value::Date(NaiveDate::from_ymd(2020, 12, 25)),
+        MARKER_TINY_STRUCT | 1,
+        &[SIGNATURE_DATE],
+        &[MARKER_INT_16],
+        18621_i16.to_be_bytes()
+    );
 
-    #[test]
-    fn past_date_from_bytes() {
-        let past_date = Value::Date(NaiveDate::from_ymd(1901, 12, 31));
-        let past_bytes = Bytes::from_static(&[
-            MARKER_TINY_STRUCT | 1,
-            SIGNATURE_DATE,
-            MARKER_INT_16,
-            0x9E,
-            0xFA,
-        ]);
-        assert_eq!(&past_date.clone().serialize().unwrap(), &past_bytes);
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(past_bytes))).unwrap(),
-            past_date
-        );
-    }
+    value_test!(
+        past_date,
+        Value::Date(NaiveDate::from_ymd(1901, 12, 31)),
+        MARKER_TINY_STRUCT | 1,
+        &[SIGNATURE_DATE],
+        &[MARKER_INT_16],
+        (-24838_i16).to_be_bytes()
+    );
 
-    #[test]
-    fn future_date_from_bytes() {
-        let future_date = Value::Date(NaiveDate::from_ymd(3000, 5, 23));
-        let future_bytes = Bytes::from_static(&[
-            MARKER_TINY_STRUCT | 1,
-            SIGNATURE_DATE,
-            MARKER_INT_32,
-            0x00,
-            0x05,
-            0xBE,
-            0x16,
-        ]);
-        assert_eq!(&future_date.clone().serialize().unwrap(), &future_bytes);
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(future_bytes))).unwrap(),
-            future_date
-        );
-    }
+    value_test!(
+        future_date,
+        Value::Date(NaiveDate::from_ymd(3000, 5, 23)),
+        MARKER_TINY_STRUCT | 1,
+        &[SIGNATURE_DATE],
+        &[MARKER_INT_32],
+        376342_i32.to_be_bytes()
+    );
 
     #[test]
     fn time_from_bytes() {
