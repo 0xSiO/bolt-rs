@@ -1104,7 +1104,7 @@ mod tests {
     #[test]
     fn null_from_bytes() {
         let null_bytes = Bytes::from_static(&[MARKER_NULL]);
-        assert_eq!(Value::Null.try_into_bytes().unwrap(), null_bytes);
+        assert_eq!(Value::Null.serialize().unwrap(), null_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(null_bytes))).unwrap(),
             Value::Null
@@ -1129,7 +1129,7 @@ mod tests {
     fn tiny_integer_from_bytes() {
         let tiny = Value::Integer(110);
         let tiny_bytes = Bytes::from_static(&[110]);
-        assert_eq!(&tiny.clone().try_into_bytes().unwrap(), &tiny_bytes);
+        assert_eq!(&tiny.clone().serialize().unwrap(), &tiny_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
             tiny
@@ -1140,7 +1140,7 @@ mod tests {
     fn small_integer_from_bytes() {
         let small = Value::Integer(-127);
         let small_bytes = Bytes::from_static(&[0xC8, 0x81]);
-        assert_eq!(&small.clone().try_into_bytes().unwrap(), &small_bytes);
+        assert_eq!(&small.clone().serialize().unwrap(), &small_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
             small
@@ -1151,7 +1151,7 @@ mod tests {
     fn medium_integer_from_bytes() {
         let medium = Value::Integer(8000);
         let medium_bytes = Bytes::from_static(&[0xC9, 0x1F, 0x40]);
-        assert_eq!(&medium.clone().try_into_bytes().unwrap(), &medium_bytes);
+        assert_eq!(&medium.clone().serialize().unwrap(), &medium_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
             medium
@@ -1163,7 +1163,7 @@ mod tests {
         let medium_negative = Value::Integer(-18621);
         let medium_negative_bytes = Bytes::from_static(&[0xC9, 0xB7, 0x43]);
         assert_eq!(
-            &medium_negative.clone().try_into_bytes().unwrap(),
+            &medium_negative.clone().serialize().unwrap(),
             &medium_negative_bytes
         );
         assert_eq!(
@@ -1176,7 +1176,7 @@ mod tests {
     fn large_integer_from_bytes() {
         let large = Value::Integer(-1_000_000_000);
         let large_bytes = Bytes::from_static(&[0xCA, 0xC4, 0x65, 0x36, 0x00]);
-        assert_eq!(&large.clone().try_into_bytes().unwrap(), &large_bytes);
+        assert_eq!(&large.clone().serialize().unwrap(), &large_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
             large
@@ -1188,10 +1188,7 @@ mod tests {
         let very_large = Value::Integer(9_000_000_000_000_000_000);
         let very_large_bytes =
             Bytes::from_static(&[0xCB, 0x7C, 0xE6, 0x6C, 0x50, 0xE2, 0x84, 0x00, 0x00]);
-        assert_eq!(
-            &very_large.clone().try_into_bytes().unwrap(),
-            &very_large_bytes
-        );
+        assert_eq!(&very_large.clone().serialize().unwrap(), &very_large_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(very_large_bytes))).unwrap(),
             very_large
@@ -1201,13 +1198,13 @@ mod tests {
     #[test]
     fn float_from_bytes() {
         let min = Value::Float(std::f64::MIN_POSITIVE);
-        let min_bytes = min.clone().try_into_bytes().unwrap();
+        let min_bytes = min.clone().serialize().unwrap();
         let max = Value::Float(std::f64::MAX);
-        let max_bytes = max.clone().try_into_bytes().unwrap();
+        let max_bytes = max.clone().serialize().unwrap();
         let e = Value::Float(std::f64::consts::E);
-        let e_bytes = e.clone().try_into_bytes().unwrap();
+        let e_bytes = e.clone().serialize().unwrap();
         let pi = Value::Float(std::f64::consts::PI);
-        let pi_bytes = pi.clone().try_into_bytes().unwrap();
+        let pi_bytes = pi.clone().serialize().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(min_bytes))).unwrap(),
             min
@@ -1223,13 +1220,13 @@ mod tests {
     #[test]
     fn byte_array_from_bytes() {
         let empty_arr = Value::Bytes(vec![]);
-        let empty_arr_bytes = empty_arr.clone().try_into_bytes().unwrap();
+        let empty_arr_bytes = empty_arr.clone().serialize().unwrap();
         let small_arr = Value::Bytes(vec![1_u8; 100]);
-        let small_arr_bytes = small_arr.clone().try_into_bytes().unwrap();
+        let small_arr_bytes = small_arr.clone().serialize().unwrap();
         let medium_arr = Value::Bytes(vec![99_u8; 1000]);
-        let medium_arr_bytes = medium_arr.clone().try_into_bytes().unwrap();
+        let medium_arr_bytes = medium_arr.clone().serialize().unwrap();
         let large_arr = Value::Bytes(vec![1_u8; 100_000]);
-        let large_arr_bytes = large_arr.clone().try_into_bytes().unwrap();
+        let large_arr_bytes = large_arr.clone().serialize().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(empty_arr_bytes))).unwrap(),
             empty_arr
@@ -1252,10 +1249,7 @@ mod tests {
     fn empty_list_from_bytes() {
         let empty_list = Value::List(vec![]);
         let empty_list_bytes = Bytes::from_static(&[MARKER_TINY_LIST | 0]);
-        assert_eq!(
-            &empty_list.clone().try_into_bytes().unwrap(),
-            &empty_list_bytes
-        );
+        assert_eq!(&empty_list.clone().serialize().unwrap(), &empty_list_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(empty_list_bytes))).unwrap(),
             empty_list
@@ -1283,10 +1277,7 @@ mod tests {
             0x86,
             0xA0,
         ]);
-        assert_eq!(
-            &tiny_list.clone().try_into_bytes().unwrap(),
-            &tiny_list_bytes
-        );
+        assert_eq!(&tiny_list.clone().serialize().unwrap(), &tiny_list_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(tiny_list_bytes))).unwrap(),
             tiny_list
@@ -1304,10 +1295,7 @@ mod tests {
                     .copied(),
             ),
         );
-        assert_eq!(
-            &small_list.clone().try_into_bytes().unwrap(),
-            &small_list_bytes
-        );
+        assert_eq!(&small_list.clone().serialize().unwrap(), &small_list_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_list_bytes))).unwrap(),
             small_list
@@ -1323,7 +1311,7 @@ mod tests {
                 .chain(vec![MARKER_FALSE; 1000]),
         );
         assert_eq!(
-            &medium_list.clone().try_into_bytes().unwrap(),
+            &medium_list.clone().serialize().unwrap(),
             &medium_list_bytes
         );
         assert_eq!(
@@ -1341,10 +1329,7 @@ mod tests {
                 .into_iter()
                 .chain(vec![1; 70_000]),
         );
-        assert_eq!(
-            &large_list.clone().try_into_bytes().unwrap(),
-            &large_list_bytes
-        );
+        assert_eq!(&large_list.clone().serialize().unwrap(), &large_list_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_list_bytes))).unwrap(),
             large_list
@@ -1356,7 +1341,7 @@ mod tests {
         let tiny = Value::from("string");
         let tiny_bytes =
             Bytes::from_static(&[MARKER_TINY_STRING | 6, b's', b't', b'r', b'i', b'n', b'g']);
-        assert_eq!(&tiny.clone().try_into_bytes().unwrap(), &tiny_bytes);
+        assert_eq!(&tiny.clone().serialize().unwrap(), &tiny_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(tiny_bytes))).unwrap(),
             tiny
@@ -1374,7 +1359,7 @@ mod tests {
                     .copied(),
             ),
         );
-        assert_eq!(small.clone().try_into_bytes().unwrap(), &small_bytes);
+        assert_eq!(small.clone().serialize().unwrap(), &small_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_bytes))).unwrap(),
             small
@@ -1392,7 +1377,7 @@ mod tests {
                     .copied(),
             ),
         );
-        assert_eq!(medium.clone().try_into_bytes().unwrap(), &medium_bytes);
+        assert_eq!(medium.clone().serialize().unwrap(), &medium_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(medium_bytes))).unwrap(),
             medium
@@ -1412,7 +1397,7 @@ mod tests {
                         .copied(),
                 ),
         );
-        assert_eq!(large.clone().try_into_bytes().unwrap(), &large_bytes);
+        assert_eq!(large.clone().serialize().unwrap(), &large_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(large_bytes))).unwrap(),
             large
@@ -1450,7 +1435,7 @@ mod tests {
             0x65,
             0x6e,
         ]);
-        assert_eq!(special.clone().try_into_bytes().unwrap(), &special_bytes);
+        assert_eq!(special.clone().serialize().unwrap(), &special_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(special_bytes))).unwrap(),
             special
@@ -1460,7 +1445,7 @@ mod tests {
     #[test]
     fn empty_map_from_bytes() {
         let empty_map = Value::from(HashMap::<&str, i8>::new());
-        let empty_map_bytes = empty_map.clone().try_into_bytes().unwrap();
+        let empty_map_bytes = empty_map.clone().serialize().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(empty_map_bytes))).unwrap(),
             empty_map
@@ -1470,7 +1455,7 @@ mod tests {
     #[test]
     fn tiny_map_from_bytes() {
         let tiny_map = Value::from(HashMap::<&str, i8>::from_iter(vec![("a", 1_i8)]));
-        let tiny_map_bytes = tiny_map.clone().try_into_bytes().unwrap();
+        let tiny_map_bytes = tiny_map.clone().serialize().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(tiny_map_bytes))).unwrap(),
             tiny_map
@@ -1497,7 +1482,7 @@ mod tests {
             ("o", 5_i8),
             ("p", 6_i8),
         ]));
-        let small_map_bytes = small_map.clone().try_into_bytes().unwrap();
+        let small_map_bytes = small_map.clone().serialize().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(small_map_bytes))).unwrap(),
             small_map
@@ -1541,7 +1526,7 @@ mod tests {
 
     #[test]
     fn node_from_bytes() {
-        let node_bytes: Bytes = get_node().try_into_bytes().unwrap();
+        let node_bytes: Bytes = get_node().serialize().unwrap();
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(node_bytes))).unwrap(),
@@ -1551,7 +1536,7 @@ mod tests {
 
     #[test]
     fn relationship_from_bytes() {
-        let rel_bytes: Bytes = get_rel().try_into_bytes().unwrap();
+        let rel_bytes: Bytes = get_rel().serialize().unwrap();
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(rel_bytes))).unwrap(),
@@ -1562,7 +1547,7 @@ mod tests {
     #[test]
     fn path_from_bytes() {
         let path = Path::new(vec![get_node()], vec![get_unbound_rel()], vec![100, 101]);
-        let path_bytes: Bytes = path.clone().try_into_bytes().unwrap();
+        let path_bytes: Bytes = path.clone().serialize().unwrap();
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(path_bytes))).unwrap(),
@@ -1572,7 +1557,7 @@ mod tests {
 
     #[test]
     fn unbound_relationship_from_bytes() {
-        let unbound_rel_bytes: Bytes = get_unbound_rel().try_into_bytes().unwrap();
+        let unbound_rel_bytes: Bytes = get_unbound_rel().serialize().unwrap();
 
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(unbound_rel_bytes))).unwrap(),
@@ -1590,10 +1575,7 @@ mod tests {
             0x48,
             0xBD,
         ]);
-        assert_eq!(
-            &christmas.clone().try_into_bytes().unwrap(),
-            &christmas_bytes
-        );
+        assert_eq!(&christmas.clone().serialize().unwrap(), &christmas_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(christmas_bytes))).unwrap(),
             christmas
@@ -1610,7 +1592,7 @@ mod tests {
             0x9E,
             0xFA,
         ]);
-        assert_eq!(&past_date.clone().try_into_bytes().unwrap(), &past_bytes);
+        assert_eq!(&past_date.clone().serialize().unwrap(), &past_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(past_bytes))).unwrap(),
             past_date
@@ -1629,10 +1611,7 @@ mod tests {
             0xBE,
             0x16,
         ]);
-        assert_eq!(
-            &future_date.clone().try_into_bytes().unwrap(),
-            &future_bytes
-        );
+        assert_eq!(&future_date.clone().serialize().unwrap(), &future_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(future_bytes))).unwrap(),
             future_date
@@ -1645,7 +1624,7 @@ mod tests {
         let midnight_utc_bytes =
             Bytes::from_static(&[MARKER_TINY_STRUCT | 2, SIGNATURE_TIME, 0, 0]);
         assert_eq!(
-            &midnight_utc.clone().try_into_bytes().unwrap(),
+            &midnight_utc.clone().serialize().unwrap(),
             &midnight_utc_bytes
         );
         assert_eq!(
@@ -1674,7 +1653,7 @@ mod tests {
             0x80,
         ]);
         assert_eq!(
-            &about_four_pm_pacific.clone().try_into_bytes().unwrap(),
+            &about_four_pm_pacific.clone().serialize().unwrap(),
             &about_four_pm_pacific_bytes
         );
         assert_eq!(
@@ -1706,10 +1685,7 @@ mod tests {
             0xB9,
             0xB0,
         ]);
-        assert_eq!(
-            &date_time.clone().try_into_bytes().unwrap(),
-            &date_time_bytes
-        );
+        assert_eq!(&date_time.clone().serialize().unwrap(), &date_time_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
             date_time
@@ -1755,10 +1731,7 @@ mod tests {
             b'a',
             b'r',
         ]);
-        assert_eq!(
-            &date_time.clone().try_into_bytes().unwrap(),
-            &date_time_bytes
-        );
+        assert_eq!(&date_time.clone().serialize().unwrap(), &date_time_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
             date_time
@@ -1781,10 +1754,7 @@ mod tests {
             0x39,
             0xE7,
         ]);
-        assert_eq!(
-            &local_time.clone().try_into_bytes().unwrap(),
-            &local_time_bytes
-        );
+        assert_eq!(&local_time.clone().serialize().unwrap(), &local_time_bytes);
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(local_time_bytes))).unwrap(),
             local_time
@@ -1808,7 +1778,7 @@ mod tests {
             0x0F,
         ]);
         assert_eq!(
-            &local_date_time.clone().try_into_bytes().unwrap(),
+            &local_date_time.clone().serialize().unwrap(),
             &local_date_time_bytes
         );
         assert_eq!(
@@ -1820,7 +1790,7 @@ mod tests {
     #[test]
     fn duration_from_bytes() {
         let duration = Duration::new(9876, 12345, 65332, 23435);
-        let duration_bytes = duration.clone().try_into_bytes().unwrap();
+        let duration_bytes = duration.clone().serialize().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(duration_bytes))).unwrap(),
             Value::Duration(duration)
@@ -1830,14 +1800,14 @@ mod tests {
     #[test]
     fn point_from_bytes() {
         let point2d = Point2D::new(9876, 12.312_345, 134_564.123_567_543);
-        let point2d_bytes = point2d.clone().try_into_bytes().unwrap();
+        let point2d_bytes = point2d.clone().serialize().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(point2d_bytes))).unwrap(),
             Value::Point2D(point2d)
         );
 
         let point3d = Point3D::new(249, 543.598_387, 2_945_732_849.293_85, 45_438.874_385);
-        let point3d_bytes = point3d.clone().try_into_bytes().unwrap();
+        let point3d_bytes = point3d.clone().serialize().unwrap();
         assert_eq!(
             Value::try_from(Arc::new(Mutex::new(point3d_bytes))).unwrap(),
             Value::Point3D(point3d)

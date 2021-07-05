@@ -63,6 +63,8 @@ pub enum Error {
     #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
     #[error(transparent)]
+    ConversionError(#[from] bolt_proto::error::ConversionError),
+    #[error(transparent)]
     IOError(#[from] std::io::Error),
 }
 
