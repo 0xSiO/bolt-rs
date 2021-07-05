@@ -56,3 +56,20 @@ pub(crate) fn get_info_from_bytes(bytes: &mut impl Buf) -> Result<(u8, u8)> {
     let signature = bytes.get_u8();
     Ok((marker, signature))
 }
+
+/// Returns marker, size, and signature. Might panic - use this inside a catch_unwind block
+pub(crate) fn get_structure_info(bytes: &mut impl Buf) -> DeserializeResult<(u8, usize, u8)> {
+    let marker = bytes.get_u8();
+    let size = match marker {
+        marker if (STRUCT_MARKER_TINY..=(STRUCT_MARKER_TINY | 0x0F)).contains(&marker) => {
+            0x0F & marker as usize
+        }
+        STRUCT_MARKER_SMALL => bytes.get_u8() as usize,
+        STRUCT_MARKER_MEDIUM => bytes.get_u16() as usize,
+        _ => {
+            return Err(DeserializationError::InvalidMarkerByte(marker));
+        }
+    };
+    let signature = bytes.get_u8();
+    Ok((marker, size, signature))
+}

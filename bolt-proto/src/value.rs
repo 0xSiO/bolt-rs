@@ -507,12 +507,85 @@ impl BoltValue for Value {
                     if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker)
                         || matches!(marker, MARKER_SMALL_STRUCT | MARKER_MEDIUM_STRUCT) =>
                 {
-                    todo!()
+                    deserialize_structure_new(bytes)
                 }
                 _ => Err(DeserializationError::InvalidMarkerByte(marker)),
             }
         })
         .map_err(|_| DeserializationError::Panicked)?
+    }
+}
+
+macro_rules! deserialize {
+    ($name:ident, $bytes:ident) => {{
+        let (value, remaining) = $name::deserialize($bytes)?;
+        $bytes = remaining;
+        Ok((Value::$name(value), $bytes))
+    }};
+}
+
+fn deserialize_structure_new<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Value, B)> {
+    let (_, _, signature) = get_structure_info(&mut bytes)?;
+    match signature {
+        node::SIGNATURE => deserialize!(Node, bytes),
+        relationship::SIGNATURE => deserialize!(Relationship, bytes),
+        path::SIGNATURE => deserialize!(Path, bytes),
+        unbound_relationship::SIGNATURE => deserialize!(UnboundRelationship, bytes),
+        // TODO
+        // SIGNATURE_DATE => {
+        //     let days_since_epoch: i64 = Value::deserialize(bytes)?.try_into()?;
+        //     Ok(Value::Date(
+        //         NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(days_since_epoch),
+        //     ))
+        // }
+        // SIGNATURE_TIME => {
+        //     let nanos_since_midnight: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     let zone_offset: i32 = Value::try_from(input_arc)?.try_into()?;
+        //     Ok(Value::Time(
+        //         NaiveTime::from_num_seconds_from_midnight(
+        //             (nanos_since_midnight / 1_000_000_000) as u32,
+        //             (nanos_since_midnight % 1_000_000_000) as u32,
+        //         ),
+        //         FixedOffset::east(zone_offset),
+        //     ))
+        // }
+        // SIGNATURE_DATE_TIME_OFFSET => {
+        //     let epoch_seconds: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     let nanos: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     let offset_seconds: i32 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     Ok(Value::DateTimeOffset(DateTime::from_utc(
+        //         NaiveDateTime::from_timestamp(epoch_seconds, nanos as u32),
+        //         FixedOffset::east(offset_seconds),
+        //     )))
+        // }
+        // SIGNATURE_DATE_TIME_ZONED => {
+        //     let epoch_seconds: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     let nanos: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     let timezone_id: String = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     let timezone: Tz = timezone_id.parse().unwrap();
+        //     Ok(Value::DateTimeZoned(
+        //         timezone.timestamp(epoch_seconds, nanos as u32),
+        //     ))
+        // }
+        // SIGNATURE_LOCAL_TIME => {
+        //     let nanos_since_midnight: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     Ok(Value::LocalTime(NaiveTime::from_num_seconds_from_midnight(
+        //         (nanos_since_midnight / 1_000_000_000) as u32,
+        //         (nanos_since_midnight % 1_000_000_000) as u32,
+        //     )))
+        // }
+        // SIGNATURE_LOCAL_DATE_TIME => {
+        //     let epoch_seconds: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     let nanos: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
+        //     Ok(Value::LocalDateTime(NaiveDateTime::from_timestamp(
+        //         epoch_seconds,
+        //         nanos as u32,
+        //     )))
+        // }
+        duration::SIGNATURE => deserialize!(Duration, bytes),
+        point_2d::SIGNATURE => deserialize!(Point2D, bytes),
+        point_3d::SIGNATURE => deserialize!(Point3D, bytes),
+        _ => Err(DeserializationError::InvalidSignatureByte(signature)),
     }
 }
 

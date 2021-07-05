@@ -6,6 +6,7 @@ use crate::{Message, Value};
 
 pub type Result<T> = std::result::Result<T, Error>;
 pub type MarkerResult<T> = std::result::Result<T, MarkerError>;
+pub type ConversionResult<T> = std::result::Result<T, ConversionError>;
 pub type SerializeResult<T> = std::result::Result<T, SerializationError>;
 pub type DeserializeResult<T> = std::result::Result<T, DeserializationError>;
 
