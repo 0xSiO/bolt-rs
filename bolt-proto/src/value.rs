@@ -557,18 +557,21 @@ fn deserialize_structure_new<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeRe
                 bytes,
             ))
         }
+        SIGNATURE_TIME => {
+            let nanos_since_midnight: i64 = deserialize_variant!(Integer, bytes);
+            let zone_offset: i32 = deserialize_variant!(Integer, bytes) as i32;
+            Ok((
+                Value::Time(
+                    NaiveTime::from_num_seconds_from_midnight(
+                        (nanos_since_midnight / 1_000_000_000) as u32,
+                        (nanos_since_midnight % 1_000_000_000) as u32,
+                    ),
+                    FixedOffset::east(zone_offset),
+                ),
+                bytes,
+            ))
+        }
         // TODO
-        // SIGNATURE_TIME => {
-        //     let nanos_since_midnight: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
-        //     let zone_offset: i32 = Value::try_from(input_arc)?.try_into()?;
-        //     Ok(Value::Time(
-        //         NaiveTime::from_num_seconds_from_midnight(
-        //             (nanos_since_midnight / 1_000_000_000) as u32,
-        //             (nanos_since_midnight % 1_000_000_000) as u32,
-        //         ),
-        //         FixedOffset::east(zone_offset),
-        //     ))
-        // }
         // SIGNATURE_DATE_TIME_OFFSET => {
         //     let epoch_seconds: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
         //     let nanos: i64 = Value::try_from(Arc::clone(&input_arc))?.try_into()?;
@@ -1460,49 +1463,27 @@ mod tests {
         376342_i32.to_be_bytes()
     );
 
-    #[test]
-    fn time_from_bytes() {
-        let midnight_utc = Value::Time(NaiveTime::from_hms_nano(0, 0, 0, 0), Utc.fix());
-        let midnight_utc_bytes =
-            Bytes::from_static(&[MARKER_TINY_STRUCT | 2, SIGNATURE_TIME, 0, 0]);
-        assert_eq!(
-            &midnight_utc.clone().serialize().unwrap(),
-            &midnight_utc_bytes
-        );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(midnight_utc_bytes))).unwrap(),
-            midnight_utc
-        );
+    value_test!(
+        time,
+        Value::Time(NaiveTime::from_hms_nano(0, 0, 0, 0), Utc.fix()),
+        MARKER_TINY_STRUCT | 2,
+        &[SIGNATURE_TIME],
+        &[0, 0]
+    );
 
-        let about_four_pm_pacific = Value::Time(
+    value_test!(
+        about_four_pm_pacific,
+        Value::Time(
             NaiveTime::from_hms_nano(16, 4, 35, 235),
             FixedOffset::east(-8 * 3600),
-        );
-        let about_four_pm_pacific_bytes = Bytes::from_static(&[
-            MARKER_TINY_STRUCT | 2,
-            SIGNATURE_TIME,
-            MARKER_INT_64,
-            0x00,
-            0x00,
-            0x34,
-            0xA3,
-            0x12,
-            0xD0,
-            0xFE,
-            0xEB,
-            MARKER_INT_16,
-            0x8F,
-            0x80,
-        ]);
-        assert_eq!(
-            &about_four_pm_pacific.clone().serialize().unwrap(),
-            &about_four_pm_pacific_bytes
-        );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(about_four_pm_pacific_bytes))).unwrap(),
-            about_four_pm_pacific
-        );
-    }
+        ),
+        MARKER_TINY_STRUCT | 2,
+        &[SIGNATURE_TIME],
+        &[MARKER_INT_64],
+        57875000000235_i64.to_be_bytes(),
+        &[MARKER_INT_16],
+        (-8 * 3600_i16).to_be_bytes()
+    );
 
     #[test]
     fn date_time_offset_from_bytes() {
