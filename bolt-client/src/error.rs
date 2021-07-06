@@ -34,6 +34,14 @@ response: {response:?}"
     SerializationError(#[from] bolt_proto::error::SerializationError),
 }
 
+#[derive(Debug, Error)]
+pub enum ConnectionError {
+    #[error("handshake with server failed for versions [{}]", format_versions(.0))]
+    HandshakeFailed([u32; 4]),
+    #[error("invalid DNS name: {0}")]
+    InvalidDNSName(String),
+}
+
 fn format_version(version: u32) -> String {
     match version {
         V1_0 => String::from("1.0"),

@@ -32,15 +32,20 @@ impl Stream {
     pub async fn connect(
         addr: impl ToSocketAddrs,
         domain: Option<impl AsRef<str>>,
-    ) -> Result<Self> {
+    ) -> io::Result<Self> {
         match domain {
             Some(domain) => {
                 let mut config = ClientConfig::new();
                 config
                     .root_store
                     .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
-                let dns_name_ref = DNSNameRef::try_from_ascii_str(domain.as_ref())
-                    .map_err(|_| Error::InvalidDNSName(domain.as_ref().to_string()))?;
+                let dns_name_ref =
+                    DNSNameRef::try_from_ascii_str(domain.as_ref()).map_err(|_| {
+                        io::Error::new(
+                            io::ErrorKind::InvalidInput,
+                            ConnectionError::InvalidDNSName(domain.as_ref().to_string()),
+                        )
+                    })?;
                 let stream = TcpStream::connect(addr).await?;
                 Ok(Stream::SecureTcp(Box::new(
                     TlsConnector::from(Arc::new(config))
