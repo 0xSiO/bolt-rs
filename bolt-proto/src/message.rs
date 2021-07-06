@@ -119,6 +119,26 @@ impl Message {
         }
         Message::try_from(Arc::new(Mutex::new(bytes.freeze())))
     }
+
+    pub fn into_chunks(self) -> SerializeResult<Vec<Bytes>> {
+        let bytes = self.serialize()?;
+
+        // Big enough to hold all the chunks, plus a partial chunk, plus the message
+        // footer
+        let mut result: Vec<Bytes> = Vec::with_capacity(bytes.len() / CHUNK_SIZE + 2);
+        for slice in bytes.chunks(CHUNK_SIZE) {
+            // 16-bit size, then the chunk data
+            let mut chunk = BytesMut::with_capacity(mem::size_of::<u16>() + slice.len());
+            // Length of slice is at most CHUNK_SIZE, which can fit in a u16
+            chunk.put_u16(slice.len() as u16);
+            chunk.put(slice);
+            result.push(chunk.freeze());
+        }
+        // End message
+        result.push(Bytes::from_static(&[0, 0]));
+
+        Ok(result)
+    }
 }
 
 macro_rules! deserialize_struct {
