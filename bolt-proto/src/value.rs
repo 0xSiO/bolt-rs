@@ -67,6 +67,9 @@ pub(crate) const SIGNATURE_DATE_TIME_OFFSET: u8 = 0x46;
 pub(crate) const SIGNATURE_DATE_TIME_ZONED: u8 = 0x66;
 pub(crate) const SIGNATURE_LOCAL_TIME: u8 = 0x74;
 pub(crate) const SIGNATURE_LOCAL_DATE_TIME: u8 = 0x64;
+pub(crate) const SIGNATURE_DURATION: u8 = 0x45;
+pub(crate) const SIGNATURE_POINT_2D: u8 = 0x58;
+pub(crate) const SIGNATURE_POINT_3D: u8 = 0x59;
 
 /// An enum that can hold values of all Bolt-compatible types.
 ///
@@ -1491,157 +1494,105 @@ mod tests {
         (-8 * 3600_i16).to_be_bytes()
     );
 
-    #[test]
-    fn date_time_offset_from_bytes() {
-        let date_time = Value::DateTimeOffset(
+    value_test!(
+        date_time_offset,
+        Value::DateTimeOffset(
             FixedOffset::east(-5 * 3600)
                 .from_utc_datetime(&NaiveDate::from_ymd(2050, 12, 31).and_hms_nano(23, 59, 59, 10)),
-        );
-        let date_time_bytes = Bytes::from_static(&[
-            MARKER_TINY_STRUCT | 3,
-            SIGNATURE_DATE_TIME_OFFSET,
-            MARKER_INT_64,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x98,
-            0x5B,
-            0xA9,
-            0x7F,
-            10,
-            MARKER_INT_16,
-            0xB9,
-            0xB0,
-        ]);
-        assert_eq!(&date_time.clone().serialize().unwrap(), &date_time_bytes);
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
-            date_time
-        );
-    }
+        ),
+        MARKER_TINY_STRUCT | 3,
+        &[SIGNATURE_DATE_TIME_OFFSET],
+        &[MARKER_INT_64],
+        2556143999_i64.to_be_bytes(),
+        &[10],
+        &[MARKER_INT_16],
+        (-5 * 3600_i16).to_be_bytes()
+    );
 
-    #[test]
-    fn date_time_zoned_from_bytes() {
-        let date_time = Value::DateTimeZoned(
+    value_test!(
+        date_time_zoned,
+        Value::DateTimeZoned(
             chrono_tz::Asia::Ulaanbaatar
                 .ymd(2030, 8, 3)
                 .and_hms_milli(14, 30, 1, 2),
-        );
-        let date_time_bytes = Bytes::from_static(&[
-            MARKER_TINY_STRUCT | 3,
-            SIGNATURE_DATE_TIME_ZONED,
-            MARKER_INT_32,
-            0x71,
-            0xF6,
-            0x54,
-            0xE9,
-            MARKER_INT_32,
-            0x00,
-            0x1E,
-            0x84,
-            0x80,
-            MARKER_SMALL_STRING,
-            16,
-            b'A',
-            b's',
-            b'i',
-            b'a',
-            b'/',
-            b'U',
-            b'l',
-            b'a',
-            b'a',
-            b'n',
-            b'b',
-            b'a',
-            b'a',
-            b't',
-            b'a',
-            b'r',
-        ]);
-        assert_eq!(&date_time.clone().serialize().unwrap(), &date_time_bytes);
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(date_time_bytes))).unwrap(),
-            date_time
-        );
-    }
+        ),
+        MARKER_TINY_STRUCT | 3,
+        &[SIGNATURE_DATE_TIME_ZONED],
+        &[MARKER_INT_32],
+        1911969001_i32.to_be_bytes(),
+        &[MARKER_INT_32],
+        2000000_i32.to_be_bytes(),
+        &[MARKER_SMALL_STRING, 16],
+        b"Asia/Ulaanbaatar"
+    );
 
-    #[test]
-    fn local_time_from_bytes() {
-        let local_time = Value::LocalTime(NaiveTime::from_hms_nano(23, 59, 59, 999));
-        let local_time_bytes = Bytes::from_static(&[
-            MARKER_TINY_STRUCT | 1,
-            SIGNATURE_LOCAL_TIME,
-            MARKER_INT_64,
-            0x00,
-            0x00,
-            0x4E,
-            0x94,
-            0x55,
-            0xB4,
-            0x39,
-            0xE7,
-        ]);
-        assert_eq!(&local_time.clone().serialize().unwrap(), &local_time_bytes);
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(local_time_bytes))).unwrap(),
-            local_time
-        );
-    }
+    value_test!(
+        local_time,
+        Value::LocalTime(NaiveTime::from_hms_nano(23, 59, 59, 999)),
+        MARKER_TINY_STRUCT | 1,
+        &[SIGNATURE_LOCAL_TIME],
+        &[MARKER_INT_64],
+        86399000000999_i64.to_be_bytes()
+    );
 
-    #[test]
-    fn local_date_time_from_bytes() {
-        let local_date_time =
-            Value::LocalDateTime(NaiveDate::from_ymd(1999, 2, 27).and_hms_nano(1, 0, 0, 9999));
-        let local_date_time_bytes = Bytes::from_static(&[
-            MARKER_TINY_STRUCT | 2,
-            SIGNATURE_LOCAL_DATE_TIME,
-            MARKER_INT_32,
-            0x36,
-            0xD7,
-            0x43,
-            0x90,
-            MARKER_INT_16,
-            0x27,
-            0x0F,
-        ]);
-        assert_eq!(
-            &local_date_time.clone().serialize().unwrap(),
-            &local_date_time_bytes
-        );
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(local_date_time_bytes))).unwrap(),
-            local_date_time
-        );
-    }
+    value_test!(
+        local_date_time,
+        Value::LocalDateTime(NaiveDate::from_ymd(1999, 2, 27).and_hms_nano(1, 0, 0, 9999)),
+        MARKER_TINY_STRUCT | 2,
+        &[SIGNATURE_LOCAL_DATE_TIME],
+        &[MARKER_INT_32],
+        920077200_i32.to_be_bytes(),
+        &[MARKER_INT_16],
+        9999_i16.to_be_bytes()
+    );
 
-    #[test]
-    fn duration_from_bytes() {
-        let duration = Duration::new(9876, 12345, 65332, 23435);
-        let duration_bytes = duration.clone().serialize().unwrap();
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(duration_bytes))).unwrap(),
-            Value::Duration(duration)
-        );
-    }
+    value_test!(
+        duration,
+        Value::Duration(Duration::new(9876, 12345, 65332, 23435)),
+        MARKER_TINY_STRUCT | 4,
+        &[SIGNATURE_DURATION],
+        &[MARKER_INT_16],
+        9876_i16.to_be_bytes(),
+        &[MARKER_INT_16],
+        12345_i16.to_be_bytes(),
+        &[MARKER_INT_32],
+        65332_i32.to_be_bytes(),
+        &[MARKER_INT_16],
+        23435_i16.to_be_bytes()
+    );
 
-    #[test]
-    fn point_from_bytes() {
-        let point2d = Point2D::new(9876, 12.312_345, 134_564.123_567_543);
-        let point2d_bytes = point2d.clone().serialize().unwrap();
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(point2d_bytes))).unwrap(),
-            Value::Point2D(point2d)
-        );
+    value_test!(
+        point_2d,
+        Value::Point2D(Point2D::new(9876, 12.312_345, 134_564.123_567_543)),
+        MARKER_TINY_STRUCT | 3,
+        &[SIGNATURE_POINT_2D],
+        &[MARKER_INT_16],
+        9876_i16.to_be_bytes(),
+        &[MARKER_FLOAT],
+        12.312345_f64.to_be_bytes(),
+        &[MARKER_FLOAT],
+        134_564.123_567_543_f64.to_be_bytes()
+    );
 
-        let point3d = Point3D::new(249, 543.598_387, 2_945_732_849.293_85, 45_438.874_385);
-        let point3d_bytes = point3d.clone().serialize().unwrap();
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(point3d_bytes))).unwrap(),
-            Value::Point3D(point3d)
-        );
-    }
+    value_test!(
+        point_3d,
+        Value::Point3D(Point3D::new(
+            249,
+            543.598_387,
+            2_945_732_849.293_85,
+            45_438.874_385
+        )),
+        MARKER_TINY_STRUCT | 4,
+        &[SIGNATURE_POINT_3D],
+        &[MARKER_INT_16],
+        249_i16.to_be_bytes(),
+        &[MARKER_FLOAT],
+        543.598_387_f64.to_be_bytes(),
+        &[MARKER_FLOAT],
+        2_945_732_849.293_85_f64.to_be_bytes(),
+        &[MARKER_FLOAT],
+        45_438.874_385_f64.to_be_bytes()
+    );
 
     #[test]
     #[ignore]
