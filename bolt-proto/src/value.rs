@@ -61,6 +61,10 @@ pub(crate) const MARKER_TINY_STRUCT: u8 = 0xB0;
 pub(crate) const MARKER_SMALL_STRUCT: u8 = 0xDC;
 pub(crate) const MARKER_MEDIUM_STRUCT: u8 = 0xDD;
 
+pub(crate) const SIGNATURE_NODE: u8 = 0x4E;
+pub(crate) const SIGNATURE_RELATIONSHIP: u8 = 0x52;
+pub(crate) const SIGNATURE_PATH: u8 = 0x50;
+pub(crate) const SIGNATURE_UNBOUND_RELATIONSHIP: u8 = 0x72;
 pub(crate) const SIGNATURE_DATE: u8 = 0x44;
 pub(crate) const SIGNATURE_TIME: u8 = 0x54;
 pub(crate) const SIGNATURE_DATE_TIME_OFFSET: u8 = 0x46;
@@ -547,10 +551,10 @@ macro_rules! deserialize_variant {
 fn deserialize_structure_new<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Value, B)> {
     let signature = bytes.get_u8();
     match signature {
-        node::SIGNATURE => deserialize_struct!(Node, bytes),
-        relationship::SIGNATURE => deserialize_struct!(Relationship, bytes),
-        path::SIGNATURE => deserialize_struct!(Path, bytes),
-        unbound_relationship::SIGNATURE => deserialize_struct!(UnboundRelationship, bytes),
+        SIGNATURE_NODE => deserialize_struct!(Node, bytes),
+        SIGNATURE_RELATIONSHIP => deserialize_struct!(Relationship, bytes),
+        SIGNATURE_PATH => deserialize_struct!(Path, bytes),
+        SIGNATURE_UNBOUND_RELATIONSHIP => deserialize_struct!(UnboundRelationship, bytes),
         SIGNATURE_DATE => {
             let days_since_epoch: i64 = deserialize_variant!(Integer, bytes);
             Ok((
@@ -614,9 +618,9 @@ fn deserialize_structure_new<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeRe
                 bytes,
             ))
         }
-        duration::SIGNATURE => deserialize_struct!(Duration, bytes),
-        point_2d::SIGNATURE => deserialize_struct!(Point2D, bytes),
-        point_3d::SIGNATURE => deserialize_struct!(Point3D, bytes),
+        SIGNATURE_DURATION => deserialize_struct!(Duration, bytes),
+        SIGNATURE_POINT_2D => deserialize_struct!(Point2D, bytes),
+        SIGNATURE_POINT_3D => deserialize_struct!(Point3D, bytes),
         _ => Err(DeserializationError::InvalidSignatureByte(signature)),
     }
 }
