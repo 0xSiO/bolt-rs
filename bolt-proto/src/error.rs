@@ -53,6 +53,8 @@ pub enum DeserializationError {
     InvalidMarkerByte(u8),
     #[error("invalid signature byte: {0:x}")]
     InvalidSignatureByte(u8),
+    #[error("invalid size ({size} fields) for signature byte {signature:x}")]
+    InvalidSize { size: usize, signature: u8 },
     #[error(transparent)]
     ConversionError(#[from] ConversionError),
     #[error("string deserialization failed: {0}")]

@@ -52,7 +52,7 @@ pub(crate) const SIGNATURE_RUN: u8 = 0x10;
 pub(crate) const SIGNATURE_DISCARD_ALL: u8 = 0x2F;
 pub(crate) const SIGNATURE_PULL_ALL: u8 = 0x3F;
 pub(crate) const SIGNATURE_ACK_FAILURE: u8 = 0x0E;
-pub(crate) const SIGNATURE_RESET: u8 = 0x13;
+pub(crate) const SIGNATURE_RESET: u8 = 0x0F;
 pub(crate) const SIGNATURE_RECORD: u8 = 0x71;
 pub(crate) const SIGNATURE_SUCCESS: u8 = 0x70;
 pub(crate) const SIGNATURE_FAILURE: u8 = 0x7F;
@@ -119,6 +119,14 @@ impl Message {
     }
 }
 
+macro_rules! deserialize_struct {
+    ($name:ident, $bytes:ident) => {{
+        let (message, remaining) = $name::deserialize($bytes)?;
+        $bytes = remaining;
+        Ok((Message::$name(message), $bytes))
+    }};
+}
+
 impl BoltValue for Message {
     fn marker(&self) -> MarkerResult<u8> {
         match self {
@@ -153,9 +161,62 @@ impl BoltValue for Message {
     }
 
     fn deserialize<B: bytes::Buf + std::panic::UnwindSafe>(
-        bytes: B,
+        mut bytes: B,
     ) -> DeserializeResult<(Self, B)> {
-        todo!()
+        catch_unwind(move || {
+            let (_, size, signature) = get_structure_info(&mut bytes)?;
+
+            match signature {
+                SIGNATURE_INIT => {
+                    // Conflicting signatures, so we have to check for metadata.
+                    // HELLO has 1 field, while INIT has 2.
+                    match size {
+                        1 => deserialize_struct!(Hello, bytes),
+                        2 => deserialize_struct!(Init, bytes),
+                        _ => Err(DeserializationError::InvalidSize { size, signature }),
+                    }
+                }
+                SIGNATURE_RUN => {
+                    // Conflicting signatures, so we have to check for metadata.
+                    // RUN has 2 fields, while RUN_WITH_METADATA has 3.
+                    match size {
+                        2 => deserialize_struct!(Run, bytes),
+                        3 => deserialize_struct!(RunWithMetadata, bytes),
+                        _ => Err(DeserializationError::InvalidSize { size, signature }),
+                    }
+                }
+                SIGNATURE_DISCARD_ALL => {
+                    // Conflicting signatures, so we have to check for metadata.
+                    // DISCARD_ALL has 0 fields, while DISCARD has 1.
+                    match size {
+                        0 => Ok((Message::DiscardAll, bytes)),
+                        1 => deserialize_struct!(Discard, bytes),
+                        _ => Err(DeserializationError::InvalidSize { size, signature }),
+                    }
+                }
+                SIGNATURE_PULL_ALL => {
+                    // Conflicting signatures, so we have to check for metadata.
+                    // PULL_ALL has 0 fields, while PULL has 1.
+                    match size {
+                        0 => Ok((Message::PullAll, bytes)),
+                        1 => deserialize_struct!(Pull, bytes),
+                        _ => Err(DeserializationError::InvalidSize { size, signature }),
+                    }
+                }
+                SIGNATURE_ACK_FAILURE => Ok((Message::AckFailure, bytes)),
+                SIGNATURE_RESET => Ok((Message::Reset, bytes)),
+                SIGNATURE_RECORD => deserialize_struct!(Record, bytes),
+                SIGNATURE_SUCCESS => deserialize_struct!(Success, bytes),
+                SIGNATURE_FAILURE => deserialize_struct!(Failure, bytes),
+                SIGNATURE_IGNORED => Ok((Message::Ignored, bytes)),
+                SIGNATURE_GOODBYE => Ok((Message::Goodbye, bytes)),
+                SIGNATURE_BEGIN => deserialize_struct!(Begin, bytes),
+                SIGNATURE_COMMIT => Ok((Message::Commit, bytes)),
+                SIGNATURE_ROLLBACK => Ok((Message::Rollback, bytes)),
+                _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
+            }
+        })
+        .map_err(|_| DeserializationError::Panicked)?
     }
 }
 

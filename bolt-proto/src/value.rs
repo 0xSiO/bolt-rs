@@ -549,6 +549,7 @@ macro_rules! deserialize_variant {
 }
 
 fn deserialize_structure_new<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Value, B)> {
+    // FIXME: There could be a length after the marker that we're skipping here
     let signature = bytes.get_u8();
     match signature {
         SIGNATURE_NODE => deserialize_struct!(Node, bytes),
