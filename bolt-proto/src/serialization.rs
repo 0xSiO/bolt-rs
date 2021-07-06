@@ -6,7 +6,10 @@ use std::{
 
 use bytes::{Buf, Bytes};
 
-use crate::error::*;
+use crate::{
+    error::*,
+    value::{MARKER_MEDIUM_STRUCT, MARKER_SMALL_STRUCT, MARKER_TINY_STRUCT},
+};
 
 pub(crate) trait BoltValue: Sized {
     fn marker(&self) -> MarkerResult<u8>;
@@ -36,19 +39,15 @@ pub(crate) trait Signature {
     fn get_signature(&self) -> u8;
 }
 
-pub(crate) const STRUCT_MARKER_TINY: u8 = 0xB0;
-pub(crate) const STRUCT_MARKER_SMALL: u8 = 0xDC;
-pub(crate) const STRUCT_MARKER_MEDIUM: u8 = 0xDD;
-
 // Might panic. Use this inside a catch_unwind block
 pub(crate) fn get_info_from_bytes(bytes: &mut impl Buf) -> Result<(u8, u8)> {
     let marker = bytes.get_u8();
     let _size = match marker {
-        marker if (STRUCT_MARKER_TINY..=(STRUCT_MARKER_TINY | 0x0F)).contains(&marker) => {
+        marker if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker) => {
             0x0F & marker as usize
         }
-        STRUCT_MARKER_SMALL => bytes.get_u8() as usize,
-        STRUCT_MARKER_MEDIUM => bytes.get_u16() as usize,
+        MARKER_SMALL_STRUCT => bytes.get_u8() as usize,
+        MARKER_MEDIUM_STRUCT => bytes.get_u16() as usize,
         _ => {
             return Err(DeserializationError::InvalidMarkerByte(marker).into());
         }
@@ -61,11 +60,11 @@ pub(crate) fn get_info_from_bytes(bytes: &mut impl Buf) -> Result<(u8, u8)> {
 pub(crate) fn get_structure_info(bytes: &mut impl Buf) -> DeserializeResult<(u8, usize, u8)> {
     let marker = bytes.get_u8();
     let size = match marker {
-        marker if (STRUCT_MARKER_TINY..=(STRUCT_MARKER_TINY | 0x0F)).contains(&marker) => {
+        marker if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker) => {
             0x0F & marker as usize
         }
-        STRUCT_MARKER_SMALL => bytes.get_u8() as usize,
-        STRUCT_MARKER_MEDIUM => bytes.get_u16() as usize,
+        MARKER_SMALL_STRUCT => bytes.get_u8() as usize,
+        MARKER_MEDIUM_STRUCT => bytes.get_u16() as usize,
         _ => {
             return Err(DeserializationError::InvalidMarkerByte(marker));
         }
