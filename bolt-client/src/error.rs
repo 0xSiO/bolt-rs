@@ -32,8 +32,6 @@ response: {response:?}"
     },
     #[error(transparent)]
     SerializationError(#[from] bolt_proto::error::SerializationError),
-    #[error(transparent)]
-    ProtocolError(#[from] bolt_proto::error::Error),
 }
 
 fn format_version(version: u32) -> String {

@@ -12,16 +12,19 @@ pub type DeserializeResult<T> = std::result::Result<T, DeserializationError>;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
-    IOError(#[from] std::io::Error),
-    #[error("value too large (size: {0})")]
-    ValueTooLarge(usize),
+    MarkerError(#[from] MarkerError),
     #[error(transparent)]
     ConversionError(#[from] ConversionError),
     #[error(transparent)]
-    DeserializationError(#[from] DeserializationError),
-    // TODO: Remove / refactor?
+    SerializationError(#[from] SerializationError),
     #[error(transparent)]
-    MarkerError(#[from] MarkerError),
+    DeserializationError(#[from] DeserializationError),
+}
+
+#[derive(Debug, Error)]
+pub enum MarkerError {
+    #[error("value too large (size: {0})")]
+    ValueTooLarge(usize),
 }
 
 #[derive(Debug, Error)]
@@ -30,12 +33,6 @@ pub enum ConversionError {
     FromValue(Value),
     #[error("invalid conversion from message {0:?}")]
     FromMessage(Message),
-}
-
-#[derive(Debug, Error)]
-pub enum MarkerError {
-    #[error("value too large (size: {0})")]
-    ValueTooLarge(usize),
 }
 
 #[derive(Debug, Error)]
@@ -54,8 +51,8 @@ pub enum DeserializationError {
     InvalidSignatureByte(u8),
     #[error("invalid size ({size} fields) for signature byte {signature:x}")]
     InvalidSize { size: usize, signature: u8 },
-    #[error(transparent)]
-    ConversionError(#[from] ConversionError),
     #[error("string deserialization failed: {0}")]
     InvalidUTF8(#[from] FromUtf8Error),
+    #[error(transparent)]
+    ConversionError(#[from] ConversionError),
 }

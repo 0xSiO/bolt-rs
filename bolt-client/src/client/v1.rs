@@ -562,7 +562,7 @@ pub(crate) mod tests {
         client.send_message(Message::Begin(begin)).await.unwrap();
         assert!(matches!(
             client.read_message().await,
-            Err(Error::ProtocolError(_))
+            Err(Error::IOError(_))
         ));
     }
 }
