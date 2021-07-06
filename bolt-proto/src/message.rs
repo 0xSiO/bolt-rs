@@ -154,14 +154,8 @@ impl BoltValue for Message {
     }
 }
 
-impl Marker for Message {
-    fn get_marker(&self) -> Result<u8> {
-        Ok(self.marker()?)
-    }
-}
-
-impl Signature for Message {
-    fn get_signature(&self) -> u8 {
+impl BoltStructure for Message {
+    fn signature(&self) -> u8 {
         match self {
             Message::Init(_) => SIGNATURE_INIT,
             Message::Run(_) => SIGNATURE_RUN,
@@ -182,6 +176,18 @@ impl Signature for Message {
             Message::Discard(_) => SIGNATURE_DISCARD,
             Message::Pull(_) => SIGNATURE_PULL,
         }
+    }
+}
+
+impl Marker for Message {
+    fn get_marker(&self) -> Result<u8> {
+        Ok(self.marker()?)
+    }
+}
+
+impl Signature for Message {
+    fn get_signature(&self) -> u8 {
+        self.signature()
     }
 }
 
