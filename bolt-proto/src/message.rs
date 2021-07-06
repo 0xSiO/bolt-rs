@@ -1,10 +1,12 @@
-use std::convert::{TryFrom, TryInto};
-use std::mem;
-use std::ops::DerefMut;
-use std::panic::catch_unwind;
-use std::sync::{Arc, Mutex};
+use std::{
+    convert::{TryFrom, TryInto},
+    mem,
+    ops::DerefMut,
+    panic::{catch_unwind, UnwindSafe},
+    sync::{Arc, Mutex},
+};
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use futures_util::io::{AsyncRead, AsyncReadExt};
 
 pub use ack_failure::AckFailure;
@@ -160,9 +162,7 @@ impl BoltValue for Message {
         }
     }
 
-    fn deserialize<B: bytes::Buf + std::panic::UnwindSafe>(
-        mut bytes: B,
-    ) -> DeserializeResult<(Self, B)> {
+    fn deserialize<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Self, B)> {
         catch_unwind(move || {
             let (_, size, signature) = get_structure_info(&mut bytes)?;
 
