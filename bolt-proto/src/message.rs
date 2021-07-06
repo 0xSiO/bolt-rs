@@ -147,24 +147,24 @@ impl Marker for Message {
 impl Signature for Message {
     fn get_signature(&self) -> u8 {
         match self {
-            Message::Init(init) => SIGNATURE_INIT,
-            Message::Run(run) => SIGNATURE_RUN,
+            Message::Init(_) => SIGNATURE_INIT,
+            Message::Run(_) => SIGNATURE_RUN,
             Message::DiscardAll => SIGNATURE_DISCARD_ALL,
             Message::PullAll => SIGNATURE_PULL_ALL,
             Message::AckFailure => SIGNATURE_ACK_FAILURE,
             Message::Reset => SIGNATURE_RESET,
-            Message::Record(record) => SIGNATURE_RECORD,
-            Message::Success(success) => SIGNATURE_SUCCESS,
-            Message::Failure(failure) => SIGNATURE_FAILURE,
+            Message::Record(_) => SIGNATURE_RECORD,
+            Message::Success(_) => SIGNATURE_SUCCESS,
+            Message::Failure(_) => SIGNATURE_FAILURE,
             Message::Ignored => SIGNATURE_IGNORED,
-            Message::Hello(hello) => SIGNATURE_HELLO,
+            Message::Hello(_) => SIGNATURE_HELLO,
             Message::Goodbye => SIGNATURE_GOODBYE,
-            Message::RunWithMetadata(run_with_metadata) => SIGNATURE_RUN_WITH_METADATA,
-            Message::Begin(begin) => SIGNATURE_BEGIN,
+            Message::RunWithMetadata(_) => SIGNATURE_RUN_WITH_METADATA,
+            Message::Begin(_) => SIGNATURE_BEGIN,
             Message::Commit => SIGNATURE_COMMIT,
             Message::Rollback => SIGNATURE_ROLLBACK,
-            Message::Discard(discard) => SIGNATURE_DISCARD,
-            Message::Pull(pull) => SIGNATURE_PULL,
+            Message::Discard(_) => SIGNATURE_DISCARD,
+            Message::Pull(_) => SIGNATURE_PULL,
         }
     }
 }
