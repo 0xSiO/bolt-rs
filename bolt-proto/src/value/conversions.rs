@@ -236,15 +236,15 @@ impl_try_from_value!(UnboundRelationship, UnboundRelationship);
 impl_try_from_value!(NaiveDate, Date);
 
 impl TryFrom<Value> for DateTime<FixedOffset> {
-    type Error = Error;
+    type Error = ConversionError;
 
-    fn try_from(value: Value) -> Result<Self> {
+    fn try_from(value: Value) -> ConversionResult<Self> {
         match value {
             Value::DateTimeOffset(date_time_offset) => Ok(date_time_offset),
             Value::DateTimeZoned(date_time_zoned) => {
                 Ok(date_time_zoned.with_timezone(&date_time_zoned.offset().fix()))
             }
-            _ => Err(ConversionError::FromValue(value).into()),
+            _ => Err(ConversionError::FromValue(value)),
         }
     }
 }

@@ -36,12 +36,12 @@ macro_rules! impl_message_with_metadata {
 macro_rules! impl_try_from_message {
     ($T:path, $V:ident) => {
         impl ::std::convert::TryFrom<$crate::Message> for $T {
-            type Error = $crate::error::Error;
+            type Error = $crate::error::ConversionError;
 
-            fn try_from(message: $crate::Message) -> $crate::error::Result<Self> {
+            fn try_from(message: $crate::Message) -> $crate::error::ConversionResult<Self> {
                 match message {
                     $crate::Message::$V(inner) => Ok(inner),
-                    _ => Err($crate::error::ConversionError::FromMessage(message).into()),
+                    _ => Err($crate::error::ConversionError::FromMessage(message)),
                 }
             }
         }
