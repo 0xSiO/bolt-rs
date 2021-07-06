@@ -1152,6 +1152,17 @@ mod tests {
                 assert_eq!(remaining.len(), 0);
             }
         };
+        ($name:ident, $value:expr, $marker:expr) => {
+            #[test]
+            fn $name() {
+                let value = $value;
+                let bytes = $value.clone().serialize().unwrap();
+                assert_eq!(value.marker().unwrap(), $marker);
+                let (deserialized, remaining) = Value::deserialize(bytes).unwrap();
+                assert_eq!(deserialized, value);
+                assert_eq!(remaining.len(), 0);
+            }
+        };
     }
 
     value_test!(null, Value::Null, MARKER_NULL, &[]);
@@ -1373,19 +1384,22 @@ mod tests {
         assert_eq!(remaining.len(), 0);
     }
 
-    fn get_node() -> Node {
-        Node::new(
+    value_test!(
+        node,
+        Value::Node(Node::new(
             24_i64,
             vec!["TestNode".to_string()],
             HashMap::from_iter(vec![
                 ("key1".to_string(), -1_i8),
                 ("key2".to_string(), 1_i8),
             ]),
-        )
-    }
+        )),
+        MARKER_TINY_STRUCT | 3
+    );
 
-    fn get_rel() -> Relationship {
-        Relationship::new(
+    value_test!(
+        relationship,
+        Value::Relationship(Relationship::new(
             24_i64,
             32_i64,
             128_i64,
@@ -1394,60 +1408,46 @@ mod tests {
                 ("key1".to_string(), -2_i8),
                 ("key2".to_string(), 2_i8),
             ]),
-        )
-    }
+        )),
+        MARKER_TINY_STRUCT | 5
+    );
 
-    fn get_unbound_rel() -> UnboundRelationship {
-        UnboundRelationship::new(
+    value_test!(
+        path,
+        Value::Path(Path::new(
+            vec![Node::new(
+                24_i64,
+                vec!["TestNode".to_string()],
+                HashMap::from_iter(vec![
+                    ("key1".to_string(), -1_i8),
+                    ("key2".to_string(), 1_i8),
+                ]),
+            )],
+            vec![UnboundRelationship::new(
+                128_i64,
+                "TestRel".to_string(),
+                HashMap::from_iter(vec![
+                    ("key1".to_string(), -2_i8),
+                    ("key2".to_string(), 2_i8),
+                ]),
+            )],
+            vec![100, 101]
+        )),
+        MARKER_TINY_STRUCT | 3
+    );
+
+    value_test!(
+        unbound_relationship,
+        Value::UnboundRelationship(UnboundRelationship::new(
             128_i64,
             "TestRel".to_string(),
             HashMap::from_iter(vec![
                 ("key1".to_string(), -2_i8),
                 ("key2".to_string(), 2_i8),
             ]),
-        )
-    }
-
-    #[test]
-    fn node_from_bytes() {
-        let node_bytes: Bytes = get_node().serialize().unwrap();
-
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(node_bytes))).unwrap(),
-            Value::Node(get_node())
-        );
-    }
-
-    #[test]
-    fn relationship_from_bytes() {
-        let rel_bytes: Bytes = get_rel().serialize().unwrap();
-
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(rel_bytes))).unwrap(),
-            Value::Relationship(get_rel())
-        );
-    }
-
-    #[test]
-    fn path_from_bytes() {
-        let path = Path::new(vec![get_node()], vec![get_unbound_rel()], vec![100, 101]);
-        let path_bytes: Bytes = path.clone().serialize().unwrap();
-
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(path_bytes))).unwrap(),
-            Value::Path(path)
-        );
-    }
-
-    #[test]
-    fn unbound_relationship_from_bytes() {
-        let unbound_rel_bytes: Bytes = get_unbound_rel().serialize().unwrap();
-
-        assert_eq!(
-            Value::try_from(Arc::new(Mutex::new(unbound_rel_bytes))).unwrap(),
-            Value::UnboundRelationship(get_unbound_rel())
-        );
-    }
+        )),
+        MARKER_TINY_STRUCT | 3
+    );
 
     value_test!(
         date,
