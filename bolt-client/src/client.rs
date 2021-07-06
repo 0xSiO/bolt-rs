@@ -409,7 +409,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         #[cfg(test)]
         println!(">>> {:?}", message);
 
-        let chunks: Vec<Bytes> = message.clone().try_into()?;
+        let chunks = message.clone().into_chunks()?;
         for chunk in chunks {
             self.stream.write_all(&chunk).await?;
         }

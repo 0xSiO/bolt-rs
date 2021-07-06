@@ -3,6 +3,7 @@ use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+// TODO: Break into more specific error types
 #[derive(Debug, Error)]
 pub enum Error {
     #[cfg(feature = "tokio-stream")]
@@ -29,6 +30,8 @@ response: {response:?}"
         request: Option<bolt_proto::Message>,
         response: bolt_proto::Message,
     },
+    #[error(transparent)]
+    SerializationError(#[from] bolt_proto::error::SerializationError),
     #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
 }
