@@ -4,11 +4,8 @@ use bolt_proto_derive::*;
 
 use crate::{value::SIGNATURE_RELATIONSHIP, Value};
 
-pub(crate) const MARKER: u8 = 0xB5;
-pub(crate) const SIGNATURE: u8 = 0x52;
-
 #[bolt_structure(SIGNATURE_RELATIONSHIP)]
-#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Relationship {
     pub(crate) rel_identity: i64,
     pub(crate) start_node_identity: i64,

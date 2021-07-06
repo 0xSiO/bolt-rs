@@ -4,11 +4,8 @@ use bolt_proto_derive::*;
 
 use crate::{impl_try_from_message, message::SIGNATURE_RUN_WITH_METADATA, Value};
 
-pub(crate) const MARKER: u8 = 0xB3;
-pub(crate) const SIGNATURE: u8 = 0x10;
-
 #[bolt_structure(SIGNATURE_RUN_WITH_METADATA)]
-#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RunWithMetadata {
     pub(crate) statement: String,
     pub(crate) parameters: HashMap<String, Value>,
@@ -42,112 +39,3 @@ impl RunWithMetadata {
 }
 
 impl_try_from_message!(RunWithMetadata, RunWithMetadata);
-
-#[cfg(test)]
-mod tests {
-    use std::convert::TryFrom;
-    use std::iter::FromIterator;
-    use std::sync::{Arc, Mutex};
-
-    use bytes::Bytes;
-
-    use crate::serialization::*;
-    use crate::value::*;
-
-    use super::*;
-
-    fn new_msg() -> RunWithMetadata {
-        RunWithMetadata::new(
-            "something;".to_string(),
-            HashMap::new(),
-            HashMap::from_iter(vec![("arbitrary".to_string(), Value::from("any"))]),
-        )
-    }
-
-    #[test]
-    fn get_marker() {
-        assert_eq!(new_msg().get_marker().unwrap(), MARKER);
-    }
-
-    #[test]
-    fn get_signature() {
-        assert_eq!(new_msg().get_signature(), SIGNATURE);
-    }
-
-    #[test]
-    fn try_into_bytes() {
-        let msg = new_msg();
-        assert_eq!(
-            msg.try_into_bytes().unwrap(),
-            Bytes::from_static(&[
-                MARKER,
-                SIGNATURE,
-                MARKER_TINY_STRING | 10,
-                b's',
-                b'o',
-                b'm',
-                b'e',
-                b't',
-                b'h',
-                b'i',
-                b'n',
-                b'g',
-                b';',
-                MARKER_TINY_MAP,
-                MARKER_TINY_MAP | 1,
-                MARKER_TINY_STRING | 9,
-                b'a',
-                b'r',
-                b'b',
-                b'i',
-                b't',
-                b'r',
-                b'a',
-                b'r',
-                b'y',
-                MARKER_TINY_STRING | 3,
-                b'a',
-                b'n',
-                b'y',
-            ])
-        );
-    }
-
-    #[test]
-    fn try_from_bytes() {
-        let msg = new_msg();
-        let msg_bytes = &[
-            MARKER_TINY_STRING | 10,
-            b's',
-            b'o',
-            b'm',
-            b'e',
-            b't',
-            b'h',
-            b'i',
-            b'n',
-            b'g',
-            b';',
-            MARKER_TINY_MAP,
-            MARKER_TINY_MAP | 1,
-            MARKER_TINY_STRING | 9,
-            b'a',
-            b'r',
-            b'b',
-            b'i',
-            b't',
-            b'r',
-            b'a',
-            b'r',
-            b'y',
-            MARKER_TINY_STRING | 3,
-            b'a',
-            b'n',
-            b'y',
-        ];
-        assert_eq!(
-            RunWithMetadata::try_from(Arc::new(Mutex::new(Bytes::from_static(msg_bytes)))).unwrap(),
-            msg
-        );
-    }
-}

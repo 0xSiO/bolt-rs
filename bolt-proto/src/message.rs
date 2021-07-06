@@ -1,50 +1,31 @@
 use std::{
-    convert::{TryFrom, TryInto},
     mem,
-    ops::DerefMut,
     panic::{catch_unwind, UnwindSafe},
-    sync::{Arc, Mutex},
 };
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use futures_util::io::{AsyncRead, AsyncReadExt};
 
-pub use ack_failure::AckFailure;
 pub use begin::Begin;
-pub use commit::Commit;
 pub use discard::Discard;
-pub use discard_all::DiscardAll;
 pub use failure::Failure;
-pub use goodbye::Goodbye;
 pub use hello::Hello;
-pub use ignored::Ignored;
 pub use init::Init;
 pub use pull::Pull;
-pub use pull_all::PullAll;
 pub use record::Record;
-pub use reset::Reset;
-pub use rollback::Rollback;
 pub use run::Run;
 pub use run_with_metadata::RunWithMetadata;
 pub use success::Success;
 
 use crate::{error::*, serialization::*, value::MARKER_TINY_STRUCT};
 
-pub(crate) mod ack_failure;
 pub(crate) mod begin;
-pub(crate) mod commit;
 pub(crate) mod discard;
-pub(crate) mod discard_all;
 pub(crate) mod failure;
-pub(crate) mod goodbye;
 pub(crate) mod hello;
-pub(crate) mod ignored;
 pub(crate) mod init;
 pub(crate) mod pull;
-pub(crate) mod pull_all;
 pub(crate) mod record;
-pub(crate) mod reset;
-pub(crate) mod rollback;
 pub(crate) mod run;
 pub(crate) mod run_with_metadata;
 pub(crate) mod success;
@@ -117,7 +98,10 @@ impl Message {
             stream.read_exact(&mut u16_bytes).await?;
             chunk_len = u16::from_be_bytes(u16_bytes);
         }
-        Message::try_from(Arc::new(Mutex::new(bytes.freeze())))
+        let (message, remaining) = Message::deserialize(bytes)?;
+        debug_assert_eq!(remaining.len(), 0);
+
+        Ok(message)
     }
 
     pub fn into_chunks(self) -> SerializeResult<Vec<Bytes>> {
@@ -262,135 +246,5 @@ impl BoltStructure for Message {
             Message::Discard(_) => SIGNATURE_DISCARD,
             Message::Pull(_) => SIGNATURE_PULL,
         }
-    }
-}
-
-impl Marker for Message {
-    fn get_marker(&self) -> Result<u8> {
-        Ok(self.marker()?)
-    }
-}
-
-impl Signature for Message {
-    fn get_signature(&self) -> u8 {
-        self.signature()
-    }
-}
-
-impl Serialize for Message {}
-
-impl TryInto<Bytes> for Message {
-    type Error = Error;
-
-    fn try_into(self) -> Result<Bytes> {
-        match self {
-            Message::Init(init) => init.try_into(),
-            Message::Run(run) => run.try_into(),
-            Message::DiscardAll => DiscardAll.try_into(),
-            Message::PullAll => PullAll.try_into(),
-            Message::AckFailure => AckFailure.try_into(),
-            Message::Reset => Reset.try_into(),
-            Message::Record(record) => record.try_into(),
-            Message::Success(success) => success.try_into(),
-            Message::Failure(failure) => failure.try_into(),
-            Message::Ignored => Ignored.try_into(),
-            Message::Hello(hello) => hello.try_into(),
-            Message::Goodbye => Goodbye.try_into(),
-            Message::RunWithMetadata(run_with_metadata) => run_with_metadata.try_into(),
-            Message::Begin(begin) => begin.try_into(),
-            Message::Commit => Commit.try_into(),
-            Message::Rollback => Rollback.try_into(),
-            Message::Discard(discard) => discard.try_into(),
-            Message::Pull(pull) => pull.try_into(),
-        }
-    }
-}
-
-impl Deserialize for Message {}
-
-impl TryFrom<Arc<Mutex<Bytes>>> for Message {
-    type Error = Error;
-
-    fn try_from(input_arc: Arc<Mutex<Bytes>>) -> Result<Self> {
-        catch_unwind(move || {
-            let (marker, signature) = get_info_from_bytes(input_arc.lock().unwrap().deref_mut())?;
-
-            match signature {
-                init::SIGNATURE => {
-                    // Equal to hello::SIGNATURE, so we have to check for metadata.
-                    // INIT has 2 fields, while HELLO has 1.
-                    if marker == init::MARKER {
-                        Ok(Message::Init(Init::try_from(input_arc)?))
-                    } else {
-                        Ok(Message::Hello(Hello::try_from(input_arc)?))
-                    }
-                }
-                run::SIGNATURE => {
-                    // Equal to run_with_metadata::SIGNATURE, so we have to check for
-                    // metadata. RUN has 2 fields, while RUN_WITH_METADATA has 3.
-                    if marker == run::MARKER {
-                        Ok(Message::Run(Run::try_from(input_arc)?))
-                    } else {
-                        Ok(Message::RunWithMetadata(RunWithMetadata::try_from(
-                            input_arc,
-                        )?))
-                    }
-                }
-                discard_all::SIGNATURE => {
-                    // Equal to discard::SIGNATURE, so we have to check for metadata.
-                    // DISCARD_ALL has 0 fields, while DISCARD has 1.
-                    if marker == discard_all::MARKER {
-                        Ok(Message::DiscardAll)
-                    } else {
-                        Ok(Message::Discard(Discard::try_from(input_arc)?))
-                    }
-                }
-                pull_all::SIGNATURE => {
-                    // Equal to pull::SIGNATURE, so we have to check for metadata.
-                    // PULL_ALL has 0 fields, while PULL has 1.
-                    if marker == pull_all::MARKER {
-                        Ok(Message::PullAll)
-                    } else {
-                        Ok(Message::Pull(Pull::try_from(input_arc)?))
-                    }
-                }
-                ack_failure::SIGNATURE => Ok(Message::AckFailure),
-                reset::SIGNATURE => Ok(Message::Reset),
-                record::SIGNATURE => Ok(Message::Record(Record::try_from(input_arc)?)),
-                success::SIGNATURE => Ok(Message::Success(Success::try_from(input_arc)?)),
-                failure::SIGNATURE => Ok(Message::Failure(Failure::try_from(input_arc)?)),
-                ignored::SIGNATURE => Ok(Message::Ignored),
-                goodbye::SIGNATURE => Ok(Message::Goodbye),
-                begin::SIGNATURE => Ok(Message::Begin(Begin::try_from(input_arc)?)),
-                commit::SIGNATURE => Ok(Message::Commit),
-                rollback::SIGNATURE => Ok(Message::Rollback),
-                _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
-            }
-        })
-        .map_err(|_| DeserializationError::Panicked)?
-    }
-}
-
-impl TryInto<Vec<Bytes>> for Message {
-    type Error = Error;
-
-    fn try_into(self) -> Result<Vec<Bytes>> {
-        let bytes: Bytes = self.try_into_bytes()?;
-
-        // Big enough to hold all the chunks, plus a partial chunk, plus the message
-        // footer
-        let mut result: Vec<Bytes> = Vec::with_capacity(bytes.len() / CHUNK_SIZE + 2);
-        for slice in bytes.chunks(CHUNK_SIZE) {
-            // 16-bit size, then the chunk data
-            let mut chunk = BytesMut::with_capacity(mem::size_of::<u16>() + slice.len());
-            // Length of slice is at most CHUNK_SIZE, which can fit in a u16
-            chunk.put_u16(slice.len() as u16);
-            chunk.put(slice);
-            result.push(chunk.freeze());
-        }
-        // End message
-        result.push(Bytes::from_static(&[0, 0]));
-
-        Ok(result)
     }
 }

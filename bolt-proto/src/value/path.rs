@@ -2,11 +2,8 @@ use bolt_proto_derive::*;
 
 use crate::value::{Node, UnboundRelationship, SIGNATURE_PATH};
 
-pub(crate) const MARKER: u8 = 0xB3;
-pub(crate) const SIGNATURE: u8 = 0x50;
-
 #[bolt_structure(SIGNATURE_PATH)]
-#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Path {
     pub(crate) nodes: Vec<Node>,
     pub(crate) relationships: Vec<UnboundRelationship>,

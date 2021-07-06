@@ -2,11 +2,8 @@ use bolt_proto_derive::*;
 
 use crate::value::SIGNATURE_POINT_2D;
 
-pub(crate) const MARKER: u8 = 0xB3;
-pub(crate) const SIGNATURE: u8 = 0x58;
-
 #[bolt_structure(SIGNATURE_POINT_2D)]
-#[derive(Debug, Clone, PartialEq, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Point2D {
     pub(crate) srid: i32,
     pub(crate) x: f64,

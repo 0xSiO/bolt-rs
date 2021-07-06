@@ -7,7 +7,7 @@
 // http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative Commons,
 // PO Box 1866, Mountain View, CA 94042, USA.
 
-use std::{collections::VecDeque, convert::TryInto};
+use std::collections::VecDeque;
 
 use bytes::*;
 use futures_util::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
@@ -460,7 +460,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             #[cfg(test)]
             println!(">>> {:?}", message);
 
-            let chunks: Vec<Bytes> = message.clone().try_into()?;
+            let chunks = message.clone().into_chunks()?;
             for chunk in chunks {
                 self.stream.write_all(&chunk).await?;
             }

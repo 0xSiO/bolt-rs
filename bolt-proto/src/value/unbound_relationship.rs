@@ -4,11 +4,8 @@ use bolt_proto_derive::*;
 
 use crate::{value::SIGNATURE_UNBOUND_RELATIONSHIP, Value};
 
-pub(crate) const MARKER: u8 = 0xB3;
-pub(crate) const SIGNATURE: u8 = 0x72;
-
 #[bolt_structure(SIGNATURE_UNBOUND_RELATIONSHIP)]
-#[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UnboundRelationship {
     pub(crate) rel_identity: i64,
     pub(crate) rel_type: String,
