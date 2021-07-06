@@ -26,8 +26,7 @@ pub use run::Run;
 pub use run_with_metadata::RunWithMetadata;
 pub use success::Success;
 
-use crate::error::*;
-use crate::serialization::*;
+use crate::{error::*, serialization::*, value};
 
 pub(crate) mod ack_failure;
 pub(crate) mod begin;
@@ -47,6 +46,25 @@ pub(crate) mod rollback;
 pub(crate) mod run;
 pub(crate) mod run_with_metadata;
 pub(crate) mod success;
+
+pub(crate) const SIGNATURE_INIT: u8 = 0x01;
+pub(crate) const SIGNATURE_RUN: u8 = 0x10;
+pub(crate) const SIGNATURE_DISCARD_ALL: u8 = 0x2F;
+pub(crate) const SIGNATURE_PULL_ALL: u8 = 0x3F;
+pub(crate) const SIGNATURE_ACK_FAILURE: u8 = 0x0E;
+pub(crate) const SIGNATURE_RESET: u8 = 0x13;
+pub(crate) const SIGNATURE_RECORD: u8 = 0x71;
+pub(crate) const SIGNATURE_SUCCESS: u8 = 0x70;
+pub(crate) const SIGNATURE_FAILURE: u8 = 0x7F;
+pub(crate) const SIGNATURE_IGNORED: u8 = 0x7E;
+pub(crate) const SIGNATURE_HELLO: u8 = 0x01;
+pub(crate) const SIGNATURE_GOODBYE: u8 = 0x02;
+pub(crate) const SIGNATURE_RUN_WITH_METADATA: u8 = 0x10;
+pub(crate) const SIGNATURE_BEGIN: u8 = 0x11;
+pub(crate) const SIGNATURE_COMMIT: u8 = 0x12;
+pub(crate) const SIGNATURE_ROLLBACK: u8 = 0x13;
+pub(crate) const SIGNATURE_DISCARD: u8 = 0x2F;
+pub(crate) const SIGNATURE_PULL: u8 = 0x3F;
 
 // This is the default maximum chunk size in the official driver, minus header length
 const CHUNK_SIZE: usize = 16383 - mem::size_of::<u16>();
@@ -106,20 +124,20 @@ impl Marker for Message {
         match self {
             Message::Init(init) => init.get_marker(),
             Message::Run(run) => run.get_marker(),
-            Message::DiscardAll => DiscardAll.get_marker(),
-            Message::PullAll => PullAll.get_marker(),
-            Message::AckFailure => AckFailure.get_marker(),
-            Message::Reset => Reset.get_marker(),
+            Message::DiscardAll => Ok(value::MARKER_TINY_STRUCT | 0),
+            Message::PullAll => Ok(value::MARKER_TINY_STRUCT | 0),
+            Message::AckFailure => Ok(value::MARKER_TINY_STRUCT | 0),
+            Message::Reset => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::Record(record) => record.get_marker(),
             Message::Success(success) => success.get_marker(),
             Message::Failure(failure) => failure.get_marker(),
-            Message::Ignored => Ignored.get_marker(),
+            Message::Ignored => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::Hello(hello) => hello.get_marker(),
-            Message::Goodbye => Goodbye.get_marker(),
+            Message::Goodbye => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_marker(),
             Message::Begin(begin) => begin.get_marker(),
-            Message::Commit => Commit.get_marker(),
-            Message::Rollback => Rollback.get_marker(),
+            Message::Commit => Ok(value::MARKER_TINY_STRUCT | 0),
+            Message::Rollback => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::Discard(discard) => discard.get_marker(),
             Message::Pull(pull) => pull.get_marker(),
         }
@@ -129,24 +147,24 @@ impl Marker for Message {
 impl Signature for Message {
     fn get_signature(&self) -> u8 {
         match self {
-            Message::Init(init) => init.get_signature(),
-            Message::Run(run) => run.get_signature(),
-            Message::DiscardAll => DiscardAll.get_signature(),
-            Message::PullAll => PullAll.get_signature(),
-            Message::AckFailure => AckFailure.get_signature(),
-            Message::Reset => Reset.get_signature(),
-            Message::Record(record) => record.get_signature(),
-            Message::Success(success) => success.get_signature(),
-            Message::Failure(failure) => failure.get_signature(),
-            Message::Ignored => Ignored.get_signature(),
-            Message::Hello(hello) => hello.get_signature(),
-            Message::Goodbye => Goodbye.get_signature(),
-            Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_signature(),
-            Message::Begin(begin) => begin.get_signature(),
-            Message::Commit => Commit.get_signature(),
-            Message::Rollback => Rollback.get_signature(),
-            Message::Discard(discard) => discard.get_signature(),
-            Message::Pull(pull) => pull.get_signature(),
+            Message::Init(init) => SIGNATURE_INIT,
+            Message::Run(run) => SIGNATURE_RUN,
+            Message::DiscardAll => SIGNATURE_DISCARD_ALL,
+            Message::PullAll => SIGNATURE_PULL_ALL,
+            Message::AckFailure => SIGNATURE_ACK_FAILURE,
+            Message::Reset => SIGNATURE_RESET,
+            Message::Record(record) => SIGNATURE_RECORD,
+            Message::Success(success) => SIGNATURE_SUCCESS,
+            Message::Failure(failure) => SIGNATURE_FAILURE,
+            Message::Ignored => SIGNATURE_IGNORED,
+            Message::Hello(hello) => SIGNATURE_HELLO,
+            Message::Goodbye => SIGNATURE_GOODBYE,
+            Message::RunWithMetadata(run_with_metadata) => SIGNATURE_RUN_WITH_METADATA,
+            Message::Begin(begin) => SIGNATURE_BEGIN,
+            Message::Commit => SIGNATURE_COMMIT,
+            Message::Rollback => SIGNATURE_ROLLBACK,
+            Message::Discard(discard) => SIGNATURE_DISCARD,
+            Message::Pull(pull) => SIGNATURE_PULL,
         }
     }
 }
