@@ -26,7 +26,7 @@ pub use run::Run;
 pub use run_with_metadata::RunWithMetadata;
 pub use success::Success;
 
-use crate::{error::*, serialization::*, value};
+use crate::{error::*, serialization::*, value::MARKER_TINY_STRUCT};
 
 pub(crate) mod ack_failure;
 pub(crate) mod begin;
@@ -124,27 +124,32 @@ impl BoltValue for Message {
         match self {
             Message::Init(init) => init.marker(),
             Message::Run(run) => run.marker(),
-            Message::DiscardAll => Ok(value::MARKER_TINY_STRUCT | 0),
-            Message::PullAll => Ok(value::MARKER_TINY_STRUCT | 0),
-            Message::AckFailure => Ok(value::MARKER_TINY_STRUCT | 0),
-            Message::Reset => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::Record(record) => record.marker(),
             Message::Success(success) => success.marker(),
             Message::Failure(failure) => failure.marker(),
-            Message::Ignored => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::Hello(hello) => hello.marker(),
-            Message::Goodbye => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::RunWithMetadata(run_with_metadata) => run_with_metadata.marker(),
             Message::Begin(begin) => begin.marker(),
-            Message::Commit => Ok(value::MARKER_TINY_STRUCT | 0),
-            Message::Rollback => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::Discard(discard) => discard.marker(),
             Message::Pull(pull) => pull.marker(),
+            _ => Ok(MARKER_TINY_STRUCT | 0),
         }
     }
 
     fn serialize(self) -> SerializeResult<Bytes> {
-        todo!()
+        match self {
+            Message::Init(init) => init.serialize(),
+            Message::Run(run) => run.serialize(),
+            Message::Record(record) => record.serialize(),
+            Message::Success(success) => success.serialize(),
+            Message::Failure(failure) => failure.serialize(),
+            Message::Hello(hello) => hello.serialize(),
+            Message::RunWithMetadata(run_with_metadata) => run_with_metadata.serialize(),
+            Message::Begin(begin) => begin.serialize(),
+            Message::Discard(discard) => discard.serialize(),
+            Message::Pull(pull) => pull.serialize(),
+            other => Ok(Bytes::from(vec![other.marker()?, other.signature()])),
+        }
     }
 
     fn deserialize<B: bytes::Buf + std::panic::UnwindSafe>(
