@@ -2,11 +2,12 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
-use crate::{impl_message_with_metadata, impl_try_from_message, Value};
+use crate::{impl_message_with_metadata, impl_try_from_message, message::SIGNATURE_FAILURE, Value};
 
 pub(crate) const MARKER: u8 = 0xB1;
 pub(crate) const SIGNATURE: u8 = 0x7F;
 
+#[bolt_structure(SIGNATURE_FAILURE)]
 #[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Failure {
     pub(crate) metadata: HashMap<String, Value>,

@@ -119,28 +119,44 @@ impl Message {
     }
 }
 
-impl Marker for Message {
-    fn get_marker(&self) -> Result<u8> {
+impl BoltValue for Message {
+    fn marker(&self) -> MarkerResult<u8> {
         match self {
-            Message::Init(init) => init.get_marker(),
-            Message::Run(run) => run.get_marker(),
+            Message::Init(init) => init.marker(),
+            Message::Run(run) => run.marker(),
             Message::DiscardAll => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::PullAll => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::AckFailure => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::Reset => Ok(value::MARKER_TINY_STRUCT | 0),
-            Message::Record(record) => record.get_marker(),
-            Message::Success(success) => success.get_marker(),
-            Message::Failure(failure) => failure.get_marker(),
+            Message::Record(record) => record.marker(),
+            Message::Success(success) => success.marker(),
+            Message::Failure(failure) => failure.marker(),
             Message::Ignored => Ok(value::MARKER_TINY_STRUCT | 0),
-            Message::Hello(hello) => hello.get_marker(),
+            Message::Hello(hello) => hello.marker(),
             Message::Goodbye => Ok(value::MARKER_TINY_STRUCT | 0),
-            Message::RunWithMetadata(run_with_metadata) => run_with_metadata.get_marker(),
-            Message::Begin(begin) => begin.get_marker(),
+            Message::RunWithMetadata(run_with_metadata) => run_with_metadata.marker(),
+            Message::Begin(begin) => begin.marker(),
             Message::Commit => Ok(value::MARKER_TINY_STRUCT | 0),
             Message::Rollback => Ok(value::MARKER_TINY_STRUCT | 0),
-            Message::Discard(discard) => discard.get_marker(),
-            Message::Pull(pull) => pull.get_marker(),
+            Message::Discard(discard) => discard.marker(),
+            Message::Pull(pull) => pull.marker(),
         }
+    }
+
+    fn serialize(self) -> SerializeResult<Bytes> {
+        todo!()
+    }
+
+    fn deserialize<B: bytes::Buf + std::panic::UnwindSafe>(
+        bytes: B,
+    ) -> DeserializeResult<(Self, B)> {
+        todo!()
+    }
+}
+
+impl Marker for Message {
+    fn get_marker(&self) -> Result<u8> {
+        Ok(self.marker()?)
     }
 }
 
