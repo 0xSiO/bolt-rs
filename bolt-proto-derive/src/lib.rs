@@ -3,8 +3,7 @@
 use proc_macro::TokenStream;
 
 use syn::{
-    AttributeArgs, Data, DataStruct, Fields, Generics, Ident, ItemStruct, Lit, NestedMeta,
-    WhereClause,
+    AttributeArgs, Data, DataStruct, Fields, Generics, Ident, ItemStruct, NestedMeta, WhereClause,
 };
 
 use quote::{format_ident, quote};
@@ -27,7 +26,7 @@ fn get_struct_info(ast: &syn::DeriveInput) -> (&Ident, &Generics, &Option<WhereC
 fn get_struct_info_new(
     structure: ItemStruct,
     args: AttributeArgs,
-) -> (Ident, Generics, Option<WhereClause>, Fields, u8, u8) {
+) -> (Ident, Generics, Option<WhereClause>, Fields, u8, NestedMeta) {
     let name = structure.ident;
     let type_args = structure.generics;
     let where_clause = type_args.where_clause.clone();
@@ -40,12 +39,7 @@ fn get_struct_info_new(
         _ => panic!("struct has too many fields"),
     };
 
-    let signature = match args.into_iter().next().expect("signature is required") {
-        NestedMeta::Lit(Lit::Int(int)) => int
-            .base10_parse::<u8>()
-            .expect("couldn't parse signature byte"),
-        other => panic!("invalid signature byte: {:?}", other),
-    };
+    let signature = args.into_iter().next().expect("signature is required");
 
     (name, type_args, where_clause, fields, marker, signature)
 }

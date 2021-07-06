@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
-use crate::Value;
+use crate::{value::SIGNATURE_NODE, Value};
 
 pub(crate) const MARKER: u8 = 0xB3;
 pub(crate) const SIGNATURE: u8 = 0x4E;
 
-#[bolt_structure(0x4E)]
+#[bolt_structure(SIGNATURE_NODE)]
 #[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Node {
     pub(crate) node_identity: i64,

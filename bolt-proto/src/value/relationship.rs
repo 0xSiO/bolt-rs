@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use bolt_proto_derive::*;
 
-use crate::Value;
+use crate::{value::SIGNATURE_RELATIONSHIP, Value};
 
 pub(crate) const MARKER: u8 = 0xB5;
 pub(crate) const SIGNATURE: u8 = 0x52;
 
-#[bolt_structure(0x52)]
+#[bolt_structure(SIGNATURE_RELATIONSHIP)]
 #[derive(Debug, Clone, Eq, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Relationship {
     pub(crate) rel_identity: i64,

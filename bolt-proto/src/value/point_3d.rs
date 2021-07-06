@@ -1,9 +1,11 @@
 use bolt_proto_derive::*;
 
+use crate::value::SIGNATURE_POINT_3D;
+
 pub(crate) const MARKER: u8 = 0xB4;
 pub(crate) const SIGNATURE: u8 = 0x59;
 
-#[bolt_structure(0x59)]
+#[bolt_structure(SIGNATURE_POINT_3D)]
 #[derive(Debug, Clone, PartialEq, Signature, Marker, Serialize, Deserialize)]
 pub struct Point3D {
     pub(crate) srid: i32,
@@ -31,107 +33,5 @@ impl Point3D {
 
     pub fn z(&self) -> f64 {
         self.z
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::convert::TryFrom;
-    use std::sync::{Arc, Mutex};
-
-    use bytes::Bytes;
-
-    use crate::serialization::*;
-    use crate::value::MARKER_FLOAT;
-
-    use super::*;
-
-    fn get_point() -> Point3D {
-        Point3D::new(7, 1234.56543, 5_421_394.569_325_1, 1.9287)
-    }
-
-    #[test]
-    fn get_marker() {
-        let point = get_point();
-        assert_eq!(point.get_marker().unwrap(), MARKER);
-    }
-
-    #[test]
-    fn try_into_bytes() {
-        let point = get_point();
-        assert_eq!(
-            point.try_into_bytes().unwrap(),
-            Bytes::from_static(&[
-                MARKER,
-                SIGNATURE,
-                0x07,
-                MARKER_FLOAT,
-                0x40,
-                0x93,
-                0x4A,
-                0x43,
-                0x00,
-                0x14,
-                0xF8,
-                0xB6,
-                MARKER_FLOAT,
-                0x41,
-                0x54,
-                0xAE,
-                0x54,
-                0xA4,
-                0x6F,
-                0xD2,
-                0x8B,
-                MARKER_FLOAT,
-                0x3F,
-                0xFE,
-                0xDB,
-                0xF4,
-                0x87,
-                0xFC,
-                0xB9,
-                0x24
-            ])
-        );
-    }
-
-    #[test]
-    fn try_from_bytes() {
-        let point = get_point();
-        let point_bytes = &[
-            0x07,
-            MARKER_FLOAT,
-            0x40,
-            0x93,
-            0x4A,
-            0x43,
-            0x00,
-            0x14,
-            0xF8,
-            0xB6,
-            MARKER_FLOAT,
-            0x41,
-            0x54,
-            0xAE,
-            0x54,
-            0xA4,
-            0x6F,
-            0xD2,
-            0x8B,
-            MARKER_FLOAT,
-            0x3F,
-            0xFE,
-            0xDB,
-            0xF4,
-            0x87,
-            0xFC,
-            0xB9,
-            0x24,
-        ];
-        assert_eq!(
-            Point3D::try_from(Arc::new(Mutex::new(Bytes::from_static(point_bytes)))).unwrap(),
-            point
-        );
     }
 }
