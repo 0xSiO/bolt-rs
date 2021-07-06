@@ -4,15 +4,13 @@ use thiserror::Error;
 
 use crate::{Message, Value};
 
-pub type MarkerResult<T> = std::result::Result<T, MarkerError>;
+pub(crate) type MarkerResult<T> = std::result::Result<T, MarkerError>;
 pub type ConversionResult<T> = std::result::Result<T, ConversionError>;
 pub type SerializeResult<T> = std::result::Result<T, SerializationError>;
 pub type DeserializeResult<T> = std::result::Result<T, DeserializationError>;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error(transparent)]
-    MarkerError(#[from] MarkerError),
     #[error(transparent)]
     ConversionError(#[from] ConversionError),
     #[error(transparent)]
