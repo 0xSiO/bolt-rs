@@ -147,7 +147,7 @@ impl BoltValue for Message {
             Message::Begin(begin) => begin.marker(),
             Message::Discard(discard) => discard.marker(),
             Message::Pull(pull) => pull.marker(),
-            _ => Ok(MARKER_TINY_STRUCT | 0),
+            _ => Ok(MARKER_TINY_STRUCT),
         }
     }
 
@@ -218,7 +218,7 @@ impl BoltValue for Message {
                 SIGNATURE_BEGIN => deserialize_struct!(Begin, bytes),
                 SIGNATURE_COMMIT => Ok((Message::Commit, bytes)),
                 SIGNATURE_ROLLBACK => Ok((Message::Rollback, bytes)),
-                _ => Err(DeserializationError::InvalidSignatureByte(signature).into()),
+                _ => Err(DeserializationError::InvalidSignatureByte(signature)),
             }
         })
         .map_err(|_| DeserializationError::Panicked)?
