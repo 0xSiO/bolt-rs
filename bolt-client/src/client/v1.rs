@@ -562,7 +562,11 @@ pub(crate) mod tests {
         client.send_message(Message::Begin(begin)).await.unwrap();
         assert!(matches!(
             client.read_message().await,
-            Err(Error::IOError(_))
+            Err(Error::ProtocolError(
+                bolt_proto::error::Error::DeserializationError(
+                    bolt_proto::error::DeserializationError::IoError(_)
+                )
+            ))
         ));
     }
 }
