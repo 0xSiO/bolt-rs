@@ -535,6 +535,59 @@ pub(crate) mod tests {
         assert_eq!(client.server_state(), Streaming);
     }
 
+    // When pipelining, the RESET at the end takes effect retroactively, making all previous
+    // messages return exactly 1 IGNORED
+    #[tokio::test]
+    async fn reset_internals_pipelined() {
+        let client = get_initialized_client(V1_0).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+
+        let messages = client
+            .pipeline(vec![
+                Message::Run(Run::new(String::from("RETURN 1;"), Default::default())),
+                Message::PullAll,
+                Message::Run(Run::new(String::from("RETURN 1;"), Default::default())),
+                Message::PullAll,
+                Message::Reset,
+            ])
+            .await
+            .unwrap();
+
+        assert_eq!(
+            messages,
+            vec![
+                Message::Ignored,
+                Message::Ignored,
+                Message::Ignored,
+                Message::Ignored,
+                Message::Success(Success::new(Default::default()))
+            ]
+        );
+    }
+
+    // When sending individual messages, RESET does not take effect for results that are already in
+    // our socket buffer. Instead, we use state-tracking logic to return IGNORED for responses when
+    // in the INTERRUPTED state.
+    #[tokio::test]
+    async fn reset_internals() {
+        let client = get_initialized_client(V1_0).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+
+        client.run("RETURN 1;", None).await.unwrap();
+        client.send_message(Message::PullAll).await.unwrap();
+        client.send_message(Message::Reset).await.unwrap();
+        assert_eq!(client.server_state(), Interrupted);
+
+        // Ignored RECORD
+        assert_eq!(client.read_message().await.unwrap(), Message::Ignored);
+        // Ignored PULL_ALL summary
+        assert_eq!(client.read_message().await.unwrap(), Message::Ignored);
+        // RESET success
+        Success::try_from(client.read_message().await.unwrap()).unwrap();
+    }
+
     #[tokio::test]
     async fn ignored() {
         let client = get_initialized_client(V1_0).await;

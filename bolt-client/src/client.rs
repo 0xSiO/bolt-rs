@@ -289,44 +289,55 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             }
 
             // INTERRUPTED
-            // TODO: Should we be matching the response to Ignored, or can it be anything?
-            (Interrupted, Some(Message::Run(_)), Message::Ignored) => {
+            (Interrupted, Some(Message::Run(_)), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::RunWithMetadata(_)), Message::Ignored) => {
+            (Interrupted, Some(Message::RunWithMetadata(_)), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::PullAll), Message::Ignored) => {
+            (Interrupted, Some(Message::PullAll), Message::Record(_)) => {
+                self.server_state = Interrupted;
+                // Put the PULL_ALL message back so we can keep consuming records
+                self.sent_queue.push_front(Message::PullAll);
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::PullAll), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::Pull(_)), Message::Ignored) => {
+            (Interrupted, Some(Message::Pull(pull)), Message::Record(_)) => {
+                self.server_state = Interrupted;
+                // Put the PULL message back so we can keep consuming records
+                self.sent_queue.push_front(Message::Pull(pull));
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::Pull(_)), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::DiscardAll), Message::Ignored) => {
+            (Interrupted, Some(Message::DiscardAll), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::Discard(_)), Message::Ignored) => {
+            (Interrupted, Some(Message::Discard(_)), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::Begin(_)), Message::Ignored) => {
+            (Interrupted, Some(Message::Begin(_)), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::Commit), Message::Ignored) => {
+            (Interrupted, Some(Message::Commit), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::Rollback), Message::Ignored) => {
+            (Interrupted, Some(Message::Rollback), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
-            (Interrupted, Some(Message::AckFailure), Message::Ignored) => {
+            (Interrupted, Some(Message::AckFailure), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
@@ -467,6 +478,13 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
             for chunk in chunks {
                 self.stream.write_all(&chunk).await?;
+            }
+
+            // Immediate state changes
+            match message {
+                Message::Reset => self.server_state = Interrupted,
+                Message::Goodbye => self.server_state = Disconnected,
+                _ => {}
             }
         }
         self.stream.flush().await?;
