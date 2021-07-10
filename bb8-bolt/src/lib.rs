@@ -17,14 +17,14 @@ use bolt_proto::{error::Error as ProtocolError, message, version::*, Message, Se
 pub use bolt_client;
 pub use bolt_proto;
 
-pub struct BoltConnectionManager {
+pub struct Manager {
     addr: SocketAddr,
     domain: Option<String>,
     preferred_versions: [u32; 4],
     metadata: HashMap<String, Value>,
 }
 
-impl BoltConnectionManager {
+impl Manager {
     pub async fn new(
         addr: impl ToSocketAddrs,
         domain: Option<String>,
@@ -63,7 +63,7 @@ pub enum Error {
 }
 
 #[async_trait]
-impl ManageConnection for BoltConnectionManager {
+impl ManageConnection for Manager {
     type Connection = Client<Compat<BufStream<Stream>>>;
     type Error = Error;
 
@@ -126,17 +126,14 @@ mod tests {
 
     use super::*;
 
-    async fn get_connection_manager(
-        preferred_versions: [u32; 4],
-        succeed: bool,
-    ) -> BoltConnectionManager {
+    async fn get_connection_manager(preferred_versions: [u32; 4], succeed: bool) -> Manager {
         let credentials = if succeed {
             env::var("BOLT_TEST_PASSWORD").unwrap()
         } else {
             String::from("invalid")
         };
 
-        BoltConnectionManager::new(
+        Manager::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok(),
             preferred_versions,
