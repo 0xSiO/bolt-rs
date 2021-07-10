@@ -7,9 +7,6 @@ pub type ConnectionResult<T> = std::result::Result<T, ConnectionError>;
 // TODO: Break into more specific error types
 #[derive(Debug, Error)]
 pub enum Error {
-    #[cfg(feature = "tokio-stream")]
-    #[error("invalid DNS name: {0}")]
-    InvalidDNSName(String),
     #[error(transparent)]
     IOError(#[from] std::io::Error),
     #[error("handshake with server failed for versions [{}]", format_versions(.0))]
@@ -41,8 +38,6 @@ response: {response:?}"
 pub enum ConnectionError {
     #[error("handshake with server failed for versions [{}]", format_versions(.0))]
     HandshakeFailed([u32; 4]),
-    #[error("invalid DNS name: {0}")]
-    InvalidDNSName(String),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
 }

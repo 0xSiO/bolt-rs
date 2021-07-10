@@ -13,8 +13,6 @@ use tokio::{
 };
 use tokio_rustls::{client::TlsStream, rustls::ClientConfig, webpki::DNSNameRef, TlsConnector};
 
-use crate::error::*;
-
 /// A convenient wrapper around a [`TcpStream`](tokio::net::TcpStream) or a
 /// [`TlsStream`](tokio_rustls::client::TlsStream).
 #[cfg_attr(docsrs, doc(cfg(feature = "tokio-stream")))]
@@ -39,13 +37,8 @@ impl Stream {
                 config
                     .root_store
                     .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
-                let dns_name_ref =
-                    DNSNameRef::try_from_ascii_str(domain.as_ref()).map_err(|_| {
-                        io::Error::new(
-                            io::ErrorKind::InvalidInput,
-                            ConnectionError::InvalidDNSName(domain.as_ref().to_string()),
-                        )
-                    })?;
+                let dns_name_ref = DNSNameRef::try_from_ascii_str(domain.as_ref())
+                    .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, domain.as_ref()))?;
                 let stream = TcpStream::connect(addr).await?;
                 Ok(Stream::SecureTcp(Box::new(
                     TlsConnector::from(Arc::new(config))
