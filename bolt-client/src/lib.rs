@@ -42,6 +42,7 @@
 //!             ("principal", &env::var("BOLT_TEST_USERNAME")?),
 //!             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
 //!         ]))).await?;
+//! #   Success::try_from(response.clone()).unwrap();
 //!     assert!(Success::try_from(response).is_ok());
 //!
 //!     // Run a query on the server
@@ -49,13 +50,14 @@
 //!
 //!     // Successful responses will include a SUCCESS message with related metadata
 //!     // Consuming these messages is optional and will be skipped for the rest of the example
+//! #   Success::try_from(response.clone()).unwrap();
 //!     assert!(Success::try_from(response).is_ok());
 //!
 //!     // Use PULL to retrieve results of the query, organized into RECORD messages
 //!     // We get a (Message, Vec<Record>) returned from a PULL
 //!     let pull_meta = Metadata::from_iter(vec![("n", 1)]);
 //!     let (response, records) = client.pull(Some(pull_meta.clone())).await?;
-//! #   assert!(Success::try_from(response).is_ok());
+//! #   Success::try_from(response).unwrap();
 //!
 //!     assert_eq!(records[0].fields(), &[Value::from(1)]);
 //! #    
@@ -72,7 +74,7 @@
 //!     // Grab a node from the database and convert it to a native type
 //!     client.run_with_metadata("MATCH (rust:Language) RETURN rust;", None, None).await?;
 //!     let (response, records) = client.pull(Some(pull_meta.clone())).await?;
-//! #   assert!(Success::try_from(response).is_ok());
+//! #   Success::try_from(response).unwrap();
 //!     let node = Node::try_from(records[0].fields()[0].clone())?;
 //!
 //!     // Access properties from returned values
@@ -120,14 +122,14 @@
 //! #             ("principal", &env::var("BOLT_TEST_USERNAME")?),
 //! #             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
 //! #         ]))).await?;
-//! #     assert!(Success::try_from(response).is_ok());
+//! #     Success::try_from(response).unwrap();
 //! #
 //! #     let response = client.run_with_metadata("RETURN 1 as num;", None, None).await?;
-//! #     assert!(Success::try_from(response).is_ok());
+//! #     Success::try_from(response).unwrap();
 //!
 //! // PULL_ALL instead of PULL
 //! let (response, records) = client.pull_all().await?;
-//! #     assert!(Success::try_from(response).is_ok());
+//! #     Success::try_from(response).unwrap();
 //! #
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //! #     client.run_with_metadata("MATCH (n {test: 'doctest-v3'}) DETACH DELETE n;", None, None).await?;
@@ -141,7 +143,7 @@
 //! #
 //! #     client.run_with_metadata("MATCH (c:C {test: 'doctest-v3'}) RETURN c;", None, None).await?;
 //! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
-//! #     assert!(Success::try_from(response).is_ok());
+//! #     Success::try_from(response).unwrap();
 //! #     let node = Node::try_from(records[0].fields()[0].clone())?;
 //! #     assert_eq!(node.labels(), &[String::from("C")]);
 //! #     assert_eq!(node.properties(),
@@ -183,15 +185,15 @@
 //!         ("principal", &env::var("BOLT_TEST_USERNAME")?),
 //!         ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
 //!     ])).await?;
-//! #     assert!(Success::try_from(response).is_ok());
+//! #     Success::try_from(response).unwrap();
 //!
 //! // Instead of `run_with_metadata`, we call `run`, and there is no third parameter for metadata.
 //! let response = client.run("RETURN 1 as num;", None).await?;
-//! #     assert!(Success::try_from(response).is_ok());
+//! #     Success::try_from(response).unwrap();
 //!
 //! // We also use Client::pull_all here.
 //! let (response, records) = client.pull_all().await?;
-//! #     assert!(Success::try_from(response).is_ok());
+//! #     Success::try_from(response).unwrap();
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //! #    
 //! #     client.run("MATCH (n {test: 'doctest-v2-v1'}) DETACH DELETE n;", None).await?;
@@ -204,7 +206,7 @@
 //! #     client.pull_all().await?;
 //! #     client.run("MATCH (rust:Language {test: 'doctest-v2-v1'}) RETURN rust;", None).await?;
 //! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
-//! #     assert!(Success::try_from(response).is_ok());
+//! #     Success::try_from(response).unwrap();
 //! #    
 //! #     let node = Node::try_from(records[0].fields()[0].clone())?;
 //! #     assert_eq!(node.labels(), &["Language".to_string()]);

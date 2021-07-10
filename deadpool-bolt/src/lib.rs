@@ -226,7 +226,9 @@ mod tests {
                     continue;
                 }
                 Err(Error::ClientInitFailed(_)) => {
-                    // Ok
+                    // Test passed. We only check the first compatible version since sending too
+                    // many invalid credentials will cause us to get rate-limited.
+                    return;
                 }
                 Err(other) => panic!("{}", other),
             }
