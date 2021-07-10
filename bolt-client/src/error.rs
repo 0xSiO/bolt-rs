@@ -10,9 +10,15 @@ pub enum Error {
     #[error(transparent)]
     ConnectionError(#[from] ConnectionError),
     #[error(transparent)]
-    CommunicationError(#[from] CommunicationError),
+    CommunicationError(Box<CommunicationError>),
     #[error(transparent)]
     ProtocolError(#[from] ProtocolError),
+}
+
+impl From<CommunicationError> for Error {
+    fn from(error: CommunicationError) -> Self {
+        Error::CommunicationError(Box::new(error))
+    }
 }
 
 #[derive(Debug, Error)]

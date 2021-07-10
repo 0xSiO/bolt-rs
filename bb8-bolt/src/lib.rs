@@ -35,7 +35,7 @@ impl BoltConnectionManager {
             addr: lookup_host(addr)
                 .await?
                 .next()
-                .ok_or(io::Error::from(io::ErrorKind::AddrNotAvailable))?,
+                .ok_or_else(|| io::Error::from(io::ErrorKind::AddrNotAvailable))?,
             domain,
             preferred_versions,
             metadata: metadata
