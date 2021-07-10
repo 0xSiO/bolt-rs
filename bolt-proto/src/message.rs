@@ -168,7 +168,8 @@ impl BoltValue for Message {
 
     fn deserialize<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Self, B)> {
         catch_unwind(move || {
-            let (_, size, signature) = get_structure_info(&mut bytes)?;
+            let marker = bytes.get_u8();
+            let (size, signature) = get_structure_info(marker, &mut bytes)?;
 
             match signature {
                 SIGNATURE_INIT => {

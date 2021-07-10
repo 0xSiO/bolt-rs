@@ -515,7 +515,7 @@ impl BoltValue for Value {
                     if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker)
                         || matches!(marker, MARKER_SMALL_STRUCT | MARKER_MEDIUM_STRUCT) =>
                 {
-                    deserialize_structure(bytes)
+                    deserialize_structure(marker, bytes)
                 }
                 _ => Err(DeserializationError::InvalidMarkerByte(marker)),
             }
@@ -544,9 +544,12 @@ macro_rules! deserialize_variant {
     }};
 }
 
-fn deserialize_structure<B: Buf + UnwindSafe>(mut bytes: B) -> DeserializeResult<(Value, B)> {
-    // FIXME: There could be a length after the marker that we're skipping here
-    let signature = bytes.get_u8();
+fn deserialize_structure<B: Buf + UnwindSafe>(
+    marker: u8,
+    mut bytes: B,
+) -> DeserializeResult<(Value, B)> {
+    let (_, signature) = get_structure_info(marker, &mut bytes)?;
+
     match signature {
         SIGNATURE_NODE => deserialize_struct!(Node, bytes),
         SIGNATURE_RELATIONSHIP => deserialize_struct!(Relationship, bytes),

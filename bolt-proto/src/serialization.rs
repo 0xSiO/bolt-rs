@@ -19,9 +19,11 @@ pub(crate) trait BoltStructure: BoltValue {
     fn signature(&self) -> u8;
 }
 
-/// Returns marker, size, and signature. Might panic - use this inside a catch_unwind block
-pub(crate) fn get_structure_info(bytes: &mut impl Buf) -> DeserializeResult<(u8, usize, u8)> {
-    let marker = bytes.get_u8();
+/// Returns size and signature. Might panic - use this inside a catch_unwind block
+pub(crate) fn get_structure_info(
+    marker: u8,
+    bytes: &mut impl Buf,
+) -> DeserializeResult<(usize, u8)> {
     let size = match marker {
         marker if (MARKER_TINY_STRUCT..=(MARKER_TINY_STRUCT | 0x0F)).contains(&marker) => {
             0x0F & marker as usize
@@ -31,5 +33,5 @@ pub(crate) fn get_structure_info(bytes: &mut impl Buf) -> DeserializeResult<(u8,
         _ => return Err(DeserializationError::InvalidMarkerByte(marker)),
     };
     let signature = bytes.get_u8();
-    Ok((marker, size, signature))
+    Ok((size, signature))
 }
