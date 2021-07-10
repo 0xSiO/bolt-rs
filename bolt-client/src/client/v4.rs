@@ -1,8 +1,11 @@
-use bolt_client_macros::*;
-use bolt_proto::{message::*, Message};
+use bolt_client_macros::bolt_version;
+use bolt_proto::{
+    message::{Discard, Pull, Record},
+    Message,
+};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
-use crate::{error::*, Client, Metadata};
+use crate::{error::CommunicationResult, Client, Metadata};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send a `DISCARD` message to the server.
@@ -16,7 +19,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
     ///   available
     #[bolt_version(4, 4.1)]
-    pub async fn discard(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+    pub async fn discard(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let discard_msg = Discard::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Discard(discard_msg)).await?;
         self.read_message().await
@@ -33,7 +36,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
     ///   available or if retrieval fails
     #[bolt_version(4, 4.1)]
-    pub async fn pull(&mut self, metadata: Option<Metadata>) -> Result<(Message, Vec<Record>)> {
+    pub async fn pull(
+        &mut self,
+        metadata: Option<Metadata>,
+    ) -> CommunicationResult<(Message, Vec<Record>)> {
         let pull_msg = Pull::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Pull(pull_msg)).await?;
         let mut records = vec![];
@@ -56,10 +62,9 @@ mod tests {
     use std::convert::TryFrom;
     use std::iter::FromIterator;
 
-    use bolt_proto::{value::*, version::*, ServerState::*};
+    use bolt_proto::{message::*, value::*, version::*, ServerState::*};
 
-    use crate::client::v1::tests::*;
-    use crate::skip_if_handshake_failed;
+    use crate::{client::v1::tests::*, error::CommunicationError, skip_if_handshake_failed};
 
     use super::*;
 
@@ -317,7 +322,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.commit().await,
-            Err(Error::InvalidState { state: Ready, .. })
+            Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -382,7 +387,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.rollback().await,
-            Err(Error::InvalidState { state: Ready, .. })
+            Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 }

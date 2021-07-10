@@ -52,7 +52,7 @@ pub fn bolt_version(attr_args: TokenStream, item: TokenStream) -> TokenStream {
             if [#(#versions),*].contains(&self.version) {
                 #function_body
             } else {
-                Err(crate::error::Error::UnsupportedOperation(self.version))
+                Err(crate::error::CommunicationError::UnsupportedOperation(self.version))
             }
         }
     )

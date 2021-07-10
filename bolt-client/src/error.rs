@@ -1,8 +1,9 @@
-use bolt_proto::version::*;
+use bolt_proto::{error::Error as ProtocolError, version::*, Message, ServerState};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 pub type ConnectionResult<T> = std::result::Result<T, ConnectionError>;
+pub type CommunicationResult<T> = std::result::Result<T, CommunicationError>;
 
 // TODO: Break into more specific error types
 #[derive(Debug, Error)]
@@ -31,6 +32,8 @@ response: {response:?}"
     #[error(transparent)]
     ConnectionError(#[from] ConnectionError),
     #[error(transparent)]
+    CommunicationError(#[from] CommunicationError),
+    #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
 }
 
@@ -38,6 +41,31 @@ response: {response:?}"
 pub enum ConnectionError {
     #[error("handshake with server failed for versions [{}]", format_versions(.0))]
     HandshakeFailed([u32; 4]),
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum CommunicationError {
+    #[error(
+        "server gave unexpected response while in {state:?} state.
+request: {request:?}
+response: {response:?}"
+    )]
+    InvalidResponse {
+        state: ServerState,
+        request: Option<Message>,
+        response: Message,
+    },
+    #[error("unsupported operation for server in {state:?} state: {message:?}")]
+    InvalidState {
+        state: ServerState,
+        message: Message,
+    },
+    #[error("unsupported operation for client with version = {}", format_version(*.0))]
+    UnsupportedOperation(u32),
+    #[error(transparent)]
+    ProtocolError(#[from] ProtocolError),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
 }

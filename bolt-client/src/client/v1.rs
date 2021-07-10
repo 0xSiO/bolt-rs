@@ -2,7 +2,7 @@ use bolt_client_macros::*;
 use bolt_proto::{message::*, Message};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
-use crate::{error::*, Client, Metadata, Params};
+use crate::{error::CommunicationResult, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send an `INIT` message to the server.
@@ -26,7 +26,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         &mut self,
         client_name: impl Into<String>,
         auth_token: Metadata,
-    ) -> Result<Message> {
+    ) -> CommunicationResult<Message> {
         let init_msg = Init::new(client_name.into(), auth_token.value);
         self.send_message(Message::Init(init_msg)).await?;
         self.read_message().await
@@ -68,7 +68,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         &mut self,
         statement: impl Into<String>,
         parameters: Option<Params>,
-    ) -> Result<Message> {
+    ) -> CommunicationResult<Message> {
         let run_msg = Run::new(statement.into(), parameters.unwrap_or_default().value);
         self.send_message(Message::Run(run_msg)).await?;
         self.read_message().await
@@ -94,7 +94,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
     ///   available
     #[bolt_version(1, 2, 3)]
-    pub async fn discard_all(&mut self) -> Result<Message> {
+    pub async fn discard_all(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::DiscardAll).await?;
         self.read_message().await
     }
@@ -123,7 +123,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
     ///   available or if retrieval fails
     #[bolt_version(1, 2, 3)]
-    pub async fn pull_all(&mut self) -> Result<(Message, Vec<Record>)> {
+    pub async fn pull_all(&mut self) -> CommunicationResult<(Message, Vec<Record>)> {
         self.send_message(Message::PullAll).await?;
         let mut records = vec![];
         loop {
@@ -155,7 +155,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting
     ///   to be cleared
     #[bolt_version(1, 2)]
-    pub async fn ack_failure(&mut self) -> Result<Message> {
+    pub async fn ack_failure(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::AckFailure).await?;
         self.read_message().await
     }
@@ -186,7 +186,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently
     ///   possible
     #[bolt_version(1, 2, 3, 4, 4.1)]
-    pub async fn reset(&mut self) -> Result<Message> {
+    pub async fn reset(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Reset).await?;
         loop {
             // TODO: Make sure this works as expected
@@ -208,7 +208,10 @@ pub(crate) mod tests {
     use tokio::io::BufStream;
     use tokio_util::compat::*;
 
-    use crate::{skip_if_handshake_failed, stream, Metadata};
+    use crate::{
+        error::{CommunicationError, ConnectionResult, Result},
+        skip_if_handshake_failed, stream, Metadata,
+    };
 
     use super::*;
 
@@ -232,7 +235,7 @@ pub(crate) mod tests {
     pub(crate) async fn initialize_client(
         client: &mut Client<Stream>,
         succeed: bool,
-    ) -> Result<Message> {
+    ) -> CommunicationResult<Message> {
         let username = env::var("BOLT_TEST_USERNAME").unwrap();
         let password = if succeed {
             env::var("BOLT_TEST_PASSWORD").unwrap()
@@ -270,7 +273,9 @@ pub(crate) mod tests {
         Ok(client)
     }
 
-    pub(crate) async fn run_invalid_query(client: &mut Client<Stream>) -> Result<Message> {
+    pub(crate) async fn run_invalid_query(
+        client: &mut Client<Stream>,
+    ) -> CommunicationResult<Message> {
         if client.version() > V2_0 {
             client
                 .run_with_metadata(
@@ -284,7 +289,9 @@ pub(crate) mod tests {
         }
     }
 
-    pub(crate) async fn run_valid_query(client: &mut Client<Stream>) -> Result<Message> {
+    pub(crate) async fn run_valid_query(
+        client: &mut Client<Stream>,
+    ) -> CommunicationResult<Message> {
         if client.version() > V2_0 {
             client
                 .run_with_metadata(
@@ -323,7 +330,7 @@ pub(crate) mod tests {
         let response = initialize_client(&mut client, true).await;
         assert!(matches!(
             response,
-            Err(Error::InvalidState { state: Defunct, .. })
+            Err(CommunicationError::InvalidState { state: Defunct, .. })
         ));
     }
 
@@ -472,7 +479,7 @@ pub(crate) mod tests {
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(
             client.discard_all().await,
-            Err(Error::InvalidState { state: Ready, .. })
+            Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -504,7 +511,7 @@ pub(crate) mod tests {
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(
             client.pull_all().await,
-            Err(Error::InvalidState { state: Ready, .. })
+            Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -549,7 +556,7 @@ pub(crate) mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.commit().await,
-            Err(Error::UnsupportedOperation(V1_0))
+            Err(CommunicationError::UnsupportedOperation(V1_0))
         ));
     }
 
@@ -562,7 +569,7 @@ pub(crate) mod tests {
         client.send_message(Message::Begin(begin)).await.unwrap();
         assert!(matches!(
             client.read_message().await,
-            Err(Error::ProtocolError(
+            Err(CommunicationError::ProtocolError(
                 bolt_proto::error::Error::DeserializationError(
                     bolt_proto::error::DeserializationError::IoError(_)
                 )

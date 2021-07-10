@@ -6,7 +6,9 @@ mod tests {
 
     use bolt_proto::{message::*, value::*, version::*, Message, ServerState::*};
 
-    use crate::{client::v1::tests::*, error::*, skip_if_handshake_failed, Metadata};
+    use crate::{
+        client::v1::tests::*, error::CommunicationError, skip_if_handshake_failed, Metadata,
+    };
 
     #[tokio::test]
     async fn hello() {
@@ -262,7 +264,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.commit().await,
-            Err(Error::InvalidState { state: Ready, .. })
+            Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -327,7 +329,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.rollback().await,
-            Err(Error::InvalidState { state: Ready, .. })
+            Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 }

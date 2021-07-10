@@ -11,8 +11,8 @@ use tokio::{
 };
 use tokio_util::compat::*;
 
-use bolt_client::*;
-use bolt_proto::{version::*, *};
+use bolt_client::{error::Error as ClientError, Metadata, Stream};
+use bolt_proto::{error::Error as ProtocolError, message, version::*, Message, Value};
 
 pub use deadpool::{managed::PoolConfig, Runtime};
 
@@ -55,15 +55,15 @@ pub enum Error {
     #[error("invalid metadata: {0}")]
     InvalidMetadata(String),
     #[error("client initialization failed: received {0:?}")]
-    ClientInitFailed(bolt_proto::Message),
+    ClientInitFailed(Message),
     #[error("invalid client version: {0:#x}")]
     InvalidClientVersion(u32),
     #[error(transparent)]
-    ClientError(#[from] bolt_client::error::Error),
+    ClientError(#[from] ClientError),
     #[error(transparent)]
-    ConversionError(#[from] bolt_proto::error::ConversionError),
+    ProtocolError(#[from] ProtocolError),
     #[error(transparent)]
-    IOError(#[from] std::io::Error),
+    IoError(#[from] std::io::Error),
 }
 
 type Client = bolt_client::Client<Compat<BufStream<Stream>>>;
@@ -82,7 +82,7 @@ impl deadpool::managed::Manager for Manager {
             &self.preferred_versions,
         )
         .await
-        .map_err(bolt_client::error::Error::from)?;
+        .map_err(ClientError::from)?;
 
         let response = match client.version() {
             V1_0 | V2_0 => {
@@ -90,14 +90,17 @@ impl deadpool::managed::Manager for Manager {
                 let user_agent: String = metadata
                     .remove("user_agent")
                     .ok_or_else(|| Error::InvalidMetadata("must contain a user_agent".to_string()))
-                    .map(String::try_from)??;
-                client.init(user_agent, Metadata::from(metadata)).await?
-            }
-            V3_0 | V4_0 | V4_1 => {
+                    .map(String::try_from)?
+                    .map_err(ProtocolError::from)?;
                 client
-                    .hello(Some(Metadata::from(self.metadata.clone())))
-                    .await?
+                    .init(user_agent, Metadata::from(metadata))
+                    .await
+                    .map_err(ClientError::from)?
             }
+            V3_0 | V4_0 | V4_1 => client
+                .hello(Some(Metadata::from(self.metadata.clone())))
+                .await
+                .map_err(ClientError::from)?,
             _ => return Err(Error::InvalidClientVersion(client.version())),
         };
 
@@ -108,13 +111,15 @@ impl deadpool::managed::Manager for Manager {
     }
 
     async fn recycle(&self, conn: &mut Client) -> RecycleResult<Error> {
-        let response = conn
-            .run("RETURN 1;".to_string(), None)
-            .await
-            .map_err(Error::from)?;
-        message::Success::try_from(response).map_err(Error::from)?;
-        let (response, _records) = conn.pull_all().await.map_err(Error::from)?;
-        message::Success::try_from(response).map_err(Error::from)?;
+        message::Success::try_from(
+            conn.reset()
+                .await
+                .map_err(ClientError::from)
+                .map_err::<Error, _>(Into::into)?,
+        )
+        .map_err(ProtocolError::from)
+        .map_err::<Error, _>(Into::into)?;
+
         Ok(())
     }
 }
@@ -216,7 +221,7 @@ mod tests {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], false).await;
             match manager.create().await {
                 Ok(_) => panic!("initialization should have failed"),
-                Err(Error::ClientError(bolt_client::error::Error::ConnectionError(
+                Err(Error::ClientError(ClientError::ConnectionError(
                     bolt_client::error::ConnectionError::HandshakeFailed(_),
                 ))) => {
                     println!(

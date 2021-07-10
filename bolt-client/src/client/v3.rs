@@ -2,7 +2,7 @@ use bolt_client_macros::*;
 use bolt_proto::{message::*, Message, ServerState::*};
 use futures_util::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 
-use crate::{error::*, Client, Metadata, Params};
+use crate::{error::CommunicationResult, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send a `HELLO` message to the server.
@@ -17,7 +17,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   if initialization cannot be performed at this time, or if the authorization
     ///   failed.
     #[bolt_version(3, 4, 4.1)]
-    pub async fn hello(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+    pub async fn hello(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let hello_msg = Hello::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Hello(hello_msg)).await?;
         self.read_message().await
@@ -29,7 +29,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// The `GOODBYE` message is a Bolt v3+ client message used to end the session. The
     /// server will end the connection upon receipt of this message.
     #[bolt_version(3, 4, 4.1)]
-    pub async fn goodbye(&mut self) -> Result<()> {
+    pub async fn goodbye(&mut self) -> CommunicationResult<()> {
         self.send_message(Message::Goodbye).await?;
         self.server_state = Defunct;
         Ok(self.stream.close().await?)
@@ -51,7 +51,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         statement: impl Into<String>,
         parameters: Option<Params>,
         metadata: Option<Metadata>,
-    ) -> Result<Message> {
+    ) -> CommunicationResult<Message> {
         let run_msg = RunWithMetadata::new(
             statement.into(),
             parameters.unwrap_or_default().value,
@@ -72,7 +72,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
     ///   if transaction could not be started
     #[bolt_version(3, 4, 4.1)]
-    pub async fn begin(&mut self, metadata: Option<Metadata>) -> Result<Message> {
+    pub async fn begin(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let begin_msg = Begin::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Begin(begin_msg)).await?;
         self.read_message().await
@@ -90,7 +90,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
     ///   if transaction could not be committed
     #[bolt_version(3, 4, 4.1)]
-    pub async fn commit(&mut self) -> Result<Message> {
+    pub async fn commit(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Commit).await?;
         self.read_message().await
     }
@@ -107,7 +107,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
     ///   if transaction could not be rolled back
     #[bolt_version(3, 4, 4.1)]
-    pub async fn rollback(&mut self) -> Result<Message> {
+    pub async fn rollback(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Rollback).await?;
         self.read_message().await
     }
@@ -119,8 +119,7 @@ mod tests {
 
     use bolt_proto::{value::*, version::*};
 
-    use crate::client::v1::tests::*;
-    use crate::skip_if_handshake_failed;
+    use crate::{client::v1::tests::*, error::CommunicationError, skip_if_handshake_failed};
 
     use super::*;
 
@@ -278,7 +277,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.commit().await,
-            Err(Error::InvalidState { state: Ready, .. })
+            Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 
@@ -340,7 +339,7 @@ mod tests {
         let mut client = client.unwrap();
         assert!(matches!(
             client.rollback().await,
-            Err(Error::InvalidState { state: Ready, .. })
+            Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 }

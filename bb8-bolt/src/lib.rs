@@ -11,8 +11,8 @@ use tokio::{
 };
 use tokio_util::compat::*;
 
-use bolt_client::*;
-use bolt_proto::{version::*, *};
+use bolt_client::{error::Error as ClientError, Client, Metadata, Stream};
+use bolt_proto::{error::Error as ProtocolError, message, version::*, Message, ServerState, Value};
 
 pub use bolt_client;
 pub use bolt_proto;
@@ -53,15 +53,15 @@ pub enum Error {
     #[error("invalid metadata: {0}")]
     InvalidMetadata(String),
     #[error("client initialization failed: received {0:?}")]
-    ClientInitFailed(bolt_proto::Message),
+    ClientInitFailed(Message),
     #[error("invalid client version: {0:#x}")]
     InvalidClientVersion(u32),
     #[error(transparent)]
-    ClientError(#[from] bolt_client::error::Error),
+    ClientError(#[from] ClientError),
     #[error(transparent)]
-    ConversionError(#[from] bolt_proto::error::ConversionError),
+    ProtocolError(#[from] ProtocolError),
     #[error(transparent)]
-    IOError(#[from] std::io::Error),
+    IoError(#[from] std::io::Error),
 }
 
 #[async_trait]
@@ -75,7 +75,7 @@ impl ManageConnection for BoltConnectionManager {
             &self.preferred_versions,
         )
         .await
-        .map_err(bolt_client::error::Error::from)?;
+        .map_err(ClientError::from)?;
 
         let response = match client.version() {
             V1_0 | V2_0 => {
@@ -83,14 +83,17 @@ impl ManageConnection for BoltConnectionManager {
                 let user_agent: String = metadata
                     .remove("user_agent")
                     .ok_or_else(|| Error::InvalidMetadata("must contain a user_agent".to_string()))
-                    .map(String::try_from)??;
-                client.init(user_agent, Metadata::from(metadata)).await?
-            }
-            V3_0 | V4_0 | V4_1 => {
+                    .map(String::try_from)?
+                    .map_err(ProtocolError::from)?;
                 client
-                    .hello(Some(Metadata::from(self.metadata.clone())))
-                    .await?
+                    .init(user_agent, Metadata::from(metadata))
+                    .await
+                    .map_err(ClientError::from)?
             }
+            V3_0 | V4_0 | V4_1 => client
+                .hello(Some(Metadata::from(self.metadata.clone())))
+                .await
+                .map_err(ClientError::from)?,
             _ => return Err(Error::InvalidClientVersion(client.version())),
         };
 
@@ -101,7 +104,12 @@ impl ManageConnection for BoltConnectionManager {
     }
 
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        message::Success::try_from(conn.reset().await?)?;
+        message::Success::try_from(
+            conn.reset()
+                .await
+                .map_err(bolt_client::error::Error::from)?,
+        )
+        .map_err(ProtocolError::from)?;
         Ok(())
     }
 

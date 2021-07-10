@@ -12,9 +12,9 @@ use std::collections::VecDeque;
 use bytes::*;
 use futures_util::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-use bolt_proto::{Message, ServerState, ServerState::*};
+use bolt_proto::{error::Error as ProtocolError, Message, ServerState, ServerState::*};
 
-use crate::error::*;
+use crate::error::{CommunicationError, CommunicationResult, ConnectionError, ConnectionResult};
 
 mod v1;
 mod v2;
@@ -70,10 +70,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.server_state
     }
 
-    pub(crate) async fn read_message(&mut self) -> Result<Message> {
+    pub(crate) async fn read_message(&mut self) -> CommunicationResult<Message> {
         let message = Message::from_stream(&mut self.stream)
             .await
-            .map_err(bolt_proto::error::Error::from)?;
+            .map_err(ProtocolError::from)?;
 
         #[cfg(test)]
         println!("<<< {:?}\n", message);
@@ -341,7 +341,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
             (state, request, response) => {
                 self.server_state = Defunct;
-                return Err(Error::InvalidResponse {
+                return Err(CommunicationError::InvalidResponse {
                     state,
                     request,
                     response,
@@ -351,7 +351,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     // TODO: Handle immediate state changes
-    pub(crate) async fn send_message(&mut self, message: Message) -> Result<()> {
+    pub(crate) async fn send_message(&mut self, message: Message) -> CommunicationResult<()> {
         // TODO: Use or-patterns where possible
         match (self.server_state, &message) {
             (Connected, Message::Init(_)) => {}
@@ -401,7 +401,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Interrupted, Message::Goodbye) => {}
             (state, message) => {
                 self.server_state = Defunct;
-                return Err(Error::InvalidState {
+                return Err(CommunicationError::InvalidState {
                     state,
                     message: message.clone(),
                 });
@@ -411,10 +411,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         #[cfg(test)]
         println!(">>> {:?}", message);
 
-        let chunks = message
-            .clone()
-            .into_chunks()
-            .map_err(bolt_proto::error::Error::from)?;
+        let chunks = message.clone().into_chunks().map_err(ProtocolError::from)?;
 
         for chunk in chunks {
             self.stream.write_all(&chunk).await?;
@@ -458,7 +455,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// receives the `RESET`/`ACK_FAILURE` message, it will send an `IGNORED` message in
     /// response to any other message from the client, including messages that were sent
     /// in a pipeline.
-    pub async fn pipeline(&mut self, messages: Vec<Message>) -> Result<Vec<Message>> {
+    pub async fn pipeline(&mut self, messages: Vec<Message>) -> CommunicationResult<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
 
@@ -466,10 +463,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             #[cfg(test)]
             println!(">>> {:?}", message);
 
-            let chunks = message
-                .clone()
-                .into_chunks()
-                .map_err(bolt_proto::error::Error::from)?;
+            let chunks = message.clone().into_chunks().map_err(ProtocolError::from)?;
 
             for chunk in chunks {
                 self.stream.write_all(&chunk).await?;
