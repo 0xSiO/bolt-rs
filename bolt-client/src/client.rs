@@ -7,7 +7,7 @@
 // http://creativecommons.org/licenses/by-sa/3.0/ or send a letter to Creative Commons,
 // PO Box 1866, Mountain View, CA 94042, USA.
 
-use std::{collections::VecDeque, io};
+use std::collections::VecDeque;
 
 use bytes::*;
 use futures_util::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
@@ -37,7 +37,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Attempt to create a new client from an asynchronous stream. A handshake will be
     /// performed with the provided protocol versions, and, if this succeeds, a Client will be
     /// returned.
-    pub async fn new(mut stream: S, preferred_versions: &[u32; 4]) -> io::Result<Self> {
+    pub async fn new(mut stream: S, preferred_versions: &[u32; 4]) -> ConnectionResult<Self> {
         let mut preferred_versions_bytes = BytesMut::with_capacity(16);
         preferred_versions
             .iter()
@@ -57,10 +57,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 sent_queue: Default::default(),
             })
         } else {
-            Err(io::Error::new(
-                io::ErrorKind::ConnectionAborted,
-                ConnectionError::HandshakeFailed(*preferred_versions),
-            ))
+            Err(ConnectionError::HandshakeFailed(*preferred_versions))
         }
     }
 

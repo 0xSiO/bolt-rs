@@ -2,6 +2,7 @@ use bolt_proto::version::*;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
+pub type ConnectionResult<T> = std::result::Result<T, ConnectionError>;
 
 // TODO: Break into more specific error types
 #[derive(Debug, Error)]
@@ -31,6 +32,8 @@ response: {response:?}"
         response: bolt_proto::Message,
     },
     #[error(transparent)]
+    ConnectionError(#[from] ConnectionError),
+    #[error(transparent)]
     ProtocolError(#[from] bolt_proto::error::Error),
 }
 
@@ -40,6 +43,8 @@ pub enum ConnectionError {
     HandshakeFailed([u32; 4]),
     #[error("invalid DNS name: {0}")]
     InvalidDNSName(String),
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
 }
 
 fn format_version(version: u32) -> String {

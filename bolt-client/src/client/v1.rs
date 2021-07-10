@@ -202,7 +202,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::{convert::TryFrom, env, io, iter::FromIterator};
+    use std::{convert::TryFrom, env, iter::FromIterator};
 
     use bolt_proto::{message::*, value::*, version::*, ServerState::*};
     use tokio::io::BufStream;
@@ -214,7 +214,7 @@ pub(crate) mod tests {
 
     type Stream = Compat<BufStream<stream::Stream>>;
 
-    pub(crate) async fn new_client(version: u32) -> io::Result<Client<Stream>> {
+    pub(crate) async fn new_client(version: u32) -> ConnectionResult<Client<Stream>> {
         Client::new(
             BufStream::new(
                 stream::Stream::connect(

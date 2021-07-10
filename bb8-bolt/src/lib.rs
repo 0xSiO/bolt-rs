@@ -74,7 +74,9 @@ impl ManageConnection for BoltConnectionManager {
             BufStream::new(Stream::connect(self.addr, self.domain.as_ref()).await?).compat(),
             &self.preferred_versions,
         )
-        .await?;
+        .await
+        .map_err(bolt_client::error::Error::from)?;
+
         let response = match client.version() {
             V1_0 | V2_0 => {
                 let mut metadata = self.metadata.clone();
@@ -204,19 +206,24 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_init_fails() {
-        let invalid_manager = get_connection_manager([V4_1, V4_0, V3_0, V2_0], false).await;
-        let pool = Pool::builder()
-            .max_size(2)
-            .build(invalid_manager)
-            .await
-            .unwrap();
-        let conn = pool.dedicated_connection().await;
-        assert!(matches!(
-            conn,
-            Err(Error::ClientInitFailed(_))
-                | Err(Error::ClientError(
-                    bolt_client::error::Error::HandshakeFailed(_)
-                ))
-        ));
+        for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1] {
+            let manager = get_connection_manager([bolt_version, 0, 0, 0], false).await;
+            match manager.connect().await {
+                Ok(_) => panic!("initialization should have failed"),
+                Err(Error::ClientError(bolt_client::error::Error::ConnectionError(
+                    bolt_client::error::ConnectionError::HandshakeFailed(_),
+                ))) => {
+                    println!(
+                        "Skipping test: server doesn't support Bolt version {:#x}.",
+                        bolt_version
+                    );
+                    continue;
+                }
+                Err(Error::ClientInitFailed(_)) => {
+                    // Ok
+                }
+                Err(other) => panic!("{}", other),
+            }
+        }
     }
 }
