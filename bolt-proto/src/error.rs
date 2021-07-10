@@ -1,5 +1,3 @@
-use std::string::FromUtf8Error;
-
 use thiserror::Error;
 
 use crate::{Message, Value};
@@ -43,7 +41,9 @@ pub enum DeserializationError {
     #[error("invalid size ({size} fields) for signature byte {signature:x}")]
     InvalidSize { size: usize, signature: u8 },
     #[error("string deserialization failed: {0}")]
-    InvalidUTF8(#[from] FromUtf8Error),
+    InvalidUTF8(#[from] std::string::FromUtf8Error),
     #[error(transparent)]
     ConversionError(#[from] ConversionError),
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
 }

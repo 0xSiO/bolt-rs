@@ -74,7 +74,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     pub(crate) async fn read_message(&mut self) -> Result<Message> {
-        let message = Message::from_stream(&mut self.stream).await?;
+        let message = Message::from_stream(&mut self.stream)
+            .await
+            .map_err(bolt_proto::error::Error::from)?;
 
         #[cfg(test)]
         println!("<<< {:?}\n", message);
@@ -412,7 +414,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         #[cfg(test)]
         println!(">>> {:?}", message);
 
-        let chunks = message.clone().into_chunks()?;
+        let chunks = message
+            .clone()
+            .into_chunks()
+            .map_err(bolt_proto::error::Error::from)?;
+
         for chunk in chunks {
             self.stream.write_all(&chunk).await?;
         }
@@ -463,7 +469,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             #[cfg(test)]
             println!(">>> {:?}", message);
 
-            let chunks = message.clone().into_chunks()?;
+            let chunks = message
+                .clone()
+                .into_chunks()
+                .map_err(bolt_proto::error::Error::from)?;
+
             for chunk in chunks {
                 self.stream.write_all(&chunk).await?;
             }

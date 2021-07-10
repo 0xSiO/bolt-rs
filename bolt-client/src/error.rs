@@ -31,7 +31,7 @@ response: {response:?}"
         response: bolt_proto::Message,
     },
     #[error(transparent)]
-    SerializationError(#[from] bolt_proto::error::SerializationError),
+    ProtocolError(#[from] bolt_proto::error::Error),
 }
 
 #[derive(Debug, Error)]
