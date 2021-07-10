@@ -490,6 +490,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.stream.flush().await?;
         self.sent_queue.extend(messages);
 
+        // FIXME: If a RESET was sent, some RECORD messages may be replaced with IGNORED, and we
+        //        will not account for them here, meaning that some messages will be left in the
+        //        socket buffer at the end. Make sure that all messages are consumed here.
         for _ in 0..responses.capacity() {
             let mut response = self.read_message().await?;
             while let Message::Record(_) = response {

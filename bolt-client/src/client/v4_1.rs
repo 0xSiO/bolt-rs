@@ -332,4 +332,43 @@ mod tests {
             Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
+
+    #[tokio::test]
+    async fn reset_internals() {
+        let client = get_initialized_client(V4_1).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+
+        client
+            .run_with_metadata("RETURN 1;", None, None)
+            .await
+            .unwrap();
+        client
+            .send_message(Message::Pull(Pull::new(HashMap::from_iter(vec![(
+                String::from("n"),
+                Value::from(1),
+            )]))))
+            .await
+            .unwrap();
+        client.send_message(Message::Reset).await.unwrap();
+        assert_eq!(client.server_state(), Interrupted);
+
+        // Two situations can happen here - either the PULL is ignored, or the records of the
+        // PULL are ignored. The latter situation results in additional IGNORED messages in
+        // the result stream.
+
+        // RECORD or PULL summary, it's not consistent
+        assert_eq!(client.read_message().await.unwrap(), Message::Ignored);
+
+        match client.read_message().await.unwrap() {
+            // PULL summary
+            Message::Ignored => {
+                // RESET result
+                Success::try_from(client.read_message().await.unwrap()).unwrap();
+            }
+            // RESET result
+            Message::Success(_) => {}
+            other => panic!("unexpected response {:?}", other),
+        }
+    }
 }
