@@ -59,8 +59,7 @@ pub fn bolt_structure(attr_args: TokenStream, item: TokenStream) -> TokenStream 
 
     let deserialize_fields = field_names
         .iter()
-        // TODO: Replace unwrap() with ?, after changing the error type to ConversionError
-        .map(|name| quote!(#name: #name.try_into().unwrap(),));
+        .map(|name| quote!(#name: #name.try_into()?,));
 
     quote!(
         #structure
