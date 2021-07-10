@@ -1,0 +1,12 @@
+[package]
+name = "mobc-bolt"
+version = "0.0.0"
+authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
+description = "A bolt-client manager for the mobc connection pool.\n"
+repository = "https://github.com/lucis-fluxum/bolt-rs"
+categories = ["asynchronous"]
+keywords = ["bolt", "database", "pool", "neo4j", "mobc"]
+license = "MIT"
+edition = "2018"
+
+[dependencies]

@@ -37,6 +37,12 @@ A bolt-client adapter crate for the [bb8](https://crates.io/crates/bb8) connecti
 
 A bolt-client manager for the [deadpool](https://crates.io/crates/deadpool) connection pool.
 
+### mobc-bolt
+[![crates.io](https://img.shields.io/crates/v/mobc-bolt.svg)](https://crates.io/crates/mobc-bolt)
+[![Released API docs](https://docs.rs/mobc-bolt/badge.svg)](https://docs.rs/mobc-bolt)
+
+A bolt-client manager for the [mobc](https://crates.io/crates/mobc) connection pool.
+
 ### bolt-proto-derive
 [![crates.io](https://img.shields.io/crates/v/bolt-proto-derive.svg)](https://crates.io/crates/bolt-proto-derive)
 [![Released API docs](https://docs.rs/bolt-proto-derive/badge.svg)](https://docs.rs/bolt-proto-derive)
