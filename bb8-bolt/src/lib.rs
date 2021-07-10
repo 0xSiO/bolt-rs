@@ -1,6 +1,6 @@
 #![warn(rust_2018_idioms)]
 
-use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
+use std::{collections::HashMap, convert::TryFrom, io, net::SocketAddr};
 
 use async_trait::async_trait;
 use bb8::{ManageConnection, PooledConnection};
@@ -30,12 +30,12 @@ impl BoltConnectionManager {
         domain: Option<String>,
         preferred_versions: [u32; 4],
         metadata: HashMap<impl Into<String>, impl Into<Value>>,
-    ) -> Result<Self, Error> {
+    ) -> io::Result<Self> {
         Ok(Self {
             addr: lookup_host(addr)
                 .await?
                 .next()
-                .ok_or(Error::InvalidAddress)?,
+                .ok_or(io::Error::from(io::ErrorKind::AddrNotAvailable))?,
             domain,
             preferred_versions,
             metadata: metadata
@@ -48,20 +48,18 @@ impl BoltConnectionManager {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("invalid host address")]
-    InvalidAddress,
     #[error("invalid metadata: {0}")]
     InvalidMetadata(String),
     #[error("client initialization failed: received {0:?}")]
     ClientInitFailed(Message),
-    #[error("invalid client version: {0:#x}")]
-    InvalidClientVersion(u32),
+    #[error("unsupported client version: {0:#x}")]
+    UnsupportedClientVersion(u32),
     #[error(transparent)]
     ClientError(#[from] ClientError),
     #[error(transparent)]
     ProtocolError(#[from] ProtocolError),
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
+    IoError(#[from] io::Error),
 }
 
 #[async_trait]
@@ -94,7 +92,7 @@ impl ManageConnection for BoltConnectionManager {
                 .hello(Some(Metadata::from(self.metadata.clone())))
                 .await
                 .map_err(ClientError::from)?,
-            _ => return Err(Error::InvalidClientVersion(client.version())),
+            _ => return Err(Error::UnsupportedClientVersion(client.version())),
         };
 
         match response {
