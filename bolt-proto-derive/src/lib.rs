@@ -81,7 +81,7 @@ pub fn bolt_structure(attr_args: TokenStream, item: TokenStream) -> TokenStream 
         impl#type_args crate::serialization::BoltValue for #name#type_args
         #where_clause
         {
-            fn marker(&self) -> crate::error::MarkerResult<u8> {
+            fn marker(&self) -> crate::error::SerializeResult<u8> {
                 Ok(#marker)
             }
 

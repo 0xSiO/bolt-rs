@@ -135,7 +135,7 @@ macro_rules! deserialize_struct {
 }
 
 impl BoltValue for Message {
-    fn marker(&self) -> MarkerResult<u8> {
+    fn marker(&self) -> SerializeResult<u8> {
         match self {
             Message::Init(init) => init.marker(),
             Message::Run(run) => run.marker(),

@@ -118,7 +118,7 @@ impl Eq for Value {
 
 // TODO: This can be implemented for foreign types and delegated to those impls
 impl BoltValue for Value {
-    fn marker(&self) -> MarkerResult<u8> {
+    fn marker(&self) -> SerializeResult<u8> {
         match self {
             Value::Boolean(true) => Ok(MARKER_TRUE),
             Value::Boolean(false) => Ok(MARKER_FALSE),
@@ -135,21 +135,21 @@ impl BoltValue for Value {
                 0..=255 => Ok(MARKER_SMALL_BYTES),
                 256..=65_535 => Ok(MARKER_MEDIUM_BYTES),
                 65_536..=2_147_483_647 => Ok(MARKER_LARGE_BYTES),
-                _ => Err(MarkerError::ValueTooLarge(bytes.len())),
+                _ => Err(SerializationError::ValueTooLarge(bytes.len())),
             },
             Value::List(list) => match list.len() {
                 0..=15 => Ok(MARKER_TINY_LIST | list.len() as u8),
                 16..=255 => Ok(MARKER_SMALL_LIST),
                 256..=65_535 => Ok(MARKER_MEDIUM_LIST),
                 65_536..=4_294_967_295 => Ok(MARKER_LARGE_LIST),
-                len => Err(MarkerError::ValueTooLarge(len)),
+                len => Err(SerializationError::ValueTooLarge(len)),
             },
             Value::Map(map) => match map.len() {
                 0..=15 => Ok(MARKER_TINY_MAP | map.len() as u8),
                 16..=255 => Ok(MARKER_SMALL_MAP),
                 256..=65_535 => Ok(MARKER_MEDIUM_MAP),
                 65_536..=4_294_967_295 => Ok(MARKER_LARGE_MAP),
-                _ => Err(MarkerError::ValueTooLarge(map.len())),
+                _ => Err(SerializationError::ValueTooLarge(map.len())),
             },
             Value::Null => Ok(MARKER_NULL),
             Value::String(string) => match string.len() {
@@ -157,7 +157,7 @@ impl BoltValue for Value {
                 16..=255 => Ok(MARKER_SMALL_STRING),
                 256..=65_535 => Ok(MARKER_MEDIUM_STRING),
                 65_536..=4_294_967_295 => Ok(MARKER_LARGE_STRING),
-                _ => Err(MarkerError::ValueTooLarge(string.len())),
+                _ => Err(SerializationError::ValueTooLarge(string.len())),
             },
             Value::Node(node) => node.marker(),
             Value::Relationship(rel) => rel.marker(),
@@ -223,7 +223,7 @@ impl BoltValue for Value {
                     0..=255 => buf.put_u8(bytes.len() as u8),
                     256..=65_535 => buf.put_u16(bytes.len() as u16),
                     65_536..=2_147_483_647 => buf.put_u32(bytes.len() as u32),
-                    _ => return Err(MarkerError::ValueTooLarge(bytes.len()).into()),
+                    _ => return Err(SerializationError::ValueTooLarge(bytes.len())),
                 }
                 buf.put_slice(&bytes);
 
@@ -252,7 +252,7 @@ impl BoltValue for Value {
                     16..=255 => bytes.put_u8(length as u8),
                     256..=65_535 => bytes.put_u16(length as u16),
                     65_536..=4_294_967_295 => bytes.put_u32(length as u32),
-                    _ => return Err(MarkerError::ValueTooLarge(length).into()),
+                    _ => return Err(SerializationError::ValueTooLarge(length)),
                 }
 
                 for value_bytes in value_bytes_vec {
@@ -285,7 +285,7 @@ impl BoltValue for Value {
                     16..=255 => bytes.put_u8(length as u8),
                     256..=65_535 => bytes.put_u16(length as u16),
                     65_536..=4_294_967_295 => bytes.put_u32(length as u32),
-                    _ => return Err(MarkerError::ValueTooLarge(length).into()),
+                    _ => return Err(SerializationError::ValueTooLarge(length)),
                 }
 
                 for value_bytes in value_bytes_vec {
@@ -307,7 +307,7 @@ impl BoltValue for Value {
                     16..=255 => bytes.put_u8(length as u8),
                     256..=65_535 => bytes.put_u16(length as u16),
                     65_536..=4_294_967_295 => bytes.put_u32(length as u32),
-                    _ => return Err(MarkerError::ValueTooLarge(length).into()),
+                    _ => return Err(SerializationError::ValueTooLarge(length)),
                 }
                 bytes.put(string.as_bytes());
 

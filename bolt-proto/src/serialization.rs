@@ -3,12 +3,12 @@ use std::panic::UnwindSafe;
 use bytes::{Buf, Bytes};
 
 use crate::{
-    error::*,
+    error::{DeserializationError, DeserializeResult, SerializeResult},
     value::{MARKER_MEDIUM_STRUCT, MARKER_SMALL_STRUCT, MARKER_TINY_STRUCT},
 };
 
 pub(crate) trait BoltValue: Sized {
-    fn marker(&self) -> MarkerResult<u8>;
+    fn marker(&self) -> SerializeResult<u8>;
 
     fn serialize(self) -> SerializeResult<Bytes>;
 
@@ -28,9 +28,7 @@ pub(crate) fn get_structure_info(bytes: &mut impl Buf) -> DeserializeResult<(u8,
         }
         MARKER_SMALL_STRUCT => bytes.get_u8() as usize,
         MARKER_MEDIUM_STRUCT => bytes.get_u16() as usize,
-        _ => {
-            return Err(DeserializationError::InvalidMarkerByte(marker));
-        }
+        _ => return Err(DeserializationError::InvalidMarkerByte(marker)),
     };
     let signature = bytes.get_u8();
     Ok((marker, size, signature))

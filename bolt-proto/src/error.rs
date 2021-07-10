@@ -4,7 +4,6 @@ use thiserror::Error;
 
 use crate::{Message, Value};
 
-pub(crate) type MarkerResult<T> = std::result::Result<T, MarkerError>;
 pub type ConversionResult<T> = std::result::Result<T, ConversionError>;
 pub type SerializeResult<T> = std::result::Result<T, SerializationError>;
 pub type DeserializeResult<T> = std::result::Result<T, DeserializationError>;
@@ -20,12 +19,6 @@ pub enum Error {
 }
 
 #[derive(Debug, Error)]
-pub enum MarkerError {
-    #[error("value too large (size: {0})")]
-    ValueTooLarge(usize),
-}
-
-#[derive(Debug, Error)]
 pub enum ConversionError {
     #[error("invalid conversion from value {0:?}")]
     FromValue(Value),
@@ -35,8 +28,8 @@ pub enum ConversionError {
 
 #[derive(Debug, Error)]
 pub enum SerializationError {
-    #[error(transparent)]
-    MarkerError(#[from] MarkerError),
+    #[error("value too large (size: {0})")]
+    ValueTooLarge(usize),
 }
 
 #[derive(Debug, Error)]
