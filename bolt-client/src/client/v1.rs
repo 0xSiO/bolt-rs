@@ -535,36 +535,35 @@ pub(crate) mod tests {
         assert_eq!(client.server_state(), Streaming);
     }
 
-    // TODO: Uncomment once IGNORED message handling in Client::pipeline is fixed
-    // TODO: Test this in other protocol versions
-    // #[tokio::test]
-    // async fn reset_internals_pipelined() {
-    //     let client = get_initialized_client(V1_0).await;
-    //     skip_if_handshake_failed!(client);
-    //     let mut client = client.unwrap();
+    #[tokio::test]
+    async fn reset_internals_pipelined() {
+        let client = get_initialized_client(V1_0).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
 
-    //     let messages = client
-    //         .pipeline(vec![
-    //             Message::Run(Run::new(String::from("RETURN 1;"), Default::default())),
-    //             Message::PullAll,
-    //             Message::Run(Run::new(String::from("RETURN 1;"), Default::default())),
-    //             Message::PullAll,
-    //             Message::Reset,
-    //         ])
-    //         .await
-    //         .unwrap();
+        let mut messages = client
+            .pipeline(vec![
+                Message::Run(Run::new(String::from("RETURN 1;"), Default::default())),
+                Message::PullAll,
+                Message::Run(Run::new(String::from("RETURN 1;"), Default::default())),
+                Message::PullAll,
+                Message::Reset,
+            ])
+            .await
+            .unwrap();
 
-    //     assert_eq!(
-    //         messages,
-    //         vec![
-    //             Message::Ignored,
-    //             Message::Ignored,
-    //             Message::Ignored,
-    //             Message::Ignored,
-    //             Message::Success(Success::new(Default::default()))
-    //         ]
-    //     );
-    // }
+        // Last message should be a SUCCESS...
+        assert_eq!(
+            messages.pop(),
+            Some(Message::Success(Success::new(Default::default())))
+        );
+
+        // ... preceded by 4 or more IGNORED
+        assert!(messages.len() >= 4);
+        for message in messages {
+            assert_eq!(message, Message::Ignored);
+        }
+    }
 
     #[tokio::test]
     async fn reset_internals() {

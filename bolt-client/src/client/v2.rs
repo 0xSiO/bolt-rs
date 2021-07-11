@@ -275,6 +275,36 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn reset_internals_pipelined() {
+        let client = get_initialized_client(V2_0).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+
+        let mut messages = client
+            .pipeline(vec![
+                Message::Run(Run::new(String::from("RETURN 1;"), Default::default())),
+                Message::PullAll,
+                Message::Run(Run::new(String::from("RETURN 1;"), Default::default())),
+                Message::PullAll,
+                Message::Reset,
+            ])
+            .await
+            .unwrap();
+
+        // Last message should be a SUCCESS...
+        assert_eq!(
+            messages.pop(),
+            Some(Message::Success(Success::new(Default::default())))
+        );
+
+        // ... preceded by 4 or more IGNORED
+        assert!(messages.len() >= 4);
+        for message in messages {
+            assert_eq!(message, Message::Ignored);
+        }
+    }
+
+    #[tokio::test]
     async fn reset_internals() {
         let client = get_initialized_client(V2_0).await;
         skip_if_handshake_failed!(client);
