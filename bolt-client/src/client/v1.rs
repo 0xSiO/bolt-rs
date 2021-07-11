@@ -130,8 +130,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             match self.read_message().await? {
                 Message::Record(record) => records.push(record),
                 Message::Success(success) => return Ok((Message::Success(success), records)),
-                // TODO: Should we return invalid records?
-                Message::Failure(failure) => return Ok((Message::Failure(failure), vec![])),
+                Message::Failure(failure) => return Ok((Message::Failure(failure), records)),
                 Message::Ignored => return Ok((Message::Ignored, vec![])),
                 _ => unreachable!(),
             }
