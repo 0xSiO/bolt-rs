@@ -66,6 +66,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.version
     }
 
+    /// Get the current server state for this client.
     pub fn server_state(&self) -> ServerState {
         self.server_state
     }
