@@ -12,7 +12,7 @@ use std::collections::VecDeque;
 use bytes::*;
 use futures_util::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
-use bolt_proto::{error::Error as ProtocolError, Message, ServerState, ServerState::*};
+use bolt_proto::{error::Error as ProtocolError, Message, ServerState, ServerState::*, Value};
 
 use crate::error::{CommunicationError, CommunicationResult, ConnectionError, ConnectionResult};
 
@@ -141,8 +141,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Failure(failure))
             }
             (Streaming, Some(Message::Pull(_)), Message::Success(success)) => {
-                // TODO: Check has_more field
-                self.server_state = Ready;
+                self.server_state = match success.metadata().get("has_more") {
+                    Some(&Value::Boolean(true)) => Streaming,
+                    _ => Ready,
+                };
                 Ok(Message::Success(success))
             }
             (Streaming, Some(Message::Pull(pull)), Message::Record(record)) => {
@@ -164,8 +166,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Failure(failure))
             }
             (Streaming, Some(Message::Discard(_)), Message::Success(success)) => {
-                // TODO: Check has_more field
-                self.server_state = Ready;
+                self.server_state = match success.metadata().get("has_more") {
+                    Some(&Value::Boolean(true)) => Streaming,
+                    _ => Ready,
+                };
                 Ok(Message::Success(success))
             }
             (Streaming, Some(Message::Discard(_)), Message::Failure(failure)) => {
@@ -223,8 +227,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Failure(failure))
             }
             (TxStreaming, Some(Message::Pull(_)), Message::Success(success)) => {
-                // TODO: Check has_more field
-                self.server_state = TxReady;
+                self.server_state = match success.metadata().get("has_more") {
+                    Some(&Value::Boolean(true)) => TxStreaming,
+                    _ => TxReady, // TODO: Or TxStreaming, if there are other stream open?
+                };
                 Ok(Message::Success(success))
             }
             (TxStreaming, Some(Message::Pull(pull)), Message::Record(record)) => {
@@ -246,8 +252,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Failure(failure))
             }
             (TxStreaming, Some(Message::Discard(_)), Message::Success(success)) => {
-                // TODO: Check has_more field
-                self.server_state = TxReady;
+                self.server_state = match success.metadata().get("has_more") {
+                    Some(&Value::Boolean(true)) => TxStreaming,
+                    _ => TxReady, // TODO: Or TxStreaming, if there are other stream open?
+                };
                 Ok(Message::Success(success))
             }
             (TxStreaming, Some(Message::Discard(_)), Message::Failure(failure)) => {
