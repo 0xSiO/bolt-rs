@@ -189,7 +189,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     pub async fn reset(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Reset).await?;
         loop {
-            // TODO: Make sure this works as expected
             match self.read_message().await? {
                 Message::Success(success) => return Ok(Message::Success(success)),
                 Message::Failure(failure) => return Ok(Message::Failure(failure)),

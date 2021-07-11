@@ -361,7 +361,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         }
     }
 
-    // TODO: Handle immediate state changes
     pub(crate) async fn send_message(&mut self, message: Message) -> CommunicationResult<()> {
         // TODO: Use or-patterns where possible
         match (self.server_state, &message) {
