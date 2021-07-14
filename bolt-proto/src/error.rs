@@ -23,6 +23,10 @@ pub enum ConversionError {
     FromValue(Value),
     #[error("invalid conversion from message {0:?}")]
     FromMessage(Message),
+    #[error(transparent)]
+    TryFromIntError(#[from] std::num::TryFromIntError),
+    #[error(transparent)]
+    Infallible(#[from] std::convert::Infallible),
 }
 
 #[derive(Debug, Error)]

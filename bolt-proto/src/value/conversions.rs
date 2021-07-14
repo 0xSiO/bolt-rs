@@ -150,9 +150,10 @@ macro_rules! impl_try_from_value_for_ints {
                 type Error = $crate::error::ConversionError;
 
                 fn try_from(value: $crate::Value) -> $crate::error::ConversionResult<Self> {
+                    use ::std::convert::TryInto;
+
                     match value {
-                        // TODO: This could be a lossy cast!
-                        $crate::Value::Integer(integer) => Ok(integer as $T),
+                        $crate::Value::Integer(integer) => Ok(integer.try_into()?),
                         _ => Err($crate::error::ConversionError::FromValue(value)),
                     }
                 }
