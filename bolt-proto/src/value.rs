@@ -88,7 +88,7 @@ pub enum Value {
     Float(f64),
     Bytes(Vec<u8>),
     List(Vec<Value>),
-    Map(HashMap<std::string::String, Value>),
+    Map(HashMap<String, Value>),
     Null,
     String(String),
     Node(Node),
