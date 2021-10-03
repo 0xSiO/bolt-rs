@@ -157,9 +157,6 @@ mod tests {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], true).await;
 
             // Don't even test connection pool if server doesn't support this Bolt version
-            if bolt_version == V4_3 {
-                manager.connect().await.unwrap();
-            }
             if manager.connect().await.is_err() {
                 println!(
                     "Skipping test: server doesn't support Bolt version {:#x}.",
