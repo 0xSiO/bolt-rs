@@ -184,7 +184,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `SUCCESS {…}` if the session was successfully reset
     /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently
     ///   possible
-    #[bolt_version(1, 2, 3, 4, 4.1)]
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
     pub async fn reset(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Reset).await?;
         loop {

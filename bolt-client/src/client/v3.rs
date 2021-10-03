@@ -16,7 +16,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
     ///   if initialization cannot be performed at this time, or if the authorization
     ///   failed.
-    #[bolt_version(3, 4, 4.1)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn hello(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let hello_msg = Hello::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Hello(hello_msg)).await?;
@@ -28,7 +28,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// # Description
     /// The `GOODBYE` message is a Bolt v3+ client message used to end the session. The
     /// server will end the connection upon receipt of this message.
-    #[bolt_version(3, 4, 4.1)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn goodbye(&mut self) -> CommunicationResult<()> {
         self.send_message(Message::Goodbye).await?;
         self.server_state = Defunct;
@@ -45,7 +45,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `SUCCESS {…​}` if the statement has been accepted for execution
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or
     ///   if a statement may not be executed at this time
-    #[bolt_version(3, 4, 4.1)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn run_with_metadata(
         &mut self,
         statement: impl Into<String>,
@@ -71,7 +71,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `SUCCESS {…}` if transaction has started successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
     ///   if transaction could not be started
-    #[bolt_version(3, 4, 4.1)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let begin_msg = Begin::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Begin(begin_msg)).await?;
@@ -89,7 +89,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `SUCCESS {…}` if transaction has been committed successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
     ///   if transaction could not be committed
-    #[bolt_version(3, 4, 4.1)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn commit(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Commit).await?;
         self.read_message().await
@@ -106,7 +106,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `SUCCESS {…}` if transaction has been rolled back successfully
     /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
     ///   if transaction could not be rolled back
-    #[bolt_version(3, 4, 4.1)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn rollback(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Rollback).await?;
         self.read_message().await

@@ -49,6 +49,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         let mut u32_bytes = [0, 0, 0, 0];
         stream.read_exact(&mut u32_bytes).await?;
         let version = u32::from_be_bytes(u32_bytes);
+        // TODO: Update to handle ranges
         if preferred_versions.contains(&version) && version > 0 {
             Ok(Self {
                 stream,

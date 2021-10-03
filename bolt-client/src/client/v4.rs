@@ -18,7 +18,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `SUCCESS {…}` if the result stream has been successfully discarded
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
     ///   available
-    #[bolt_version(4, 4.1)]
+    #[bolt_version(4, 4.1, 4.2, 4.3)]
     pub async fn discard(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let discard_msg = Discard::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Discard(discard_msg)).await?;
@@ -35,7 +35,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `SUCCESS {…​}` if the result stream has been successfully transferred
     /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
     ///   available or if retrieval fails
-    #[bolt_version(4, 4.1)]
+    #[bolt_version(4, 4.1, 4.2, 4.3)]
     pub async fn pull(
         &mut self,
         metadata: Option<Metadata>,
