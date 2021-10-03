@@ -8,3 +8,9 @@ pub const V3_0: u32 = 0x0003;
 pub const V4_0: u32 = 0x0004;
 /// Protocol version 4.1
 pub const V4_1: u32 = 0x0104;
+/// Protocol version 4.2
+pub const V4_2: u32 = 0x0204;
+/// Protocol version 4.3
+pub const V4_3: u32 = 0x0304;
+/// Protocol version 4.0, 4.1, 4.2, or 4.3
+pub const V4: u32 = 0x030304;
