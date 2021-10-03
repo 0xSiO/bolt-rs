@@ -79,7 +79,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         #[cfg(test)]
         println!("<<< {:?}\n", message);
 
-        // TODO: Use or-patterns where possible
         match (self.server_state, self.sent_queue.pop_front(), message) {
             // CONNECTED
             (Connected, Some(Message::Init(_)), Message::Success(success)) => {
@@ -229,7 +228,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (TxStreaming, Some(Message::Pull(_)), Message::Success(success)) => {
                 self.server_state = match success.metadata().get("has_more") {
                     Some(&Value::Boolean(true)) => TxStreaming,
-                    _ => TxReady, // TODO: Or TxStreaming, if there are other stream open?
+                    _ => TxReady, // TODO: Or TxStreaming, if there are other streams open?
                 };
                 Ok(Message::Success(success))
             }
@@ -254,7 +253,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (TxStreaming, Some(Message::Discard(_)), Message::Success(success)) => {
                 self.server_state = match success.metadata().get("has_more") {
                     Some(&Value::Boolean(true)) => TxStreaming,
-                    _ => TxReady, // TODO: Or TxStreaming, if there are other stream open?
+                    _ => TxReady, // TODO: Or TxStreaming, if there are other streams open?
                 };
                 Ok(Message::Success(success))
             }
@@ -371,7 +370,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     pub(crate) async fn send_message(&mut self, message: Message) -> CommunicationResult<()> {
-        // TODO: Use or-patterns where possible
         match (self.server_state, &message) {
             (Connected, Message::Init(_)) => {}
             (Connected, Message::Hello(_)) => {}
