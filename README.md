@@ -1,5 +1,5 @@
 # bolt-rs
-[![CI](https://github.com/lucis-fluxum/bolt-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/lucis-fluxum/bolt-rs/actions/workflows/ci.yml)
+[![CI](https://github.com/0xSiO/bolt-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSiO/bolt-rs/actions/workflows/ci.yml)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 ## Overview
@@ -57,7 +57,7 @@ Procedural macros used in bolt-client for client version requirements and smarte
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/lucis-fluxum/bolt-rs.
+Bug reports and pull requests are welcome on GitHub at https://github.com/0xSiO/bolt-rs.
 
 ## Donations
 

@@ -1,10 +1,9 @@
 [package]
 name = "bolt-client"
 version = "0.9.1"
-authors = ["Luc Street <lucis-fluxum@users.noreply.github.com>"]
 description = "A client that sends messages using the Bolt protocol.\n"
 readme = "README.md"
-repository = "https://github.com/lucis-fluxum/bolt-rs"
+repository = "https://github.com/0xSiO/bolt-rs"
 categories  = ["network-programming", "database", "asynchronous", "encoding"]
 keywords    = ["bolt", "client", "neo4j"]
 license = "MIT"
