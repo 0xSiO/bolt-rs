@@ -22,8 +22,8 @@ thiserror = "1.0.0"
 # Feature: tokio-stream
 pin-project = { version = "1.0.0", optional = true }
 tokio = { version = "1.8.0", features = ["io-util", "net"], optional = true }
-tokio-rustls = { version = "0.22.0", optional = true }
-webpki-roots = { version = "0.21.0", optional = true }
+tokio-rustls = { version = "0.23.0", optional = true }
+webpki-roots = { version = "0.22.0", optional = true }
 
 [dev-dependencies]
 chrono = { version = "0.4.0", default-features = false, features = ["std"] }

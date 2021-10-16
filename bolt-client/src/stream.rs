@@ -1,4 +1,5 @@
 use std::{
+    convert::TryFrom,
     fmt::Debug,
     io,
     pin::Pin,
@@ -11,7 +12,11 @@ use tokio::{
     io::{AsyncRead, AsyncWrite, ReadBuf},
     net::{TcpStream, ToSocketAddrs},
 };
-use tokio_rustls::{client::TlsStream, rustls::ClientConfig, webpki::DNSNameRef, TlsConnector};
+use tokio_rustls::{
+    client::TlsStream,
+    rustls::{ClientConfig, OwnedTrustAnchor, RootCertStore, ServerName},
+    TlsConnector,
+};
 
 /// A convenient wrapper around a [`TcpStream`](tokio::net::TcpStream) or a
 /// [`TlsStream`](tokio_rustls::client::TlsStream).
@@ -33,16 +38,30 @@ impl Stream {
     ) -> io::Result<Self> {
         match domain {
             Some(domain) => {
-                let mut config = ClientConfig::new();
-                config
-                    .root_store
-                    .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
-                let dns_name_ref = DNSNameRef::try_from_ascii_str(domain.as_ref())
+                let mut root_cert_store = RootCertStore::empty();
+                root_cert_store.add_server_trust_anchors(
+                    webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|anchor| {
+                        OwnedTrustAnchor::from_subject_spki_name_constraints(
+                            anchor.subject,
+                            anchor.spki,
+                            anchor.name_constraints,
+                        )
+                    }),
+                );
+
+                let config = ClientConfig::builder()
+                    .with_safe_defaults()
+                    .with_root_certificates(root_cert_store)
+                    .with_no_client_auth();
+
+                let server_name = ServerName::try_from(domain.as_ref())
                     .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, domain.as_ref()))?;
+
                 let stream = TcpStream::connect(addr).await?;
+
                 Ok(Stream::SecureTcp(Box::new(
                     TlsConnector::from(Arc::new(config))
-                        .connect(dns_name_ref, stream)
+                        .connect(server_name, stream)
                         .await?,
                 )))
             }
