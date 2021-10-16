@@ -28,8 +28,8 @@
 //!     let stream = BufStream::new(stream).compat();
 //!
 //!     // Create a new connection to the server and perform a handshake to establish a
-//!     // protocol version. This example demonstrates usage of the v4.1 or v4 protocol.
-//!     let mut result = Client::new(stream, &[V4_1, V4_0, 0, 0]).await;
+//!     // protocol version. This example demonstrates usage of the v4.3 or v4.2 protocol.
+//!     let mut result = Client::new(stream, &[V4_3, V4_2, 0, 0]).await;
 //! #   skip_if_handshake_failed!(result, Ok(()));
 //!     let mut client = result.unwrap();
 //!     
