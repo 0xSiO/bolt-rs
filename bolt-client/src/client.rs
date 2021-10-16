@@ -361,11 +361,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
             (state, request, response) => {
                 self.server_state = Defunct;
-                return Err(CommunicationError::InvalidResponse {
+                Err(CommunicationError::InvalidResponse {
                     state,
                     request,
                     response,
-                });
+                })
             }
         }
     }
