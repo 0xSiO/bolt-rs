@@ -1,32 +1,3 @@
-use bolt_client_macros::bolt_version;
-use bolt_proto::{message::Route, Message};
-use futures_util::io::{AsyncRead, AsyncWrite};
-
-use crate::{error::CommunicationResult, Client, RoutingContext};
-
-impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
-    /// Send a `ROUTE` message to the server.
-    ///
-    /// # Description
-    /// This Bolt v4.3+ message retrieves the current server routing table.
-    ///
-    /// # Response
-    /// - `SUCCESS {…}` if the routing table was successfully retrieved
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or if the
-    ///   routing table cannot be retrieved
-    #[bolt_version(4.3)]
-    pub async fn route(
-        &mut self,
-        context: RoutingContext,
-        bookmarks: impl Into<Vec<String>>,
-        database: impl Into<String>,
-    ) -> CommunicationResult<Message> {
-        let route_msg = Route::new(context.value, bookmarks.into(), database.into());
-        self.send_message(Message::Route(route_msg)).await?;
-        self.read_message().await
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -37,12 +8,11 @@ mod tests {
 
     use crate::{
         client::v1::tests::*, error::CommunicationError, skip_if_handshake_failed, Metadata,
-        RoutingContext,
     };
 
     #[tokio::test]
     async fn hello() {
-        let client = new_client(V4_3).await;
+        let client = new_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Connected);
@@ -53,7 +23,7 @@ mod tests {
 
     #[tokio::test]
     async fn hello_fail() {
-        let client = new_client(V4_3).await;
+        let client = new_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Connected);
@@ -64,7 +34,7 @@ mod tests {
 
     #[tokio::test]
     async fn goodbye() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -74,7 +44,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_with_metadata() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -85,24 +55,24 @@ mod tests {
 
     #[tokio::test]
     async fn run_with_metadata_pipelined() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
-                "MATCH (n {test: 'v4.3-pipelined'}) DETACH DELETE n;".to_string(),
+                "MATCH (n {test: 'v4.2-pipelined'}) DETACH DELETE n;".to_string(),
                 Default::default(), Default::default())),
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
             Message::RunWithMetadata(RunWithMetadata::new(
-                "CREATE (:Database {name: 'neo4j', v1_release: date('2010-02-16'), test: 'v4.3-pipelined'});".to_string(),
+                "CREATE (:Database {name: 'neo4j', v1_release: date('2010-02-16'), test: 'v4.2-pipelined'});".to_string(),
                 Default::default(), Default::default())),
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
             Message::RunWithMetadata(RunWithMetadata::new(
-                "MATCH (neo4j:Database {name: 'neo4j', test: 'v4.3-pipelined'}) CREATE (:Library {name: 'bolt-client', v1_release: date('2019-12-23'), test: 'v4.3-pipelined'})-[:CLIENT_FOR]->(neo4j);".to_string(),
+                "MATCH (neo4j:Database {name: 'neo4j', test: 'v4.2-pipelined'}) CREATE (:Library {name: 'bolt-client', v1_release: date('2019-12-23'), test: 'v4.2-pipelined'})-[:CLIENT_FOR]->(neo4j);".to_string(),
                 Default::default(), Default::default())),
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
             Message::RunWithMetadata(RunWithMetadata::new(
-                "MATCH (neo4j:Database {name: 'neo4j', test: 'v4.3-pipelined'}), (bolt_client:Library {name: 'bolt-client', test: 'v4.3-pipelined'}) RETURN duration.between(neo4j.v1_release, bolt_client.v1_release);".to_string(),
+                "MATCH (neo4j:Database {name: 'neo4j', test: 'v4.2-pipelined'}), (bolt_client:Library {name: 'bolt-client', test: 'v4.2-pipelined'}) RETURN duration.between(neo4j.v1_release, bolt_client.v1_release);".to_string(),
                 Default::default(), Default::default())),
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
         ];
@@ -129,7 +99,7 @@ mod tests {
     //     result stream.
     #[tokio::test]
     async fn discard() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -175,7 +145,7 @@ mod tests {
     //     work here.
     #[tokio::test]
     async fn run_and_pull() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -217,7 +187,7 @@ mod tests {
 
     #[tokio::test]
     async fn begin() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -228,7 +198,7 @@ mod tests {
 
     #[tokio::test]
     async fn commit_empty_transaction() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -241,7 +211,7 @@ mod tests {
 
     #[tokio::test]
     async fn commit() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -250,11 +220,11 @@ mod tests {
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
-                "MATCH (n {test: 'v4.3-commit'}) DETACH DELETE n;".to_string(),
+                "MATCH (n {test: 'v4.2-commit'}) DETACH DELETE n;".to_string(),
                 Default::default(), Default::default())),
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
             Message::RunWithMetadata(RunWithMetadata::new(
-                "CREATE (:Database {name: 'neo4j', v1_release: date('2010-02-16'), test: 'v4.3-commit'});".to_string(),
+                "CREATE (:Database {name: 'neo4j', v1_release: date('2010-02-16'), test: 'v4.2-commit'});".to_string(),
                 Default::default(), Default::default())),
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
         ];
@@ -266,7 +236,7 @@ mod tests {
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
-                "MATCH (n {test: 'v4.3-commit'}) RETURN n;".to_string(),
+                "MATCH (n {test: 'v4.2-commit'}) RETURN n;".to_string(),
                 Default::default(),
                 Default::default(),
             )),
@@ -289,7 +259,7 @@ mod tests {
 
     #[tokio::test]
     async fn commit_with_no_begin_fails() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert!(matches!(
@@ -300,7 +270,7 @@ mod tests {
 
     #[tokio::test]
     async fn rollback_empty_transaction() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -313,7 +283,7 @@ mod tests {
 
     #[tokio::test]
     async fn rollback() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
@@ -321,11 +291,11 @@ mod tests {
         assert_eq!(client.server_state(), TxReady);
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
-                "MATCH (n {test: 'v4.3-rollback'}) DETACH DELETE n;".to_string(),
+                "MATCH (n {test: 'v4.2-rollback'}) DETACH DELETE n;".to_string(),
                 Default::default(), Default::default())),
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
             Message::RunWithMetadata(RunWithMetadata::new(
-                "CREATE (:Database {name: 'neo4j', v1_release: date('2010-02-16'), test: 'v4.3-rollback'});".to_string(),
+                "CREATE (:Database {name: 'neo4j', v1_release: date('2010-02-16'), test: 'v4.2-rollback'});".to_string(),
                 Default::default(), Default::default())),
             Message::Pull(Pull::new(HashMap::from_iter(vec![("n".to_string(), Value::from(1))]))),
         ];
@@ -337,7 +307,7 @@ mod tests {
 
         let messages = vec![
             Message::RunWithMetadata(RunWithMetadata::new(
-                "MATCH (n {test: 'v4.3-rollback'}) RETURN n;".to_string(),
+                "MATCH (n {test: 'v4.2-rollback'}) RETURN n;".to_string(),
                 Default::default(),
                 Default::default(),
             )),
@@ -354,7 +324,7 @@ mod tests {
 
     #[tokio::test]
     async fn rollback_with_no_begin_fails() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert!(matches!(
@@ -365,7 +335,7 @@ mod tests {
 
     #[tokio::test]
     async fn reset_internals_pipelined() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
 
@@ -409,7 +379,7 @@ mod tests {
 
     #[tokio::test]
     async fn reset_internals() {
-        let client = get_initialized_client(V4_3).await;
+        let client = get_initialized_client(V4_2).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
 
@@ -444,23 +414,5 @@ mod tests {
             Message::Success(_) => {}
             other => panic!("unexpected response {:?}", other),
         }
-    }
-
-    #[tokio::test]
-    async fn route() {
-        let client = get_initialized_client(V4_3).await;
-        skip_if_handshake_failed!(client);
-        let mut client = client.unwrap();
-        assert_eq!(client.server_state(), Ready);
-        let response = client
-            .route(
-                RoutingContext::from_iter(vec![("address", "localhost:7687")]),
-                vec![],
-                "neo4j",
-            )
-            .await
-            .unwrap();
-        assert!(Success::try_from(response).is_ok());
-        assert_eq!(client.server_state(), Ready);
     }
 }

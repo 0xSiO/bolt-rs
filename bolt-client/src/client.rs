@@ -21,6 +21,7 @@ mod v2;
 mod v3;
 mod v4;
 mod v4_1;
+mod v4_2;
 mod v4_3;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
