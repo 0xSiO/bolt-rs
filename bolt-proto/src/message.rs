@@ -13,6 +13,7 @@ pub use hello::Hello;
 pub use init::Init;
 pub use pull::Pull;
 pub use record::Record;
+pub use route::Route;
 pub use run::Run;
 pub use run_with_metadata::RunWithMetadata;
 pub use success::Success;
@@ -26,6 +27,7 @@ pub(crate) mod hello;
 pub(crate) mod init;
 pub(crate) mod pull;
 pub(crate) mod record;
+pub(crate) mod route;
 pub(crate) mod run;
 pub(crate) mod run_with_metadata;
 pub(crate) mod success;
@@ -48,6 +50,7 @@ pub(crate) const SIGNATURE_COMMIT: u8 = 0x12;
 pub(crate) const SIGNATURE_ROLLBACK: u8 = 0x13;
 pub(crate) const SIGNATURE_DISCARD: u8 = 0x2F;
 pub(crate) const SIGNATURE_PULL: u8 = 0x3F;
+pub(crate) const SIGNATURE_ROUTE: u8 = 0x66;
 
 // This is the default maximum chunk size in the official driver, minus header length
 const CHUNK_SIZE: usize = 16383 - mem::size_of::<u16>();
@@ -77,6 +80,9 @@ pub enum Message {
     // V4+-compatible message types
     Discard(Discard),
     Pull(Pull),
+
+    // V4.3+-compatible message types
+    Route(Route),
 }
 
 impl Message {
@@ -146,6 +152,7 @@ impl BoltValue for Message {
             Message::Begin(begin) => begin.marker(),
             Message::Discard(discard) => discard.marker(),
             Message::Pull(pull) => pull.marker(),
+            Message::Route(route) => route.marker(),
             _ => Ok(MARKER_TINY_STRUCT),
         }
     }
@@ -162,6 +169,7 @@ impl BoltValue for Message {
             Message::Begin(begin) => begin.serialize(),
             Message::Discard(discard) => discard.serialize(),
             Message::Pull(pull) => pull.serialize(),
+            Message::Route(route) => route.serialize(),
             other => Ok(Bytes::from(vec![other.marker()?, other.signature()])),
         }
     }
@@ -218,6 +226,7 @@ impl BoltValue for Message {
                 SIGNATURE_BEGIN => deserialize_struct!(Begin, bytes),
                 SIGNATURE_COMMIT => Ok((Message::Commit, bytes)),
                 SIGNATURE_ROLLBACK => Ok((Message::Rollback, bytes)),
+                SIGNATURE_ROUTE => deserialize_struct!(Route, bytes),
                 _ => Err(DeserializationError::InvalidSignatureByte(signature)),
             }
         })
@@ -246,6 +255,7 @@ impl BoltStructure for Message {
             Message::Rollback => SIGNATURE_ROLLBACK,
             Message::Discard(_) => SIGNATURE_DISCARD,
             Message::Pull(_) => SIGNATURE_PULL,
+            Message::Route(_) => SIGNATURE_ROUTE,
         }
     }
 }
