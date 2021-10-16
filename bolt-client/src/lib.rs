@@ -237,6 +237,7 @@ pub use stream::Stream;
 
 define_value_map!(Metadata);
 define_value_map!(Params);
+define_value_map!(RoutingContext);
 
 #[doc(hidden)]
 #[macro_export]

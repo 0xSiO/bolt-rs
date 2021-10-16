@@ -21,6 +21,7 @@ mod v2;
 mod v3;
 mod v4;
 mod v4_1;
+mod v4_3;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 
@@ -123,6 +124,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Ready, Some(Message::Begin(_)), Message::Failure(failure)) => {
                 self.server_state = Failed;
                 Ok(Message::Failure(failure))
+            }
+            (Ready, Some(Message::Route(_)), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
             }
 
             // STREAMING
@@ -377,6 +382,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Ready, Message::Run(_)) => {}
             (Ready, Message::RunWithMetadata(_)) => {}
             (Ready, Message::Begin(_)) => {}
+            (Ready, Message::Route(_)) => {}
             (Ready, Message::Reset) => {}
             (Ready, Message::Goodbye) => {}
             (Streaming, Message::PullAll) => {}
