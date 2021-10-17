@@ -25,22 +25,23 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// wishing to retry initialization should establish a new connection.
     ///
     /// # Fields
-    /// - `user_agent` should conform to `"Name/Version"`, for example `"Example/1.0.0"` (see
-    ///   <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent>).
-    /// - `auth_token` must contain either just the entry `{"scheme" : "none"}` or the keys
-    ///   `scheme`, `principal` and `credentials`.
+    /// - `user_agent` should conform to the format `"Name/Version"`, for example `"Example/1.0.0"`
+    ///   (see [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent)).
+    /// - `auth_token` must contain either just the entry `{"scheme": "none"}` or the keys
+    ///   `scheme`, `principal`, and `credentials`.
     ///   - `scheme` is the authentication scheme. Predefined schemes are `"none"` or `"basic"`. If
     ///     no `scheme` is provided, it defaults to `"none"`.
     ///
     /// # Response
-    /// - [`Message::Success`] - indicates that the client is permitted to exchange further
-    ///   messages. The server may include metadata that describes details of the server
-    ///   environment and/or the connection. The following fields are defined for inclusion in the
-    ///   `SUCCESS` metadata:
-    ///   - `server` (e.g. "Neo4j/3.4.0")
-    /// - [`Message::Failure`] - indicates that the client is not permitted to exchange further
-    ///   messages. The server may choose to include metadata describing the nature of the failure
-    ///   but will immediately close the connection after the failure has been sent.
+    /// - [`Message::Success`] - initialization has completed successfully and the server has
+    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may include
+    ///   metadata that describes details of the server environment and/or the connection. The
+    ///   following fields are defined for inclusion in the `SUCCESS` metadata:
+    ///   - `server` (e.g. `"Neo4j/3.4.0"`)
+    /// - [`Message::Failure`] - initialization has failed and the server has entered the
+    ///   [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to include
+    ///   metadata describing the nature of the failure but will immediately close the connection
+    ///   after the failure has been sent.
     #[bolt_version(1, 2)]
     pub async fn init(
         &mut self,
@@ -208,31 +209,33 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a `RESET` message to the server.
+    /// Send a [`RESET`](Message::Reset) message to the server.
+    /// _(Bolt v1+. For Bolt v1 - v2, see [`Client::ack_failure`] for just clearing the
+    /// [`Failed`](bolt_proto::ServerState::Failed) state)._
     ///
     /// # Description
-    /// The `RESET` message is a client message used to return the current session to a
-    /// "clean" state. It will cause the session to `IGNORE` any message it is currently
-    /// processing, as well as any message before `RESET` that had not yet begun
-    /// processing. This allows `RESET` to abort long-running operations. It also means
-    /// clients must be careful about pipelining `RESET`. Only send this if you are not
-    /// currently waiting for a result from a prior message, or if you want to explicitly
-    /// abort any prior message.
+    /// The `RESET` message requests that the connection be set back to its initial state, as if
+    /// initialization had just been successfully completed. The `RESET` message is unique in that
+    /// it on arrival at the server, it jumps ahead in the message queue, stopping any unit of work
+    /// that happens to be executing. All the queued messages originally in front of the `RESET`
+    /// message will then be [`IGNORED`](Message::Ignored) until the `RESET` position is reached,
+    /// at which point the server will be ready for a new session.
     ///
-    /// The following actions are performed by `RESET`:
-    /// - force any currently processing message to abort with `IGNORED`
-    /// - force any pending messages that have not yet started processing to be `IGNORED`
-    /// - clear any outstanding `FAILURE` state
+    /// Specifically, `RESET` will:
+    /// - force any currently processing message to abort with [`IGNORED`](Message::Ignored)
+    /// - force any pending messages that have not yet started processing to be
+    ///   [`IGNORED`](Message::Ignored)
+    /// - clear any outstanding [`Failed`](bolt_proto::ServerState::Failed) state
     /// - dispose of any outstanding result records
-    /// - rollback the current transaction (if any)
-    ///
-    /// For Bolt v1 - v2, see [`ack_failure`](Client::ack_failure) for sending a message
-    /// that only clears `FAILURE` state.
+    /// - cancel the current transaction, if any
     ///
     /// # Response
-    /// - `SUCCESS {…}` if the session was successfully reset
-    /// - `FAILURE {"code": …​, "message": …​}` if a reset is not currently
-    ///   possible
+    /// - [`Message::Success`] - the session has been successfully reset and the server has entered
+    ///   the [`Ready`](bolt_proto::ServerState::Ready) state.
+    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
+    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
+    ///   include metadata describing the nature of the failure but will immediately close the
+    ///   connection after the failure has been sent.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
     pub async fn reset(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Reset).await?;
