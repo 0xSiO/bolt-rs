@@ -34,13 +34,13 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - [`Message::Success`] - indicates that the client is permitted to exchange further
-    ///   messages. Servers may include metadata that describes details of the server environment
-    ///   and/or the connection. The following fields are defined for inclusion in the `SUCCESS`
-    ///   metadata:
+    ///   messages. The server may include metadata that describes details of the server
+    ///   environment and/or the connection. The following fields are defined for inclusion in the
+    ///   `SUCCESS` metadata:
     ///   - `server` (e.g. "Neo4j/3.4.0")
     /// - [`Message::Failure`] - indicates that the client is not permitted to exchange further
-    ///   messages. Servers may choose to include metadata describing the nature of the failure but
-    ///   will immediately close the connection after the failure has been sent.
+    ///   messages. The server may choose to include metadata describing the nature of the failure
+    ///   but will immediately close the connection after the failure has been sent.
     #[bolt_version(1, 2)]
     pub async fn init(
         &mut self,
@@ -199,8 +199,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
     ///   metadata to the `SUCCESS` message.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may attach
-    ///   metadata to the message to provide more detail on the nature of the failure.
+    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
+    ///   include metadata describing the nature of the failure but will immediately close the
+    ///   connection after the failure has been sent.
     #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::AckFailure).await?;
