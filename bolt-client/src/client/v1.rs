@@ -13,11 +13,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// database.
     ///
     /// The server must be in the [`Connected`](bolt_proto::ServerState::Connected) state to be
-    /// able to process an `INIT` request. For any other states, receipt of an `INIT` request is
+    /// able to process an `INIT` message. For any other states, receipt of an `INIT` message is
     /// considered a protocol violation and leads to connection closure.
     ///
-    /// Clients should send `INIT` requests to the server immediately after connection and process
-    /// the response before using that connection in any other way.
+    /// Clients should send an `INIT` message to the server immediately after connection and
+    /// process the response before using that connection in any other way.
     ///
     /// The `auth_token` is used by the server to determine whether the client is permitted to
     /// exchange further messages. If this authentication fails, the server will respond with a
@@ -29,8 +29,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   (see [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent)).
     /// - `auth_token` must contain either just the entry `{"scheme": "none"}` or the keys
     ///   `scheme`, `principal`, and `credentials`.
-    ///   - `scheme` is the authentication scheme. Predefined schemes are `"none"` or `"basic"`. If
-    ///     no `scheme` is provided, it defaults to `"none"`.
+    ///   - `scheme` is the authentication scheme. Predefined schemes are `"none"` or `"basic"`.
     ///
     /// # Response
     /// - [`Message::Success`] - initialization has completed successfully and the server has

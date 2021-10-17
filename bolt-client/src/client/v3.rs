@@ -5,17 +5,48 @@ use futures_util::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use crate::{error::CommunicationResult, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
-    /// Send a `HELLO` message to the server.
+    /// Send a [`HELLO`](Message::Hello) message to the server.
+    /// _(Bolt v3+ only. For Bolt v1 - v2, see [`Client::init`])._
     ///
     /// # Description
-    /// This message is the equivalent of `INIT` for Bolt v3+ clients, but the client name
-    /// and auth token are merged into a single metadata object.
+    /// The `HELLO` message requests the connection to be authorized for use with the remote
+    /// database.
+    ///
+    /// The server must be in the [`Connected`](bolt_proto::ServerState::Connected) state to be
+    /// able to process a `HELLO` message. For any other states, receipt of a `HELLO` message is
+    /// considered a protocol violation and leads to connection closure.
+    ///
+    /// Clients should send a `HELLO` message to the server immediately after connection and
+    /// process the response before using that connection in any other way.
+    ///
+    /// If authentication fails, the server will respond with a [`FAILURE`](Message::Failure)
+    /// message and immediately close the connection. Clients wishing to retry initialization
+    /// should establish a new connection.
+    ///
+    /// # Fields
+    /// - `metadata` should contain at least two entries:
+    ///   - `user_agent`, a [`String`](bolt_proto::Value::String) which should conform to the
+    ///     format `"Name/Version"`, for example `"Example/1.0.0"` (see
+    ///     [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent)).
+    ///   - `scheme` is the authentication scheme. Predefined schemes are `"none"`, `"basic"`, or
+    ///     `"kerberos"`.
+    ///
+    /// Further entries in `metadata` are passed to the implementation of the chosen
+    /// authentication scheme. Their names, types, and defaults depend on that choice. For
+    /// example, the scheme `"basic"` requires `metadata` to contain the username and password in
+    /// the form `{"principal": "<username>", "credentials": "<password>"}`.
     ///
     /// # Response
-    /// - `SUCCESS {…}` if initialization has completed successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
-    ///   if initialization cannot be performed at this time, or if the authorization
-    ///   failed.
+    /// - [`Message::Success`] - initialization has completed successfully and the server has
+    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may include
+    ///   metadata that describes details of the server environment and/or the connection. The
+    ///   following fields are defined for inclusion in the `SUCCESS` metadata:
+    ///   - `server` (e.g. `"Neo4j/4.3.0"`)
+    ///   - `connection_id` (e.g. `"bolt-61"`)
+    /// - [`Message::Failure`] - initialization has failed and the server has entered the
+    ///   [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to include
+    ///   metadata describing the nature of the failure but will immediately close the connection
+    ///   after the failure has been sent.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn hello(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let hello_msg = Hello::new(metadata.unwrap_or_default().value);
