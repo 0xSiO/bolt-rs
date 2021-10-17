@@ -82,7 +82,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
     ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
-    /// - [`Message::Failure`] - the request cannot be processed successfully or is invalid, and
+    /// - [`Message::Failure`] - the request could not be processed successfully or is invalid, and
     ///   the server has entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server
     ///   may attach metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(1, 2)]
@@ -118,6 +118,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   The following fields are defined for inclusion in the metadata:
     ///   - `bookmark` (e.g. `"bookmark:1234"`)
     ///   - `result_consumed_after` (e.g. `123`)
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
+    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(1, 2, 3)]
     pub async fn discard_all(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::DiscardAll).await?;
