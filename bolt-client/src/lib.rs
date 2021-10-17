@@ -56,7 +56,7 @@
 //!     // Use PULL to retrieve results of the query, organized into RECORD messages
 //!     // We get a (Message, Vec<Record>) returned from a PULL
 //!     let pull_meta = Metadata::from_iter(vec![("n", 1)]);
-//!     let (response, records) = client.pull(Some(pull_meta.clone())).await?;
+//!     let (records, response) = client.pull(Some(pull_meta.clone())).await?;
 //! #   Success::try_from(response).unwrap();
 //!
 //!     assert_eq!(records[0].fields(), &[Value::from(1)]);
@@ -73,7 +73,7 @@
 //!
 //!     // Grab a node from the database and convert it to a native type
 //!     client.run("MATCH (rust:Language) RETURN rust;", None, None).await?;
-//!     let (response, records) = client.pull(Some(pull_meta.clone())).await?;
+//!     let (records, response) = client.pull(Some(pull_meta.clone())).await?;
 //! #   Success::try_from(response).unwrap();
 //!     let node = Node::try_from(records[0].fields()[0].clone())?;
 //!
@@ -89,10 +89,8 @@
 //! }
 //! ```
 //!
-//! For version 3 of the protocol, the above example would simply use [`Client::pull_all`]
-//! instead of [`Client::pull`]. In version 4, note that we must pass metadata to `PULL`
-//! to indicate how many records we wish to consume, but in version 3 this metadata is not
-//! required (i.e. all records are consumed).
+//! For version 3 of the protocol, the metadata we pass to [`Client::pull`] is not required, since
+//! all records are consumed.
 //! ```
 //! # use std::collections::HashMap;
 //! # use std::convert::TryFrom;
@@ -126,23 +124,21 @@
 //! #
 //! #     let response = client.run("RETURN 1 as num;", None, None).await?;
 //! #     Success::try_from(response).unwrap();
-//!
-//! // PULL_ALL instead of PULL
-//! let (response, records) = client.pull_all().await?;
+//! let (records, response) = client.pull(None).await?;
 //! #     Success::try_from(response).unwrap();
 //! #
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //! #     client.run("MATCH (n {test: 'doctest-v3'}) DETACH DELETE n;", None, None).await?;
-//! #     client.pull_all().await?;
+//! #     client.pull(None).await?;
 //! #
 //! #     let params = Params::from_iter(vec![("name", "C")]);
 //! #     client.run(
 //! #         "CREATE (:Seabolt {test: 'doctest-v3'})-[:WRITTEN_IN]->(:C {name: $name, test: 'doctest-v3'});",
 //! #         Some(params), None).await?;
-//! #     client.pull_all().await?;
+//! #     client.pull(None).await?;
 //! #
 //! #     client.run("MATCH (c:C {test: 'doctest-v3'}) RETURN c;", None, None).await?;
-//! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
+//! #     let (records, response) = client.pull(None).await?;
 //! #     Success::try_from(response).unwrap();
 //! #     let node = Node::try_from(records[0].fields()[0].clone())?;
 //! #     assert_eq!(node.labels(), &[String::from("C")]);
@@ -189,19 +185,19 @@
 //! #     let response = client.run("RETURN 1 as num;", None, None).await?;
 //! #     Success::try_from(response).unwrap();
 //!
-//! // We also use Client::pull_all here.
-//! let (response, records) = client.pull_all().await?;
+//! // No need to pass metadata here either
+//! let (records, response) = client.pull(None).await?;
 //! #     Success::try_from(response).unwrap();
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //! #    
 //! #     client.run("MATCH (n {test: 'doctest-v2-v1'}) DETACH DELETE n;", None, None).await?;
-//! #     client.pull_all().await?;
+//! #     client.pull(None).await?;
 //! #    
 //! #     client.run("CREATE (:Client {test: 'doctest-v2-v1'})-[:WRITTEN_IN]->(:Language {name: $name, test: 'doctest-v2-v1'});",
 //! #                Some(Params::from_iter(vec![("name".to_string(), Value::from("Rust"))])), None).await?;
-//! #     client.pull_all().await?;
+//! #     client.pull(None).await?;
 //! #     client.run("MATCH (rust:Language {test: 'doctest-v2-v1'}) RETURN rust;", None, None).await?;
-//! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
+//! #     let (records, response) = client.pull(None).await?;
 //! #     Success::try_from(response).unwrap();
 //! #    
 //! #     let node = Node::try_from(records[0].fields()[0].clone())?;

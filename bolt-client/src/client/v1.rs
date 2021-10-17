@@ -503,7 +503,7 @@ pub(crate) mod tests {
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Streaming);
 
-        let (response, records) = client.pull_all().await.unwrap();
+        let (records, response) = client.pull(None).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Ready);
         assert_eq!(records.len(), 1);
@@ -523,10 +523,10 @@ pub(crate) mod tests {
             )
             .await
             .unwrap();
-        client.pull_all().await.unwrap();
+        client.pull(None).await.unwrap();
 
         client.run("CREATE (:Client {name: 'bolt-client', test: 'v1-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v1-node-rel'});", None, None).await.unwrap();
-        client.pull_all().await.unwrap();
+        client.pull(None).await.unwrap();
         client
             .run(
                 "MATCH (c {test: 'v1-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;",
@@ -535,7 +535,7 @@ pub(crate) mod tests {
             )
             .await
             .unwrap();
-        let (_response, records) = client.pull_all().await.unwrap();
+        let (records, _response) = client.pull(None).await.unwrap();
 
         let c = Node::try_from(records[0].fields()[0].clone()).unwrap();
         let r = Relationship::try_from(records[0].fields()[1].clone()).unwrap();
@@ -595,7 +595,7 @@ pub(crate) mod tests {
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(
-            client.pull_all().await,
+            client.pull(None).await,
             Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }

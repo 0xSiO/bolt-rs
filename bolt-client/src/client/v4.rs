@@ -183,7 +183,7 @@ mod tests {
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Streaming);
 
-        let (response, records) = client
+        let (records, response) = client
             .pull(Some(Metadata::from_iter(vec![("n", 1)])))
             .await
             .unwrap();
@@ -200,7 +200,7 @@ mod tests {
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Streaming);
 
-        let (response, records) = client
+        let (records, response) = client
             .pull(Some(Metadata::from_iter(vec![("n", -1)])))
             .await
             .unwrap();
