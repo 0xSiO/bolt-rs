@@ -43,18 +43,6 @@ A bolt-client manager for the [deadpool](https://crates.io/crates/deadpool) conn
 
 A bolt-client manager for the [mobc](https://crates.io/crates/mobc) connection pool.
 
-### bolt-proto-derive
-[![crates.io](https://img.shields.io/crates/v/bolt-proto-derive.svg)](https://crates.io/crates/bolt-proto-derive)
-[![Released API docs](https://docs.rs/bolt-proto-derive/badge.svg)](https://docs.rs/bolt-proto-derive)
-
-Procedural macros used in bolt-proto to derive serialization-related traits.
-
-### bolt-client-macros
-[![crates.io](https://img.shields.io/crates/v/bolt-client-macros.svg)](https://crates.io/crates/bolt-client-macros)
-[![Released API docs](https://docs.rs/bolt-client-macros/badge.svg)](https://docs.rs/bolt-client-macros)
-
-Procedural macros used in bolt-client for client version requirements and smarter tests.
-
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/0xSiO/bolt-rs.
