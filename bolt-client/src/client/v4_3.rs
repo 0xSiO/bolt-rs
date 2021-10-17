@@ -73,7 +73,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn run_with_metadata() {
+    async fn run() {
         let client = get_initialized_client(V4_3).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
@@ -84,7 +84,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn run_with_metadata_pipelined() {
+    async fn run_pipelined() {
         let client = get_initialized_client(V4_3).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
@@ -182,7 +182,7 @@ mod tests {
 
         // Try pulling 1 result
         let response = client
-            .run_with_metadata("RETURN 3458376 as n;", None, None)
+            .run("RETURN 3458376 as n;", None, None)
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -199,7 +199,7 @@ mod tests {
 
         // Try pulling all results
         let response = client
-            .run_with_metadata("RETURN 3458376 as n;", None, None)
+            .run("RETURN 3458376 as n;", None, None)
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -413,10 +413,7 @@ mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
 
-        client
-            .run_with_metadata("RETURN 1;", None, None)
-            .await
-            .unwrap();
+        client.run("RETURN 1;", None, None).await.unwrap();
         client
             .send_message(Message::Pull(Pull::new(HashMap::from_iter(vec![(
                 String::from("n"),

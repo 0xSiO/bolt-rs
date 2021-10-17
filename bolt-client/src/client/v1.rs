@@ -38,6 +38,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to include
     ///   metadata describing the nature of the failure but will immediately close the connection
     ///   after the failure has been sent.
+    // TODO: Merge this with HELLO
     #[bolt_version(1, 2)]
     pub async fn init(
         &mut self,
@@ -50,7 +51,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     /// Send a [`RUN`](Message::Run) message to the server.
-    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::run_with_metadata`].)_
+    /// _(Bolt v1+. For Bolt v1 - v2, the `metadata` parameter is ignored.)_
     ///
     /// # Description
     /// A `RUN` message submits a new query for execution, the result of which will be consumed by
@@ -82,14 +83,23 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Failure`] - the request could not be processed successfully or is invalid, and
     ///   the server has entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server
     ///   may attach metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(1, 2)]
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
     pub async fn run(
         &mut self,
         query: impl Into<String>,
         parameters: Option<Params>,
+        metadata: Option<Metadata>,
     ) -> CommunicationResult<Message> {
-        let run_msg = Run::new(query.into(), parameters.unwrap_or_default().value);
-        self.send_message(Message::Run(run_msg)).await?;
+        let message = match self.version() {
+            1 | 2 => Message::Run(Run::new(query.into(), parameters.unwrap_or_default().value)),
+            _ => Message::RunWithMetadata(RunWithMetadata::new(
+                query.into(),
+                parameters.unwrap_or_default().value,
+                metadata.unwrap_or_default().value,
+            )),
+        };
+
+        self.send_message(message).await?;
         self.read_message().await
     }
 
@@ -324,14 +334,14 @@ pub(crate) mod tests {
     ) -> CommunicationResult<Message> {
         if client.version() > V2_0 {
             client
-                .run_with_metadata(
+                .run(
                     "RETURN invalid query oof as n;",
                     Some(Params::from_iter(vec![("some_val", 25.5432)])),
                     Some(Metadata::from_iter(vec![("some_key", true)])),
                 )
                 .await
         } else {
-            client.run("", None).await
+            client.run("", None, None).await
         }
     }
 
@@ -340,14 +350,14 @@ pub(crate) mod tests {
     ) -> CommunicationResult<Message> {
         if client.version() > V2_0 {
             client
-                .run_with_metadata(
+                .run(
                     "RETURN $some_val as n;",
                     Some(Params::from_iter(vec![("some_val", 25.5432)])),
                     Some(Metadata::from_iter(vec![("some_key", true)])),
                 )
                 .await
         } else {
-            client.run("RETURN 1 as n;", None).await
+            client.run("RETURN 1 as n;", None, None).await
         }
     }
 
@@ -465,7 +475,10 @@ pub(crate) mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
-        let response = client.run("RETURN 3458376 as n;", None).await.unwrap();
+        let response = client
+            .run("RETURN 3458376 as n;", None, None)
+            .await
+            .unwrap();
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Streaming);
 
@@ -482,16 +495,21 @@ pub(crate) mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client
-            .run("MATCH (n {test: 'v1-node-rel'}) DETACH DELETE n;", None)
+            .run(
+                "MATCH (n {test: 'v1-node-rel'}) DETACH DELETE n;",
+                None,
+                None,
+            )
             .await
             .unwrap();
         client.pull_all().await.unwrap();
 
-        client.run("CREATE (:Client {name: 'bolt-client', test: 'v1-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v1-node-rel'});", None).await.unwrap();
+        client.run("CREATE (:Client {name: 'bolt-client', test: 'v1-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v1-node-rel'});", None, None).await.unwrap();
         client.pull_all().await.unwrap();
         client
             .run(
                 "MATCH (c {test: 'v1-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;",
+                None,
                 None,
             )
             .await
@@ -617,7 +635,7 @@ pub(crate) mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
 
-        client.run("RETURN 1;", None).await.unwrap();
+        client.run("RETURN 1;", None, None).await.unwrap();
         client.send_message(Message::PullAll).await.unwrap();
         client.send_message(Message::Reset).await.unwrap();
         assert_eq!(client.server_state(), Interrupted);

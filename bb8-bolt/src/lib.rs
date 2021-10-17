@@ -174,28 +174,13 @@ mod tests {
                         let mut client = pool.get().await.unwrap();
                         let statement = format!("RETURN {} as num;", i);
                         let version = client.version();
+                        client.run(statement, None, None).await.unwrap();
                         let (response, records) = match version {
-                            V1_0 | V2_0 => {
-                                client.run(statement, None).await.unwrap();
-                                client.pull_all().await.unwrap()
-                            }
-                            V3_0 => {
-                                client
-                                    .run_with_metadata(statement, None, None)
-                                    .await
-                                    .unwrap();
-                                client.pull_all().await.unwrap()
-                            }
-                            V4_0 | V4_1 | V4_2 | V4_3 => {
-                                client
-                                    .run_with_metadata(statement, None, None)
-                                    .await
-                                    .unwrap();
-                                client
-                                    .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
-                                    .await
-                                    .unwrap()
-                            }
+                            V1_0 | V2_0 | V3_0 => client.pull_all().await.unwrap(),
+                            V4_0 | V4_1 | V4_2 | V4_3 => client
+                                .pull(Some(Metadata::from_iter(vec![("n".to_string(), 1)])))
+                                .await
+                                .unwrap(),
                             _ => panic!("Unsupported client version: {:#x}", version),
                         };
                         assert!(message::Success::try_from(response).is_ok());

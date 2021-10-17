@@ -2,7 +2,7 @@ use bolt_client_macros::*;
 use bolt_proto::{message::*, Message, ServerState::*};
 use futures_util::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 
-use crate::{error::CommunicationResult, Client, Metadata, Params};
+use crate::{error::CommunicationResult, Client, Metadata};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send a [`HELLO`](Message::Hello) message to the server.
@@ -65,32 +65,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.send_message(Message::Goodbye).await?;
         self.server_state = Defunct;
         Ok(self.stream.close().await?)
-    }
-
-    /// Send a `RUN_WITH_METADATA` message to the server.
-    ///
-    /// # Description
-    /// This message is the equivalent of `RUN` for Bolt v3+ clients, but allows passing
-    /// an arbitrary metadata hash along with the request.
-    ///
-    /// # Response
-    /// - `SUCCESS {…​}` if the statement has been accepted for execution
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or
-    ///   if a statement may not be executed at this time
-    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
-    pub async fn run_with_metadata(
-        &mut self,
-        statement: impl Into<String>,
-        parameters: Option<Params>,
-        metadata: Option<Metadata>,
-    ) -> CommunicationResult<Message> {
-        let run_msg = RunWithMetadata::new(
-            statement.into(),
-            parameters.unwrap_or_default().value,
-            metadata.unwrap_or_default().value,
-        );
-        self.send_message(Message::RunWithMetadata(run_msg)).await?;
-        self.read_message().await
     }
 
     /// Send a `BEGIN` message to the server.
@@ -188,7 +162,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn run_with_metadata() {
+    async fn run() {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
@@ -199,7 +173,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn run_with_metadata_pipelined() {
+    async fn run_pipelined() {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
@@ -419,10 +393,7 @@ mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
 
-        client
-            .run_with_metadata("RETURN 1;", None, None)
-            .await
-            .unwrap();
+        client.run("RETURN 1;", None, None).await.unwrap();
         client.send_message(Message::PullAll).await.unwrap();
         client.send_message(Message::Reset).await.unwrap();
         assert_eq!(client.server_state(), Interrupted);

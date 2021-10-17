@@ -46,7 +46,7 @@
 //!     assert!(Success::try_from(response).is_ok());
 //!
 //!     // Run a query on the server
-//!     let response = client.run_with_metadata("RETURN 1 as num;", None, None).await?;
+//!     let response = client.run("RETURN 1 as num;", None, None).await?;
 //!
 //!     // Successful responses will include a SUCCESS message with related metadata
 //!     // Consuming these messages is optional and will be skipped for the rest of the example
@@ -61,18 +61,18 @@
 //!
 //!     assert_eq!(records[0].fields(), &[Value::from(1)]);
 //! #    
-//! #   client.run_with_metadata("MATCH (n) DETACH DELETE n;", None, None).await?;
+//! #   client.run("MATCH (n) DETACH DELETE n;", None, None).await?;
 //! #   client.pull(Some(pull_meta.clone())).await?;
 //!
 //!     // Run a more complex query with parameters
 //!     let params = Params::from_iter(vec![("name", "Rust")]);
-//!     client.run_with_metadata(
+//!     client.run(
 //!         "CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});",
 //!         Some(params), None).await?;
 //!     client.pull(Some(pull_meta.clone())).await?;
 //!
 //!     // Grab a node from the database and convert it to a native type
-//!     client.run_with_metadata("MATCH (rust:Language) RETURN rust;", None, None).await?;
+//!     client.run("MATCH (rust:Language) RETURN rust;", None, None).await?;
 //!     let (response, records) = client.pull(Some(pull_meta.clone())).await?;
 //! #   Success::try_from(response).unwrap();
 //!     let node = Node::try_from(records[0].fields()[0].clone())?;
@@ -124,7 +124,7 @@
 //! #         ]))).await?;
 //! #     Success::try_from(response).unwrap();
 //! #
-//! #     let response = client.run_with_metadata("RETURN 1 as num;", None, None).await?;
+//! #     let response = client.run("RETURN 1 as num;", None, None).await?;
 //! #     Success::try_from(response).unwrap();
 //!
 //! // PULL_ALL instead of PULL
@@ -132,16 +132,16 @@
 //! #     Success::try_from(response).unwrap();
 //! #
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
-//! #     client.run_with_metadata("MATCH (n {test: 'doctest-v3'}) DETACH DELETE n;", None, None).await?;
+//! #     client.run("MATCH (n {test: 'doctest-v3'}) DETACH DELETE n;", None, None).await?;
 //! #     client.pull_all().await?;
 //! #
 //! #     let params = Params::from_iter(vec![("name", "C")]);
-//! #     client.run_with_metadata(
+//! #     client.run(
 //! #         "CREATE (:Seabolt {test: 'doctest-v3'})-[:WRITTEN_IN]->(:C {name: $name, test: 'doctest-v3'});",
 //! #         Some(params), None).await?;
 //! #     client.pull_all().await?;
 //! #
-//! #     client.run_with_metadata("MATCH (c:C {test: 'doctest-v3'}) RETURN c;", None, None).await?;
+//! #     client.run("MATCH (c:C {test: 'doctest-v3'}) RETURN c;", None, None).await?;
 //! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //! #     Success::try_from(response).unwrap();
 //! #     let node = Node::try_from(records[0].fields()[0].clone())?;
@@ -186,9 +186,7 @@
 //!         ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
 //!     ])).await?;
 //! #     Success::try_from(response).unwrap();
-//!
-//! // Instead of `run_with_metadata`, we call `run`, and there is no third parameter for metadata.
-//! let response = client.run("RETURN 1 as num;", None).await?;
+//! #     let response = client.run("RETURN 1 as num;", None, None).await?;
 //! #     Success::try_from(response).unwrap();
 //!
 //! // We also use Client::pull_all here.
@@ -196,15 +194,13 @@
 //! #     Success::try_from(response).unwrap();
 //! #     assert_eq!(records[0].fields(), &[Value::from(1 as i8)]);
 //! #    
-//! #     client.run("MATCH (n {test: 'doctest-v2-v1'}) DETACH DELETE n;", None).await?;
+//! #     client.run("MATCH (n {test: 'doctest-v2-v1'}) DETACH DELETE n;", None, None).await?;
 //! #     client.pull_all().await?;
 //! #    
 //! #     client.run("CREATE (:Client {test: 'doctest-v2-v1'})-[:WRITTEN_IN]->(:Language {name: $name, test: 'doctest-v2-v1'});",
-//! #                Some(Params::from_iter(
-//! #                    vec![("name".to_string(), Value::from("Rust"))]
-//! #                ))).await?;
+//! #                Some(Params::from_iter(vec![("name".to_string(), Value::from("Rust"))])), None).await?;
 //! #     client.pull_all().await?;
-//! #     client.run("MATCH (rust:Language {test: 'doctest-v2-v1'}) RETURN rust;", None).await?;
+//! #     client.run("MATCH (rust:Language {test: 'doctest-v2-v1'}) RETURN rust;", None, None).await?;
 //! #     let (response, records): (Message, Vec<Record>) = client.pull_all().await?;
 //! #     Success::try_from(response).unwrap();
 //! #    

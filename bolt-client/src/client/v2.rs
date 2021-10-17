@@ -126,6 +126,7 @@ mod tests {
             .run(
                 "RETURN localdatetime('2010-03-05T12:30:01.000000500');",
                 None,
+                None,
             )
             .await
             .unwrap();
@@ -145,7 +146,7 @@ mod tests {
         );
 
         let response = client
-            .run("RETURN point({x: 42.5123, y: 1.123, z: 3214});", None)
+            .run("RETURN point({x: 42.5123, y: 1.123, z: 3214});", None, None)
             .await
             .unwrap();
         assert!(Success::try_from(response).is_ok());
@@ -167,16 +168,21 @@ mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         client
-            .run("MATCH (n {test: 'v2-node-rel'}) DETACH DELETE n;", None)
+            .run(
+                "MATCH (n {test: 'v2-node-rel'}) DETACH DELETE n;",
+                None,
+                None,
+            )
             .await
             .unwrap();
         client.pull_all().await.unwrap();
 
-        client.run("CREATE (:Client {name: 'bolt-client', starting: datetime('2019-12-19T16:08:04.322-08:00'), test: 'v2-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v2-node-rel'});", None).await.unwrap();
+        client.run("CREATE (:Client {name: 'bolt-client', starting: datetime('2019-12-19T16:08:04.322-08:00'), test: 'v2-node-rel'})-[:WRITTEN_IN]->(:Language {name: 'Rust', test: 'v2-node-rel'});", None, None).await.unwrap();
         client.pull_all().await.unwrap();
         client
             .run(
                 "MATCH (c {test: 'v2-node-rel'})-[r:WRITTEN_IN]->(l) RETURN c, r, l;",
+                None,
                 None,
             )
             .await
@@ -310,7 +316,7 @@ mod tests {
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
 
-        client.run("RETURN 1;", None).await.unwrap();
+        client.run("RETURN 1;", None, None).await.unwrap();
         client.send_message(Message::PullAll).await.unwrap();
         client.send_message(Message::Reset).await.unwrap();
         assert_eq!(client.server_state(), Interrupted);
