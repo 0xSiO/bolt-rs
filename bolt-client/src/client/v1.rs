@@ -163,7 +163,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     /// Send a [`PULL`](Message::Pull) (or [`PULL_ALL`](Message::PullAll)) message to the server.
-    /// _(Sends `PULL_ALL` for Bolt v1 - v3, and `PULL` for Bolt v4+.)_
+    /// _(Sends `PULL_ALL` for Bolt v1 - v3, and `PULL` for Bolt v4+. For Bolt v1 - v3, the
+    /// `metadata` parameter is ignored.)_
     ///
     /// # Description
     /// The `PULL` message issues a request to stream outstanding results back to the client,
