@@ -1,10 +1,11 @@
-// Portions of the documentation comments for message-related instance methods in this
-// module and its submodules are copied from the descriptions on https://7687.org, with
-// minor modifications. The aforementioned comments are thus licensed under CC BY-SA 4.0.
+// Much of the documentation comments in this module and its submodules are copied from the
+// descriptions on https://7687.org, with minor modifications.
 //
-// Original copyright and license information:
+// Original copyright and license information for these descriptions:
 // Copyright © 2002-2020 Neo4j, Inc.
 // CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
+//
+// The aforementioned documentation comments are thus licensed under CC BY-SA 4.0.
 
 use std::collections::VecDeque;
 

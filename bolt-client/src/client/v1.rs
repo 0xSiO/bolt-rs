@@ -73,6 +73,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
+    // TODO: Add additional allowed server states for `RUN`
     /// Send a [`RUN`](Message::Run) message to the server.
     /// _(Bolt v1+. For Bolt v1 - v2, the `metadata` parameter is ignored.)_
     ///

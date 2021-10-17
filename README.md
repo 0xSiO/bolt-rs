@@ -55,7 +55,8 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/0xSiO/
 
 These crates are available as open source under the terms of the
 [MIT License](http://opensource.org/licenses/MIT), with portions of the documentation licensed under
-the [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/).
+the [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/)
+license.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in
 `bolt-rs` by you shall be licensed as MIT, without any additional terms or conditions.
