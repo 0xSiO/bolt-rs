@@ -176,22 +176,22 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         }
     }
 
-    /// Send an `ACK_FAILURE` message to the server.
+    /// Send an [`ACK_FAILURE`](Message::AckFailure) message to the server.
+    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::reset`])._
     ///
     /// # Description
-    /// The `ACK_FAILURE` message is a Bolt v1 - v2 client message used to acknowledge a
-    /// failure the server has sent.
+    /// `ACK_FAILURE` signals to the server that the client has acknowledged a previous failure and
+    /// should return to the [`Ready`](bolt_proto::ServerState::Ready) state.
     ///
-    /// The following actions are performed by `ACK_FAILURE`:
-    /// - clear any outstanding `FAILURE` state
-    ///
-    /// In some cases, it may be preferable to use `RESET` after a failure, to clear the
-    /// entire state of the connection.
+    /// The server must be in the [`Failed`](bolt_proto::ServerState::Failed) state to be able to
+    /// successfully process an `ACK_FAILURE` request. For any other states, receipt of an
+    /// `ACK_FAILURE` request will be considered a protocol violation and will lead to connection
+    /// closure.
     ///
     /// # Response
-    /// - `SUCCESS {…}` if the session was successfully reset
-    /// - `FAILURE {"code": …​, "message": …​}` if there is no failure waiting
-    ///   to be cleared
+    /// - [`Message::Success`] - the request has been successfully received and the server has
+    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
+    ///   metadata to the `SUCCESS` message.
     #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::AckFailure).await?;
