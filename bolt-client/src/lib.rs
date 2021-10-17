@@ -154,7 +154,7 @@
 //! # }
 //! ```
 //!
-//! For versions 1 and 2 of the protocol, the changes are more involved:
+//! For versions 1 and 2 of the protocol, there are a couple more differences:
 //! ```
 //! # use std::collections::HashMap;
 //! # use std::convert::TryFrom;
@@ -176,20 +176,16 @@
 //! let mut result = Client::new(stream, &[V2_0, V1_0, 0, 0]).await;
 //! #     skip_if_handshake_failed!(result, Ok(()));
 //! #     let mut client = result.unwrap();
-//!     
-//! // Authentication details must be sent in a separate `auth_token` entry.
-//! let auth_token: HashMap<&str, String> =
-//!     HashMap::from_iter(vec![
-//!         ("scheme", String::from("basic")),
-//!         ("principal", env::var("BOLT_TEST_USERNAME")?),
-//!         ("credentials", env::var("BOLT_TEST_PASSWORD")?),
-//!     ]);
-//! let response: Message = client.hello(
-//!     Metadata::from_iter(vec![
-//!         ("user_agent", Value::from("my-client-name/1.0")),
-//!         ("auth_token", Value::from(auth_token))
-//!     ])).await?;
+//! #
+//! #     let response: Message = client.hello(
+//! #         Metadata::from_iter(vec![
+//! #             ("user_agent", "my-client-name/1.0"),
+//! #             ("scheme", "basic"),
+//! #             ("principal", &env::var("BOLT_TEST_USERNAME")?),
+//! #             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
+//! #         ])).await?;
 //! #     Success::try_from(response).unwrap();
+//! #
 //! #     let response = client.run("RETURN 1 as num;", None, None).await?;
 //! #     Success::try_from(response).unwrap();
 //!

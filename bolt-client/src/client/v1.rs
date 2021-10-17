@@ -1,7 +1,7 @@
-use std::{collections::HashMap, convert::TryInto, io};
+use std::{convert::TryInto, io};
 
 use bolt_client_macros::*;
-use bolt_proto::{message::*, Message, Value};
+use bolt_proto::{message::*, Message};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::{error::CommunicationResult, Client, Metadata, Params};
@@ -24,7 +24,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// should establish a new connection.
     ///
     /// # Fields
-    /// For Bolt v3+:
     /// - `metadata` should contain at least two entries:
     ///   - `user_agent`, which should conform to the format `"Name/Version"`, for example
     ///     `"Example/1.0.0"` (see
@@ -36,12 +35,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// authentication scheme. Their names, types, and defaults depend on that choice. For
     /// example, the scheme `"basic"` requires `metadata` to contain the username and password in
     /// the form `{"principal": "<username>", "credentials": "<password>"}`.
-    ///
-    /// For Bolt v1 - v2:
-    /// - `metadata` should contain two entries:
-    ///   - `user_agent`, as specified above.
-    ///   - `auth_token`, a map containing a `scheme` entry as well as any additional
-    ///     authentication details, like `principal` and `credentials`.
     ///
     /// # Response
     /// - [`Message::Success`] - initialization has completed successfully and the server has
@@ -69,17 +62,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                     .map_err(|_| {
                         io::Error::new(io::ErrorKind::InvalidInput, "user_agent must be a string")
                     })?;
-                let auth_token: HashMap<String, Value> = metadata
-                    .value
-                    .remove("auth_token")
-                    .ok_or(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        "missing auth_token",
-                    ))?
-                    .try_into()
-                    .map_err(|_| {
-                        io::Error::new(io::ErrorKind::InvalidInput, "auth_token must be a map")
-                    })?;
+                let auth_token = metadata.value;
 
                 Message::Init(Init::new(user_agent, auth_token))
             }
@@ -339,29 +322,14 @@ pub(crate) mod tests {
             String::from("invalid")
         };
 
-        let version = client.version();
-        if [V1_0, V2_0].contains(&version) {
-            let auth_token: HashMap<&str, &str> = HashMap::from_iter(vec![
+        client
+            .hello(Metadata::from_iter(vec![
+                ("user_agent", "bolt-client/X.Y.Z"),
                 ("scheme", "basic"),
                 ("principal", &username),
                 ("credentials", &password),
-            ]);
-            client
-                .hello(Metadata::from_iter(vec![
-                    ("user_agent", Value::from("bolt-client/X.Y.Z")),
-                    ("auth_token", Value::from(auth_token)),
-                ]))
-                .await
-        } else {
-            client
-                .hello(Metadata::from_iter(vec![
-                    ("user_agent", "bolt-client/X.Y.Z"),
-                    ("scheme", "basic"),
-                    ("principal", &username),
-                    ("credentials", &password),
-                ]))
-                .await
-        }
+            ]))
+            .await
     }
 
     pub(crate) async fn get_initialized_client(version: u32) -> Result<Client<Stream>> {
@@ -373,33 +341,25 @@ pub(crate) mod tests {
     pub(crate) async fn run_invalid_query(
         client: &mut Client<Stream>,
     ) -> CommunicationResult<Message> {
-        if client.version() > V2_0 {
-            client
-                .run(
-                    "RETURN invalid query oof as n;",
-                    Some(Params::from_iter(vec![("some_val", 25.5432)])),
-                    Some(Metadata::from_iter(vec![("some_key", true)])),
-                )
-                .await
-        } else {
-            client.run("", None, None).await
-        }
+        client
+            .run(
+                "RETURN invalid query oof as n;",
+                Some(Params::from_iter(vec![("some_val", 25.5432)])),
+                Some(Metadata::from_iter(vec![("some_key", true)])),
+            )
+            .await
     }
 
     pub(crate) async fn run_valid_query(
         client: &mut Client<Stream>,
     ) -> CommunicationResult<Message> {
-        if client.version() > V2_0 {
-            client
-                .run(
-                    "RETURN $some_val as n;",
-                    Some(Params::from_iter(vec![("some_val", 25.5432)])),
-                    Some(Metadata::from_iter(vec![("some_key", true)])),
-                )
-                .await
-        } else {
-            client.run("RETURN 1 as n;", None, None).await
-        }
+        client
+            .run(
+                "RETURN $some_val as n;",
+                Some(Params::from_iter(vec![("some_val", 25.5432)])),
+                Some(Metadata::from_iter(vec![("some_key", true)])),
+            )
+            .await
     }
 
     #[tokio::test]
