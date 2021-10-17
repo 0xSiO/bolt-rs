@@ -1,20 +1,22 @@
+use std::{collections::HashMap, convert::TryInto, io};
+
 use bolt_client_macros::*;
-use bolt_proto::{message::*, Message};
+use bolt_proto::{message::*, Message, Value};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::{error::CommunicationResult, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
-    /// Send an [`INIT`](Message::Init) message to the server.
-    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::hello`].)_
+    /// Send a [`HELLO`](Message::Hello) (or [`INIT`](Message::Init)) message to the server.
+    /// _(Sends `INIT` for Bolt v1 - v2, and `HELLO` for Bolt v3+.)_
     ///
     /// # Description
-    /// The `INIT` message is a request for the connection to be authorized for use with the remote
-    /// database. Clients should send an `INIT` message to the server immediately after connection
+    /// The `HELLO` message requests the connection to be authorized for use with the remote
+    /// database. Clients should send a `HELLO` message to the server immediately after connection
     /// and process the response before using that connection in any other way.
     ///
     /// The server must be in the [`Connected`](bolt_proto::ServerState::Connected) state to be
-    /// able to process an `INIT` message. For any other states, receipt of an `INIT` message is
+    /// able to process a `HELLO` message. For any other states, receipt of a `HELLO` message is
     /// considered a protocol violation and leads to connection closure.
     ///
     /// If authentication fails, the server will respond with a [`FAILURE`](Message::Failure)
@@ -22,31 +24,69 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// should establish a new connection.
     ///
     /// # Fields
-    /// - `user_agent` should conform to the format `"Name/Version"`, for example `"Example/1.0.0"`
-    ///   (see [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent)).
-    /// - `auth_token` must contain either just the entry `{"scheme": "none"}` or the keys
-    ///   `scheme`, `principal`, and `credentials`.
-    ///   - `scheme` is the authentication scheme. Predefined schemes are `"none"` or `"basic"`.
+    /// For Bolt v3+:
+    /// - `metadata` should contain at least two entries:
+    ///   - `user_agent`, which should conform to the format `"Name/Version"`, for example
+    ///     `"Example/1.0.0"` (see
+    ///     [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent)).
+    ///   - `scheme` is the authentication scheme. Predefined schemes are `"none"`, `"basic"`, or
+    ///     `"kerberos"`.
+    ///
+    /// Further entries in `metadata` are passed to the implementation of the chosen
+    /// authentication scheme. Their names, types, and defaults depend on that choice. For
+    /// example, the scheme `"basic"` requires `metadata` to contain the username and password in
+    /// the form `{"principal": "<username>", "credentials": "<password>"}`.
+    ///
+    /// For Bolt v1 - v2:
+    /// - `metadata` should contain two entries:
+    ///   - `user_agent`, as specified above.
+    ///   - `auth_token`, a map containing a `scheme` entry as well as any additional
+    ///     authentication details, like `principal` and `credentials`.
     ///
     /// # Response
     /// - [`Message::Success`] - initialization has completed successfully and the server has
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may include
     ///   metadata that describes details of the server environment and/or the connection. The
     ///   following fields are defined for inclusion in the `SUCCESS` metadata:
-    ///   - `server` (e.g. `"Neo4j/3.4.0"`)
+    ///   - `server` (e.g. `"Neo4j/4.3.0"`)
+    ///   - `connection_id` (e.g. `"bolt-61"`) _(Bolt v3+ only.)_
     /// - [`Message::Failure`] - initialization has failed and the server has entered the
     ///   [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to include
     ///   metadata describing the nature of the failure but will immediately close the connection
     ///   after the failure has been sent.
-    // TODO: Merge this with HELLO
-    #[bolt_version(1, 2)]
-    pub async fn init(
-        &mut self,
-        user_agent: impl Into<String>,
-        auth_token: Metadata,
-    ) -> CommunicationResult<Message> {
-        let init_msg = Init::new(user_agent.into(), auth_token.value);
-        self.send_message(Message::Init(init_msg)).await?;
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    pub async fn hello(&mut self, mut metadata: Metadata) -> CommunicationResult<Message> {
+        let message = match self.version() {
+            1 | 2 => {
+                let user_agent: String = metadata
+                    .value
+                    .remove("user_agent")
+                    .ok_or(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "missing user_agent",
+                    ))?
+                    .try_into()
+                    .map_err(|_| {
+                        io::Error::new(io::ErrorKind::InvalidInput, "user_agent must be a string")
+                    })?;
+                let auth_token: HashMap<String, Value> = metadata
+                    .value
+                    .remove("auth_token")
+                    .ok_or(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "missing auth_token",
+                    ))?
+                    .try_into()
+                    .map_err(|_| {
+                        io::Error::new(io::ErrorKind::InvalidInput, "auth_token must be a map")
+                    })?;
+
+                Message::Init(Init::new(user_agent, auth_token))
+            }
+            _ => Message::Hello(Hello::new(metadata.value)),
+        };
+
+        self.send_message(message).await?;
         self.read_message().await
     }
 
