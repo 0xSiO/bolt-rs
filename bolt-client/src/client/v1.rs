@@ -124,29 +124,43 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a `PULL_ALL` message to the server. Returns a tuple containing a [`Vec`] of
-    /// the records returned from the server as well as the summary message (`SUCCESS` or
-    /// `FAILURE`).
+    /// Send a [`PULL_ALL`](Message::PullAll) message to the server.
+    /// _(Bolt v1 - v3 only. For Bolt v4+, see [`Client::pull`])._
     ///
     /// # Description
-    /// The `PULL_ALL` message is a Bolt v1 - v3 client message used to retrieve all
-    /// remaining items from the active result stream. For Bolt v4+, see
-    /// [`pull`](Client::pull).
+    /// The `PULL_ALL` message issues a request to stream the outstanding result back to the
+    /// client, before returning to the [`Ready`](bolt_proto::ServerState::Ready) state.
     ///
-    /// On receipt of a `PULL_ALL` message, the server will send all remaining result data
-    /// items to the client, each in a single `RECORD` message. The server will then close
-    /// the stream and send a single `SUCCESS` message optionally containing summary
-    /// information on the data items sent. If an error is encountered, the server must
-    /// instead send a `FAILURE` message, discard all remaining data items and close the
-    /// stream.
+    /// Result details consist of zero or more [`RECORD`](Message::Record) messages and a summary
+    /// message. Each record carries with it a list of values which form the data content of the
+    /// record. The order of the values within the list should be meaningful to the client, perhaps
+    /// based on a requested ordering for that result, but no guarantees are made around the order
+    /// of records within the result. A record should only be considered valid if accompanied by a
+    /// [`SUCCESS`](Message::Success) summary message.
     ///
-    /// If an unacknowledged failure is pending from a previous exchange, the server will
-    /// immediately respond with a single `IGNORED` message and take no further action.
+    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) state to be
+    /// able to successfully process a `PULL_ALL` request. If the server is in the
+    /// [`Failed`](bolt_proto::ServerState::Failed) state or
+    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `PULL_ALL` request will
+    /// be considered a protocol violation and will lead to connection closure.
     ///
     /// # Response
-    /// - `SUCCESS {…​}` if the result stream has been successfully transferred
-    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
-    ///   available or if retrieval fails
+    /// - `(`[`Message::Success`]`,Vec<`[`Record`]`>)` - the request has been successfully processed
+    ///   and the server has entered the [`Ready`](bolt_proto::ServerState::Ready) state. The
+    ///   server may attach metadata to the `SUCCESS` message to provide footer detail for the
+    ///   results. The following fields are defined for inclusion in the metadata:
+    ///   - `bookmark` (e.g. `"bookmark:1234"`)
+    ///   - `result_consumed_after` (e.g. `123`)
+    /// - `(`[`Message::Ignored`]`,Vec<`[`Record`]`>)` - the server is in the
+    ///   [`Failed`](bolt_proto::ServerState::Failed) or
+    ///   [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   discarded without being processed. No server state change has occurred.
+    /// - `(`[`Message::Failure`]`,Vec<`[`Record`]`>)` - the request could not be processed
+    ///   successfully and the server has entered the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   state. The server may attach metadata to the message to provide more detail on the
+    ///   nature of the failure. Failure may occur at any time during result streaming, so any
+    ///   records returned in the response should be considered invalid.
     #[bolt_version(1, 2, 3)]
     pub async fn pull_all(&mut self) -> CommunicationResult<(Message, Vec<Record>)> {
         self.send_message(Message::PullAll).await?;
