@@ -341,24 +341,25 @@ pub(crate) mod tests {
 
         let version = client.version();
         if [V1_0, V2_0].contains(&version) {
+            let auth_token: HashMap<&str, &str> = HashMap::from_iter(vec![
+                ("scheme", "basic"),
+                ("principal", &username),
+                ("credentials", &password),
+            ]);
             client
-                .init(
-                    "bolt-client/X.Y.Z",
-                    Metadata::from_iter(vec![
-                        ("scheme", "basic"),
-                        ("principal", &username),
-                        ("credentials", &password),
-                    ]),
-                )
+                .hello(Metadata::from_iter(vec![
+                    ("user_agent", Value::from("bolt-client/X.Y.Z")),
+                    ("auth_token", Value::from(auth_token)),
+                ]))
                 .await
         } else {
             client
-                .hello(Some(Metadata::from_iter(vec![
+                .hello(Metadata::from_iter(vec![
                     ("user_agent", "bolt-client/X.Y.Z"),
                     ("scheme", "basic"),
                     ("principal", &username),
                     ("credentials", &password),
-                ])))
+                ]))
                 .await
         }
     }

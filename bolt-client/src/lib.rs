@@ -33,15 +33,15 @@
 //! #   skip_if_handshake_failed!(result, Ok(()));
 //!     let mut client = result.unwrap();
 //!     
-//!     // Send a HELLO message with authorization details to the server to initialize
+//!     // Send a HELLO message with authentication details to the server to initialize
 //!     // the session.
 //!     let response: Message = client.hello(
-//!         Some(Metadata::from_iter(vec![
+//!         Metadata::from_iter(vec![
 //!             ("user_agent", "my-client-name/1.0"),
 //!             ("scheme", "basic"),
 //!             ("principal", &env::var("BOLT_TEST_USERNAME")?),
 //!             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
-//!         ]))).await?;
+//!         ])).await?;
 //! #   Success::try_from(response.clone()).unwrap();
 //!     assert!(Success::try_from(response).is_ok());
 //!
@@ -116,12 +116,12 @@
 //! #     let mut client = result.unwrap();
 //! #
 //! #     let response: Message = client.hello(
-//! #         Some(Metadata::from_iter(vec![
+//! #         Metadata::from_iter(vec![
 //! #             ("user_agent", "my-client-name/1.0"),
 //! #             ("scheme", "basic"),
 //! #             ("principal", &env::var("BOLT_TEST_USERNAME")?),
 //! #             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
-//! #         ]))).await?;
+//! #         ])).await?;
 //! #     Success::try_from(response).unwrap();
 //! #
 //! #     let response = client.run("RETURN 1 as num;", None, None).await?;
@@ -177,13 +177,17 @@
 //! #     skip_if_handshake_failed!(result, Ok(()));
 //! #     let mut client = result.unwrap();
 //!     
-//! // Instead of `hello`, we call `init`, and the user agent string is provided separately.
-//! let response: Message = client.init(
-//!     "my-client-name/1.0",
+//! // Authentication details must be sent in a separate `auth_token` entry.
+//! let auth_token: HashMap<&str, String> =
+//!     HashMap::from_iter(vec![
+//!         ("scheme", String::from("basic")),
+//!         ("principal", env::var("BOLT_TEST_USERNAME")?),
+//!         ("credentials", env::var("BOLT_TEST_PASSWORD")?),
+//!     ]);
+//! let response: Message = client.hello(
 //!     Metadata::from_iter(vec![
-//!         ("scheme", "basic"),
-//!         ("principal", &env::var("BOLT_TEST_USERNAME")?),
-//!         ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
+//!         ("user_agent", Value::from("my-client-name/1.0")),
+//!         ("auth_token", Value::from(auth_token))
 //!     ])).await?;
 //! #     Success::try_from(response).unwrap();
 //! #     let response = client.run("RETURN 1 as num;", None, None).await?;

@@ -1,6 +1,6 @@
 #![warn(rust_2018_idioms)]
 
-use std::{collections::HashMap, convert::TryFrom, io, net::SocketAddr};
+use std::{convert::TryFrom, io, net::SocketAddr};
 
 use async_trait::async_trait;
 use bb8::{ManageConnection, PooledConnection};
@@ -12,7 +12,7 @@ use tokio::{
 use tokio_util::compat::*;
 
 use bolt_client::{error::Error as ClientError, Client, Metadata, Stream};
-use bolt_proto::{error::Error as ProtocolError, message, version::*, Message, ServerState, Value};
+use bolt_proto::{error::Error as ProtocolError, message, Message, ServerState};
 
 pub use bolt_client;
 pub use bolt_proto;
@@ -21,7 +21,7 @@ pub struct Manager {
     addr: SocketAddr,
     domain: Option<String>,
     preferred_versions: [u32; 4],
-    metadata: HashMap<String, Value>,
+    metadata: Metadata,
 }
 
 impl Manager {
@@ -29,7 +29,7 @@ impl Manager {
         addr: impl ToSocketAddrs,
         domain: Option<String>,
         preferred_versions: [u32; 4],
-        metadata: HashMap<impl Into<String>, impl Into<Value>>,
+        metadata: Metadata,
     ) -> io::Result<Self> {
         Ok(Self {
             addr: lookup_host(addr)
@@ -38,10 +38,7 @@ impl Manager {
                 .ok_or_else(|| io::Error::from(io::ErrorKind::AddrNotAvailable))?,
             domain,
             preferred_versions,
-            metadata: metadata
-                .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect(),
+            metadata,
         })
     }
 }
@@ -75,27 +72,11 @@ impl ManageConnection for Manager {
         .await
         .map_err(ClientError::from)?;
 
-        let response = match client.version() {
-            V1_0 | V2_0 => {
-                let mut metadata = self.metadata.clone();
-                let user_agent: String = metadata
-                    .remove("user_agent")
-                    .ok_or_else(|| Error::InvalidMetadata("must contain a user_agent".to_string()))
-                    .map(String::try_from)?
-                    .map_err(ProtocolError::from)?;
-                client
-                    .init(user_agent, Metadata::from(metadata))
-                    .await
-                    .map_err(ClientError::from)?
-            }
-            V3_0 | V4_0 | V4_1 | V4_2 | V4_3 => client
-                .hello(Some(Metadata::from(self.metadata.clone())))
-                .await
-                .map_err(ClientError::from)?,
-            _ => return Err(Error::UnsupportedClientVersion(client.version())),
-        };
-
-        match response {
+        match client
+            .hello(self.metadata.clone())
+            .await
+            .map_err(ClientError::from)?
+        {
             Message::Success(_) => Ok(client),
             other => Err(Error::ClientInitFailed(other)),
         }
@@ -118,10 +99,10 @@ impl ManageConnection for Manager {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
-    use std::iter::FromIterator;
+    use std::{env, iter::FromIterator};
 
     use bb8::*;
+    use bolt_proto::{version::*, Value};
     use futures_util::{stream::FuturesUnordered, StreamExt};
 
     use super::*;
@@ -137,7 +118,7 @@ mod tests {
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok(),
             preferred_versions,
-            HashMap::from_iter(vec![
+            Metadata::from_iter(vec![
                 ("user_agent", "bolt-client/X.Y.Z"),
                 ("scheme", "basic"),
                 ("principal", &env::var("BOLT_TEST_USERNAME").unwrap()),
