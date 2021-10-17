@@ -1,8 +1,5 @@
 use bolt_client_macros::bolt_version;
-use bolt_proto::{
-    message::{Discard, Pull, Record},
-    Message,
-};
+use bolt_proto::{message::Discard, Message};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::{error::CommunicationResult, Client, Metadata};
@@ -23,35 +20,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         let discard_msg = Discard::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Discard(discard_msg)).await?;
         self.read_message().await
-    }
-
-    /// Send a `PULL` message to the server.
-    ///
-    /// # Description
-    /// This message is the equivalent of `PULL_ALL` for Bolt v4+ clients, but allows
-    /// passing an arbitrary metadata hash along with the request.
-    ///
-    /// # Response
-    /// - `SUCCESS {…​}` if the result stream has been successfully transferred
-    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
-    ///   available or if retrieval fails
-    #[bolt_version(4, 4.1, 4.2, 4.3)]
-    pub async fn pull(
-        &mut self,
-        metadata: Option<Metadata>,
-    ) -> CommunicationResult<(Message, Vec<Record>)> {
-        let pull_msg = Pull::new(metadata.unwrap_or_default().value);
-        self.send_message(Message::Pull(pull_msg)).await?;
-        let mut records = vec![];
-        loop {
-            match self.read_message().await? {
-                Message::Record(record) => records.push(record),
-                Message::Success(success) => return Ok((Message::Success(success), records)),
-                Message::Failure(failure) => return Ok((Message::Failure(failure), records)),
-                Message::Ignored => return Ok((Message::Ignored, vec![])),
-                _ => unreachable!(),
-            }
-        }
     }
 }
 

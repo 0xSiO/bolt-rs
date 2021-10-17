@@ -1,7 +1,7 @@
 use std::{convert::TryInto, io};
 
 use bolt_client_macros::*;
-use bolt_proto::{message::*, Message};
+use bolt_proto::{message::*, version::*, Message};
 use futures_util::io::{AsyncRead, AsyncWrite};
 
 use crate::{error::CommunicationResult, Client, Metadata, Params};
@@ -50,7 +50,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
     pub async fn hello(&mut self, mut metadata: Metadata) -> CommunicationResult<Message> {
         let message = match self.version() {
-            1 | 2 => {
+            V1_0 | V2_0 => {
                 let user_agent: String = metadata
                     .value
                     .remove("user_agent")
@@ -114,7 +114,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         metadata: Option<Metadata>,
     ) -> CommunicationResult<Message> {
         let message = match self.version() {
-            1 | 2 => Message::Run(Run::new(query.into(), parameters.unwrap_or_default().value)),
+            V1_0 | V2_0 => {
+                Message::Run(Run::new(query.into(), parameters.unwrap_or_default().value))
+            }
             _ => Message::RunWithMetadata(RunWithMetadata::new(
                 query.into(),
                 parameters.unwrap_or_default().value,
@@ -160,53 +162,71 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a [`PULL_ALL`](Message::PullAll) message to the server.
-    /// _(Bolt v1 - v3 only. For Bolt v4+, see [`Client::pull`].)_
+    /// Send a [`PULL`](Message::Pull) (or [`PULL_ALL`](Message::PullAll)) message to the server.
+    /// _(Sends `PULL_ALL` for Bolt v1 - v3, and `PULL` for Bolt v4+.)_
     ///
     /// # Description
-    /// The `PULL_ALL` message issues a request to stream the outstanding result back to the
-    /// client, before returning to the [`Ready`](bolt_proto::ServerState::Ready) state.
+    /// The `PULL` message issues a request to stream outstanding results back to the client,
+    /// before returning to the [`Ready`](bolt_proto::ServerState::Ready) state.
     ///
     /// Result details consist of zero or more [`RECORD`](Message::Record) messages and a summary
     /// message. Each record carries with it a list of values which form the data content of the
-    /// record. The order of the values within the list should be meaningful to the client, perhaps
-    /// based on a requested ordering for that result, but no guarantees are made around the order
-    /// of records within the result. A record should only be considered valid if accompanied by a
-    /// [`SUCCESS`](Message::Success) summary message.
+    /// record. The order of the values within that list should be meaningful to the client,
+    /// perhaps based on a requested ordering for that result, but no guarantees are made around
+    /// the order of records within the result. A record should only be considered valid if
+    /// accompanied by a [`SUCCESS`](Message::Success) summary message.
     ///
-    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) state to be
-    /// able to successfully process a `PULL_ALL` request. If the server is in the
+    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) or
+    /// [`TxStreaming`](bolt_proto::ServerState::TxStreaming) state to be able to successfully
+    /// process a `PULL` request. If the server is in the
     /// [`Failed`](bolt_proto::ServerState::Failed) state or
     /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
-    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `PULL_ALL` request will
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `PULL` request will
     /// be considered a protocol violation and will lead to connection closure.
     ///
+    /// # Fields
+    /// For Bolt v4+, additional metadata is passed along with this message:
+    /// - `n` is an integer specifying how many records to fetch. `-1` will fetch all records. `n`
+    ///   has no default and must be present.
+    /// - `qid` is an integer that specifies for which statement the `PULL` operation should be
+    ///   carried out within an explicit transaction. `-1` is the default, which denotes the last
+    ///   executed statement.
+    ///
     /// # Response
-    /// - `(`[`Message::Success`]`,Vec<`[`Record`]`>)` - the request has been successfully processed
+    /// - `(_, `[`Message::Success`]`)` - the request has been successfully processed
     ///   and the server has entered the [`Ready`](bolt_proto::ServerState::Ready) state. The
     ///   server may attach metadata to the `SUCCESS` message to provide footer detail for the
     ///   results. The following fields are defined for inclusion in the metadata:
     ///   - `bookmark` (e.g. `"bookmark:1234"`)
     ///   - `result_consumed_after` (e.g. `123`)
-    /// - `(`[`Message::Ignored`]`,Vec<`[`Record`]`>)` - the server is in the
+    /// - `(_, `[`Message::Ignored`]`)` - the server is in the
     ///   [`Failed`](bolt_proto::ServerState::Failed) or
     ///   [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
-    /// - `(`[`Message::Failure`]`,Vec<`[`Record`]`>)` - the request could not be processed
+    /// - `(_, `[`Message::Failure`]`)` - the request could not be processed
     ///   successfully and the server has entered the [`Failed`](bolt_proto::ServerState::Failed)
     ///   state. The server may attach metadata to the message to provide more detail on the
     ///   nature of the failure. Failure may occur at any time during result streaming, so any
     ///   records returned in the response should be considered invalid.
-    #[bolt_version(1, 2, 3)]
-    pub async fn pull_all(&mut self) -> CommunicationResult<(Message, Vec<Record>)> {
-        self.send_message(Message::PullAll).await?;
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    pub async fn pull(
+        &mut self,
+        metadata: Option<Metadata>,
+    ) -> CommunicationResult<(Vec<Record>, Message)> {
+        match self.version() {
+            V1_0 | V2_0 | V3_0 => self.send_message(Message::PullAll).await?,
+            _ => {
+                self.send_message(Message::Pull(Pull::new(metadata.unwrap_or_default().value)))
+                    .await?
+            }
+        }
         let mut records = vec![];
         loop {
             match self.read_message().await? {
                 Message::Record(record) => records.push(record),
-                Message::Success(success) => return Ok((Message::Success(success), records)),
-                Message::Failure(failure) => return Ok((Message::Failure(failure), records)),
-                Message::Ignored => return Ok((Message::Ignored, vec![])),
+                Message::Success(success) => return Ok((records, Message::Success(success))),
+                Message::Failure(failure) => return Ok((records, Message::Failure(failure))),
+                Message::Ignored => return Ok((vec![], Message::Ignored)),
                 _ => unreachable!(),
             }
         }
