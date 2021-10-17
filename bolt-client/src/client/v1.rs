@@ -198,6 +198,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Success`] - the request has been successfully received and the server has
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
     ///   metadata to the `SUCCESS` message.
+    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
+    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may attach
+    ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::AckFailure).await?;

@@ -418,6 +418,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Interrupted, Message::Pull(_)) => {}
             (Interrupted, Message::DiscardAll) => {}
             (Interrupted, Message::Discard(_)) => {}
+            (Interrupted, Message::AckFailure) => {}
             (Interrupted, Message::Begin(_)) => {}
             (Interrupted, Message::Commit) => {}
             (Interrupted, Message::Rollback) => {}
