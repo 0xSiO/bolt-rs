@@ -54,43 +54,48 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     /// Send a `RUN` message to the server.
+    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::run_with_metadata`])._
     ///
     /// # Description
-    /// The `RUN` message is a Bolt v1 - v2 client message used to pass a statement for
-    /// execution on the server.
-    /// For Bolt v3+, see [`run_with_metadata`](Client::run_with_metadata).
+    /// A `RUN` message submits a new query for execution, the result of which will be consumed by
+    /// a subsequent message, such as `PULL_ALL`.
     ///
-    /// On receipt of a `RUN` message, the server will start a new job by executing the
-    /// statement with the parameters (optionally) supplied. If successful, the subsequent
-    /// response will consist of a single `SUCCESS` message; if not, a `FAILURE` response
-    /// will be sent instead. A successful job will always produce a result stream which
-    /// must then be explicitly consumed (via `PULL_ALL` or `DISCARD_ALL`), even if empty.
+    /// The server must be in the [`Ready`](bolt_proto::ServerState::Ready) state to be able to
+    /// successfully process a `RUN` request. If the server is in the
+    /// [`Failed`](bolt_proto::ServerState::Failed) or
+    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the request will be
+    /// [`Ignored`](Message::Ignored). For any other states, receipt of a `RUN` request will be
+    /// considered a protocol violation and will lead to connection closure.
     ///
-    /// Depending on the statement you are executing, additional metadata may be returned
-    /// in both the `SUCCESS` message from the `RUN`, as well as in the final `SUCCESS`
-    /// after the stream has been consumed. It is up to the statement you are running to
-    /// determine what metadata to return. Notably, most queries will contain a `fields`
-    /// metadata section in the `SUCCESS` message for the RUN statement, which lists the
-    /// result record field names, and a `result_available_after` section measuring the
-    /// number of milliseconds it took for the results to be available for consumption.
+    /// # Fields
     ///
-    /// In the case where a previous result stream has not yet been fully consumed, an
-    /// attempt to `RUN` a new job will trigger a `FAILURE` response.
-    ///
-    /// If an unacknowledged failure is pending from a previous exchange, the server will
-    /// immediately respond with a single `IGNORED` message and take no further action.
+    /// - `query` contains a database query or remote procedure call.
+    /// - `parameters` contains variable fields for `query`.
     ///
     /// # Response
-    /// - `SUCCESS {…}` if the statement has been accepted for execution
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed or
-    ///   if a statement may not be executed at this time
+    /// - [`SUCCESS`](Message::Success) - the request has been successfully received and the server
+    ///   has entered the [`Streaming`](bolt_proto::ServerState::Streaming) state. Clients should
+    ///   not consider a `SUCCESS` response to indicate completion of the execution of the query,
+    ///   merely acceptance of it. The server may attach metadata to the message to provide header
+    ///   detail for the results that follow. The following fields are defined for inclusion in the
+    ///   metadata:
+    ///   - `fields` (e.g. `["name", "age"]`)
+    ///   - `result_available_after` (e.g. `123`)
+    /// - [`IGNORED`](Message::Ignored) - the server is in the
+    ///   [`Failed`](bolt_proto::ServerState::Failed) or
+    ///   [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   discarded without being processed. No server state change has occurred.
+    /// - [`FAILURE`](Message::Failure) - the request cannot be processed successfully or is
+    ///   invalid, and the server has entered the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   state. The server may attach metadata to the message to provide more detail on the nature
+    ///   of the failure.
     #[bolt_version(1, 2)]
     pub async fn run(
         &mut self,
-        statement: impl Into<String>,
+        query: impl Into<String>,
         parameters: Option<Params>,
     ) -> CommunicationResult<Message> {
-        let run_msg = Run::new(statement.into(), parameters.unwrap_or_default().value);
+        let run_msg = Run::new(query.into(), parameters.unwrap_or_default().value);
         self.send_message(Message::Run(run_msg)).await?;
         self.read_message().await
     }
