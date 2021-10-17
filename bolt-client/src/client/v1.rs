@@ -25,7 +25,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// wishing to retry initialization should establish a new connection.
     ///
     /// # Fields
-    ///
     /// - `user_agent` should conform to `"Name/Version"`, for example `"Example/1.0.0"` (see
     ///   <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent>).
     /// - `auth_token` must contain either just the entry `{"scheme" : "none"}` or the keys
@@ -68,7 +67,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// considered a protocol violation and will lead to connection closure.
     ///
     /// # Fields
-    ///
     /// - `query` contains a database query or remote procedure call.
     /// - `parameters` contains variable fields for `query`.
     ///
@@ -98,25 +96,28 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a `DISCARD_ALL` message to the server.
+    /// Send a [`DISCARD_ALL`](Message::DiscardAll) message to the server.
+    /// _(Bolt v1 - v3 only. For Bolt v4+, see [`Client::discard`])._
     ///
     /// # Description
-    /// The `DISCARD_ALL` message is a Bolt v1 - v3 client message used to discard all
-    /// remaining items from the active result stream. For Bolt v4+, see
-    /// [`discard`](Client::discard).
+    /// The `DISCARD_ALL` message issues a request to discard the outstanding result and return to
+    /// the [`Ready`](bolt_proto::ServerState::Ready) state. A receiving server will not abort the
+    /// request but continue to process it without streaming any detail messages to the client.
     ///
-    /// On receipt of a `DISCARD_ALL` message, the server will dispose of all remaining
-    /// items from the active result stream, close the stream and send a single `SUCCESS`
-    /// message to the client. If no result stream is currently active, the server will
-    /// respond with a single `FAILURE` message.
-    ///
-    /// If an unacknowledged failure is pending from a previous exchange, the server will
-    /// immediately respond with a single `IGNORED` message and take no further action.
+    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) state to be
+    /// able to successfully process a `DISCARD_ALL` request. If the server is in the
+    /// [`Failed`](bolt_proto::ServerState::Failed) state or
+    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `DISCARD_ALL` request
+    /// will be considered a protocol violation and will lead to connection closure.
     ///
     /// # Response
-    /// - `SUCCESS {…}` if the result stream has been successfully discarded
-    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
-    ///   available
+    /// - [`Message::Success`] - the request has been successfully received and the server has
+    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
+    ///   metadata to the message to provide footer detail for the discarded results.
+    ///   The following fields are defined for inclusion in the metadata:
+    ///   - `bookmark` (e.g. `"bookmark:1234"`)
+    ///   - `result_consumed_after` (e.g. `123`)
     #[bolt_version(1, 2, 3)]
     pub async fn discard_all(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::DiscardAll).await?;
