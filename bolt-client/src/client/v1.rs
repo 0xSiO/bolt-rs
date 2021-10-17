@@ -6,28 +6,49 @@ use crate::{error::CommunicationResult, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send an `INIT` message to the server.
+    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::hello`])._
     ///
     /// # Description
-    /// The `INIT` message is a Bolt v1 - v2 client message used once to initialize the
-    /// session. For Bolt v3+, see [`hello`](Client::hello).
+    /// The `INIT` message is a request for the connection to be authorized for use with the remote
+    /// database.
     ///
-    /// This message is always the first message the client sends after negotiating
-    /// protocol version via the initial handshake. Sending any message other than `INIT`
-    /// as the first message to the server will result in a `FAILURE`. The client must
-    /// acknowledge failures using `ACK_FAILURE`, after which `INIT` may be reattempted.
+    /// The server must be in the `CONNECTED` state to be able to process an `INIT` request. For any
+    /// other states, receipt of an `INIT` request is considered a protocol violation and leads
+    /// to connection closure.
+    ///
+    /// Clients should send `INIT` requests to the server immediately after connection and process
+    /// the response before using that connection in any other way.
+    ///
+    /// The `auth_token` is used by the server to determine whether the client is permitted to
+    /// exchange further messages. If this authentication fails, the server will respond with a
+    /// `FAILURE` message and immediately close the connection. Clients wishing to retry
+    /// initialization should establish a new connection.
+    ///
+    /// # Fields
+    ///
+    /// - `user_agent` should conform to `"Name/Version"`, for example `"Example/1.0.0"`. (see
+    ///   <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent>).
+    /// - `auth_token` must contain either just the entry `{"scheme" : "none"}` or the keys
+    ///   `scheme`, `principal` and `credentials`.
+    ///   - `scheme` is the authentication scheme. Predefined schemes are `"none"` or `"basic"`. If
+    ///     no `scheme` is provided, it defaults to `"none"`.
     ///
     /// # Response
-    /// - `SUCCESS {…}` if initialization has completed successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
-    ///   if initialization cannot be performed at this time, or if the authorization
-    ///   failed.
+    /// - [`Message::Success`] - indicates that the client is permitted to exchange further
+    ///   messages. Servers may include metadata that describes details of the server environment
+    ///   and/or the connection. The following fields are defined for inclusion in the `SUCCESS`
+    ///   metadata:
+    ///   - `server` (e.g. "Neo4j/3.4.0")
+    /// - [`Message::Failure`] - indicates that the client is not permitted to exchange further
+    ///   messages. Servers may choose to include metadata describing the nature of the failure but
+    ///   will immediately close the connection after the failure has been sent.
     #[bolt_version(1, 2)]
     pub async fn init(
         &mut self,
-        client_name: impl Into<String>,
+        user_agent: impl Into<String>,
         auth_token: Metadata,
     ) -> CommunicationResult<Message> {
-        let init_msg = Init::new(client_name.into(), auth_token.value);
+        let init_msg = Init::new(user_agent.into(), auth_token.value);
         self.send_message(Message::Init(init_msg)).await?;
         self.read_message().await
     }
@@ -78,7 +99,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `DISCARD_ALL` message is a Bolt v1 - v3 client message used to discard all
-    /// remaining items from the active result stream. For Bolt v4, see
+    /// remaining items from the active result stream. For Bolt v4+, see
     /// [`discard`](Client::discard).
     ///
     /// On receipt of a `DISCARD_ALL` message, the server will dispose of all remaining
@@ -105,7 +126,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `PULL_ALL` message is a Bolt v1 - v3 client message used to retrieve all
-    /// remaining items from the active result stream. For Bolt v4, see
+    /// remaining items from the active result stream. For Bolt v4+, see
     /// [`pull`](Client::pull).
     ///
     /// On receipt of a `PULL_ALL` message, the server will send all remaining result data
