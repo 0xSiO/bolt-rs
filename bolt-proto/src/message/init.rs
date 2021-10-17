@@ -7,20 +7,20 @@ use crate::{impl_try_from_message, message::SIGNATURE_INIT, Value};
 #[bolt_structure(SIGNATURE_INIT)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Init {
-    pub(crate) client_name: String,
+    pub(crate) user_agent: String,
     pub(crate) auth_token: HashMap<String, Value>,
 }
 
 impl Init {
-    pub fn new(client_name: String, auth_token: HashMap<String, Value>) -> Self {
+    pub fn new(user_agent: String, auth_token: HashMap<String, Value>) -> Self {
         Self {
-            client_name,
+            user_agent,
             auth_token,
         }
     }
 
-    pub fn client_name(&self) -> &str {
-        &self.client_name
+    pub fn user_agent(&self) -> &str {
+        &self.user_agent
     }
 
     pub fn auth_token(&self) -> &HashMap<String, Value> {

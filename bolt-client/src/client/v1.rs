@@ -5,28 +5,28 @@ use futures_util::io::{AsyncRead, AsyncWrite};
 use crate::{error::CommunicationResult, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
-    /// Send an `INIT` message to the server.
+    /// Send an [`INIT`](Message::Init) message to the server.
     /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::hello`])._
     ///
     /// # Description
     /// The `INIT` message is a request for the connection to be authorized for use with the remote
     /// database.
     ///
-    /// The server must be in the `CONNECTED` state to be able to process an `INIT` request. For any
-    /// other states, receipt of an `INIT` request is considered a protocol violation and leads
-    /// to connection closure.
+    /// The server must be in the [`Connected`](bolt_proto::ServerState::Connected) state to be
+    /// able to process an `INIT` request. For any other states, receipt of an `INIT` request is
+    /// considered a protocol violation and leads to connection closure.
     ///
     /// Clients should send `INIT` requests to the server immediately after connection and process
     /// the response before using that connection in any other way.
     ///
     /// The `auth_token` is used by the server to determine whether the client is permitted to
     /// exchange further messages. If this authentication fails, the server will respond with a
-    /// `FAILURE` message and immediately close the connection. Clients wishing to retry
-    /// initialization should establish a new connection.
+    /// [`FAILURE`](Message::Failure) message and immediately close the connection. Clients
+    /// wishing to retry initialization should establish a new connection.
     ///
     /// # Fields
     ///
-    /// - `user_agent` should conform to `"Name/Version"`, for example `"Example/1.0.0"`. (see
+    /// - `user_agent` should conform to `"Name/Version"`, for example `"Example/1.0.0"` (see
     ///   <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent>).
     /// - `auth_token` must contain either just the entry `{"scheme" : "none"}` or the keys
     ///   `scheme`, `principal` and `credentials`.
@@ -53,18 +53,18 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a `RUN` message to the server.
+    /// Send a [`RUN`](Message::Run) message to the server.
     /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::run_with_metadata`])._
     ///
     /// # Description
     /// A `RUN` message submits a new query for execution, the result of which will be consumed by
-    /// a subsequent message, such as `PULL_ALL`.
+    /// a subsequent message, such as [`PULL_ALL`](Message::PullAll).
     ///
     /// The server must be in the [`Ready`](bolt_proto::ServerState::Ready) state to be able to
     /// successfully process a `RUN` request. If the server is in the
     /// [`Failed`](bolt_proto::ServerState::Failed) or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the request will be
-    /// [`Ignored`](Message::Ignored). For any other states, receipt of a `RUN` request will be
+    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `RUN` request will be
     /// considered a protocol violation and will lead to connection closure.
     ///
     /// # Fields
@@ -73,22 +73,20 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `parameters` contains variable fields for `query`.
     ///
     /// # Response
-    /// - [`SUCCESS`](Message::Success) - the request has been successfully received and the server
-    ///   has entered the [`Streaming`](bolt_proto::ServerState::Streaming) state. Clients should
-    ///   not consider a `SUCCESS` response to indicate completion of the execution of the query,
+    /// - [`Message::Success`] - the request has been successfully received and the server has
+    ///   entered the [`Streaming`](bolt_proto::ServerState::Streaming) state. Clients should not
+    ///   consider a `SUCCESS` response to indicate completion of the execution of the query,
     ///   merely acceptance of it. The server may attach metadata to the message to provide header
     ///   detail for the results that follow. The following fields are defined for inclusion in the
     ///   metadata:
     ///   - `fields` (e.g. `["name", "age"]`)
     ///   - `result_available_after` (e.g. `123`)
-    /// - [`IGNORED`](Message::Ignored) - the server is in the
-    ///   [`Failed`](bolt_proto::ServerState::Failed) or
-    ///   [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
-    /// - [`FAILURE`](Message::Failure) - the request cannot be processed successfully or is
-    ///   invalid, and the server has entered the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   state. The server may attach metadata to the message to provide more detail on the nature
-    ///   of the failure.
+    /// - [`Message::Failure`] - the request cannot be processed successfully or is invalid, and
+    ///   the server has entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server
+    ///   may attach metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(1, 2)]
     pub async fn run(
         &mut self,
