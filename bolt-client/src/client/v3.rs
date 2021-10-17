@@ -6,18 +6,16 @@ use crate::{error::CommunicationResult, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send a [`HELLO`](Message::Hello) message to the server.
-    /// _(Bolt v3+ only. For Bolt v1 - v2, see [`Client::init`])._
+    /// _(Bolt v3+ only. For Bolt v1 - v2, see [`Client::init`].)_
     ///
     /// # Description
     /// The `HELLO` message requests the connection to be authorized for use with the remote
-    /// database.
+    /// database. Clients should send a `HELLO` message to the server immediately after connection
+    /// and process the response before using that connection in any other way.
     ///
     /// The server must be in the [`Connected`](bolt_proto::ServerState::Connected) state to be
     /// able to process a `HELLO` message. For any other states, receipt of a `HELLO` message is
     /// considered a protocol violation and leads to connection closure.
-    ///
-    /// Clients should send a `HELLO` message to the server immediately after connection and
-    /// process the response before using that connection in any other way.
     ///
     /// If authentication fails, the server will respond with a [`FAILURE`](Message::Failure)
     /// message and immediately close the connection. Clients wishing to retry initialization
@@ -54,11 +52,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a `GOODBYE` message to the server.
+    /// Send a [`GOODBYE`](Message::Goodbye) message to the server.
+    /// _(Bolt v3+ only.)_
     ///
     /// # Description
-    /// The `GOODBYE` message is a Bolt v3+ client message used to end the session. The
-    /// server will end the connection upon receipt of this message.
+    /// The `GOODBYE` message notifies the server that the connection is terminating gracefully. On
+    /// receipt of this message, the server will immediately shut down the socket on its side
+    /// without sending a response. A client may shut down the socket at any time after sending the
+    /// `GOODBYE` message. This message interrupts the server's current work, if any.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn goodbye(&mut self) -> CommunicationResult<()> {
         self.send_message(Message::Goodbye).await?;

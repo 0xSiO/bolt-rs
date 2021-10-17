@@ -6,23 +6,20 @@ use crate::{error::CommunicationResult, Client, Metadata, Params};
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Send an [`INIT`](Message::Init) message to the server.
-    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::hello`])._
+    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::hello`].)_
     ///
     /// # Description
     /// The `INIT` message is a request for the connection to be authorized for use with the remote
-    /// database.
+    /// database. Clients should send an `INIT` message to the server immediately after connection
+    /// and process the response before using that connection in any other way.
     ///
     /// The server must be in the [`Connected`](bolt_proto::ServerState::Connected) state to be
     /// able to process an `INIT` message. For any other states, receipt of an `INIT` message is
     /// considered a protocol violation and leads to connection closure.
     ///
-    /// Clients should send an `INIT` message to the server immediately after connection and
-    /// process the response before using that connection in any other way.
-    ///
-    /// The `auth_token` is used by the server to determine whether the client is permitted to
-    /// exchange further messages. If this authentication fails, the server will respond with a
-    /// [`FAILURE`](Message::Failure) message and immediately close the connection. Clients
-    /// wishing to retry initialization should establish a new connection.
+    /// If authentication fails, the server will respond with a [`FAILURE`](Message::Failure)
+    /// message and immediately close the connection. Clients wishing to retry initialization
+    /// should establish a new connection.
     ///
     /// # Fields
     /// - `user_agent` should conform to the format `"Name/Version"`, for example `"Example/1.0.0"`
@@ -53,7 +50,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     /// Send a [`RUN`](Message::Run) message to the server.
-    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::run_with_metadata`])._
+    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::run_with_metadata`].)_
     ///
     /// # Description
     /// A `RUN` message submits a new query for execution, the result of which will be consumed by
@@ -97,7 +94,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     /// Send a [`DISCARD_ALL`](Message::DiscardAll) message to the server.
-    /// _(Bolt v1 - v3 only. For Bolt v4+, see [`Client::discard`])._
+    /// _(Bolt v1 - v3 only. For Bolt v4+, see [`Client::discard`].)_
     ///
     /// # Description
     /// The `DISCARD_ALL` message issues a request to discard the outstanding result and return to
@@ -131,7 +128,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     /// Send a [`PULL_ALL`](Message::PullAll) message to the server.
-    /// _(Bolt v1 - v3 only. For Bolt v4+, see [`Client::pull`])._
+    /// _(Bolt v1 - v3 only. For Bolt v4+, see [`Client::pull`].)_
     ///
     /// # Description
     /// The `PULL_ALL` message issues a request to stream the outstanding result back to the
@@ -183,7 +180,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     /// Send an [`ACK_FAILURE`](Message::AckFailure) message to the server.
-    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::reset`])._
+    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::reset`].)_
     ///
     /// # Description
     /// `ACK_FAILURE` signals to the server that the client has acknowledged a previous failure and
@@ -210,7 +207,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
     /// Send a [`RESET`](Message::Reset) message to the server.
     /// _(Bolt v1+. For Bolt v1 - v2, see [`Client::ack_failure`] for just clearing the
-    /// [`Failed`](bolt_proto::ServerState::Failed) state)._
+    /// [`Failed`](bolt_proto::ServerState::Failed) state.)_
     ///
     /// # Description
     /// The `RESET` message requests that the connection be set back to its initial state, as if
