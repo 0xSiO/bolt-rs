@@ -100,6 +100,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     }
 
     /// Send a [`ROLLBACK`](Message::Rollback) message to the server.
+    /// _(Bolt v3+ only.)_
     ///
     /// # Description
     /// The `ROLLBACK` message requests to cancel a transaction and transition the server back to
