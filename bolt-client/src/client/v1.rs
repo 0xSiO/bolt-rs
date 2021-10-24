@@ -574,19 +574,19 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn discard_all_fail() {
+    async fn discard_fail() {
         let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(
-            client.discard_all().await,
+            client.discard(None).await,
             Err(CommunicationError::InvalidState { state: Ready, .. })
         ));
     }
 
     #[tokio::test]
-    async fn discard_all() {
+    async fn discard() {
         let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
@@ -594,13 +594,13 @@ pub(crate) mod tests {
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Streaming);
-        let response = client.discard_all().await.unwrap();
+        let response = client.discard(None).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Ready);
     }
 
     #[tokio::test]
-    async fn discard_all_and_pull() {
+    async fn discard_and_pull() {
         let client = get_initialized_client(V1_0).await;
         skip_if_handshake_failed!(client);
         let mut client = client.unwrap();
@@ -608,7 +608,7 @@ pub(crate) mod tests {
         let response = run_valid_query(&mut client).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Streaming);
-        let response = client.discard_all().await.unwrap();
+        let response = client.discard(None).await.unwrap();
         assert!(Success::try_from(response).is_ok());
         assert_eq!(client.server_state(), Ready);
         assert!(matches!(

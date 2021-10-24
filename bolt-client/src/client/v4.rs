@@ -6,7 +6,9 @@ mod tests {
 
     use bolt_proto::{message::*, value::*, version::*, ServerState::*};
 
-    use crate::{client::v1::tests::*, error::CommunicationError, skip_if_handshake_failed};
+    use crate::{
+        client::v1::tests::*, error::CommunicationError, skip_if_handshake_failed, Metadata,
+    };
 
     #[tokio::test]
     async fn hello() {
