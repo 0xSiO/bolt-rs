@@ -50,7 +50,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   default database. Default is `null`. _(Bolt v4+ only.)_
     ///
     /// # Response
-    /// - [`Message::Success`] - the request has been successfully received and the server has
+    /// - [`Message::Success`] - the transaction has been successfully started and the server has
     ///   entered the [`TxReady`](bolt_proto::ServerState::Ready) state.
     /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
     ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
@@ -83,7 +83,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// To instead cancel pending changes, send a [`ROLLBACK`](Message::Rollback) message.
     ///
     /// # Response
-    /// - [`Message::Success`] - the request has been successfully received and the server has
+    /// - [`Message::Success`] - the transaction has been successfully committed and the server has
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server sends the
     ///   following metadata fields in the response:
     ///   - `bookmark` (e.g. `"bookmark:1234"`)
@@ -118,7 +118,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// To instead persist pending changes, send a [`COMMIT`](Message::Commit) message.
     ///
     /// # Response
-    /// - [`Message::Success`] - the request has been successfully received and the server has
+    /// - [`Message::Success`] - the transaction has been successfully reverted and the server has
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state.
     /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
     ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was

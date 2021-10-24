@@ -27,8 +27,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   run. `""` denotes the server-side configured default database.
     ///
     /// # Response
-    /// - [`Message::Success`] - the request has been successfully received and the server has
-    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server sends the
+    /// - [`Message::Success`] - the routing table has been successfully retrieved and the server
+    ///   has entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server sends the
     ///   following metadata fields in the response:
     ///   - `rt`, a map with the following fields:
     ///     - `ttl`, an integer denoting the number of seconds this routing table should be

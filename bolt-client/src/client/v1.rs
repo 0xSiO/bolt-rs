@@ -185,7 +185,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   executed statement.
     ///
     /// # Response
-    /// - [`Message::Success`] - the request has been successfully received and the server has
+    /// - [`Message::Success`] - results have been successfully discarded and the server has
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
     ///   metadata to the message to provide footer detail for the discarded results.
     ///   The following fields are defined for inclusion in the metadata:
@@ -247,10 +247,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   executed statement.
     ///
     /// # Response
-    /// - `(_, `[`Message::Success`]`)` - the request has been successfully processed
-    ///   and the server has entered the [`Ready`](bolt_proto::ServerState::Ready) state. The
-    ///   server may attach metadata to the `SUCCESS` message to provide footer detail for the
-    ///   results. The following fields are defined for inclusion in the metadata:
+    /// - `(_, `[`Message::Success`]`)` - results have been successfully pulled and the server has
+    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
+    ///   metadata to the `SUCCESS` message to provide footer detail for the results. The
+    ///   following fields are defined for inclusion in the metadata:
     ///   - `type`, the type of query: read-only (`"r"`), write-only (`"w"`), read-write (`"rw"`),
     ///     or schema (`"s"`)
     ///   - `result_consumed_after`, the time in milliseconds after which the last record in the
@@ -312,7 +312,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// closure.
     ///
     /// # Response
-    /// - [`Message::Success`] - the request has been successfully received and the server has
+    /// - [`Message::Success`] - failure has been successfully acknowledged and the server has
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
     ///   metadata to the `SUCCESS` message.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
