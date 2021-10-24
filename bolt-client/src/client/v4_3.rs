@@ -22,7 +22,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `context`, which should contain routing context information as well as an `address`
     ///   field indicating to which address the client should initially connect.
     /// - `bookmarks`, a list of strings containing some kind of bookmark identification, e.g
-    ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`.
+    ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`. Default is `[]`.
     /// - `database`, a string containing the name of the database for which this command should be
     ///   run. `""` denotes the server-side configured default database.
     ///

@@ -105,6 +105,18 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `query` contains a database query or remote procedure call.
     /// - `parameters` contains variable fields for `query`.
     ///
+    /// If using Bolt v3 or later, the following `metadata` entries can be specified:
+    /// - `bookmarks`, a list of strings containing some kind of bookmark identification, e.g
+    ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`. Default is `[]`.
+    /// - `tx_timeout`, an integer specifying a transaction timeout in milliseconds. Default is the
+    ///   server-side configured timeout.
+    /// - `tx_metadata`, a map containing some metadata information, mainly used for logging.
+    /// - `mode`, a string which specifies what kind of server should be used for this
+    ///   transaction. For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
+    /// - `db`, a string containing the name of the database where the transaction should take
+    ///   place. [`null`](bolt_proto::Value::Null) and `""` denote the server-side configured
+    ///   default database. Default is `null`. _(Bolt v4+ only.)_
+    ///
     /// # Response
     /// - [`Message::Success`] - the request has been successfully received and the server has
     ///   entered the [`Streaming`](bolt_proto::ServerState::Streaming) state. Clients should not
@@ -112,8 +124,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   merely acceptance of it. The server may attach metadata to the message to provide header
     ///   detail for the results that follow. The following fields are defined for inclusion in the
     ///   metadata:
-    ///   - `fields` (e.g. `["name", "age"]`)
-    ///   - `result_available_after` (e.g. `123`)
+    ///   - `fields`, the fields included in the result (e.g. `["name", "age"]`)
+    ///   - `result_available_after`, the time in milliseconds after which the first record in the
+    ///     result stream is available. _(Bolt v1 - v2 only.)_
+    ///   - `t_first`, supercedes `result_available_after`. _(Bolt v3+ only.)_
+    ///   - `qid`, an integer that specifies the server-assigned query ID. This is sent for
+    ///     queries submitted within an explicit transaction. _(Bolt v4+ only.)_
     /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
     ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
