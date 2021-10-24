@@ -24,12 +24,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// should establish a new connection.
     ///
     /// # Fields
-    /// - `metadata` should contain at least two entries:
-    ///   - `user_agent`, which should conform to the format `"Name/Version"`, for example
-    ///     `"Example/1.0.0"` (see
-    ///     [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent)).
-    ///   - `scheme` is the authentication scheme. Predefined schemes are `"none"`, `"basic"`, or
-    ///     `"kerberos"`.
+    /// `metadata` should contain at least two entries:
+    /// - `user_agent`, which should conform to the format `"Name/Version"`, for example
+    ///   `"Example/1.0.0"` (see
+    ///   [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent)).
+    /// - `scheme` is the authentication scheme. Predefined schemes are `"none"`, `"basic"`, or
+    ///   `"kerberos"`.
     ///
     /// Further entries in `metadata` are passed to the implementation of the chosen
     /// authentication scheme. Their names, types, and defaults depend on that choice. For

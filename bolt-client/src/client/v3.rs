@@ -20,16 +20,44 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         Ok(self.stream.close().await?)
     }
 
-    /// Send a `BEGIN` message to the server.
+    /// Send a [`BEGIN`](Message::Begin) message to the server.
+    /// _(Bolt v3+ only.)_
     ///
     /// # Description
-    /// This Bolt v3+ message begins a transaction. A hash of arbitrary metadata can be
-    /// passed along with the request.
+    /// The `BEGIN` message starts a new explicit transaction and transitions the server to the
+    /// [`TxReady`](bolt_proto::ServerState::TxReady) state. The explicit transaction is closed
+    /// with either the [`COMMIT`](Message::Commit) message or [`ROLLBACK`](Message::Rollback)
+    /// message.
+    ///
+    /// The server must be in the [`Ready`](bolt_proto::ServerState::Ready) state to be able to
+    /// successfully process a `BEGIN` request. If the server is in the
+    /// [`Failed`](bolt_proto::ServerState::Failed) or
+    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `BEGIN` request will be
+    /// considered a protocol violation and will lead to connection closure.
+    ///
+    /// # Fields
+    /// `metadata` may contain the following optional fields:
+    /// - `bookmarks`, a list of strings containing some kind of bookmark identification, e.g
+    ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`. Default is `[]`.
+    /// - `tx_timeout`, an integer specifying a transaction timeout in milliseconds. Default is the
+    ///   server-side configured timeout.
+    /// - `tx_metadata`, a map containing some metadata information, mainly used for logging.
+    /// - `mode`, a string which specifies what kind of server should be used for this
+    ///   transaction. For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
+    /// - `db`, a string containing the name of the database where the transaction should take
+    ///   place. [`null`](bolt_proto::Value::Null) and `""` denote the server-side configured
+    ///   default database. Default is `null`. _(Bolt v4+ only.)_
     ///
     /// # Response
-    /// - `SUCCESS {…}` if transaction has started successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
-    ///   if transaction could not be started
+    /// - [`Message::Success`] - the request has been successfully received and the server has
+    ///   entered the [`TxReady`](bolt_proto::ServerState::Ready) state.
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
+    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let begin_msg = Begin::new(metadata.unwrap_or_default().value);
