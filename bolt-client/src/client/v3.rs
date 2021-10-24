@@ -99,17 +99,32 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a `ROLLBACK` message to the server.
+    /// Send a [`ROLLBACK`](Message::Rollback) message to the server.
     ///
     /// # Description
-    /// This Bolt v3+ message cancels a transaction. Any changes made since the
-    /// transaction was started will be undone. To instead keep pending changes, send a
-    /// `COMMIT` message.
+    /// The `ROLLBACK` message requests to cancel a transaction and transition the server back to
+    /// the [`Ready`](bolt_proto::ServerState::Ready) state. Any changes made since the transaction
+    /// was started will be undone.
+    ///
+    /// The server must be in the [`TxReady`](bolt_proto::ServerState::TxReady) state to be able to
+    /// successfully process a `ROLLBACK` request, which means that any outstanding results in the
+    /// result stream must be consumed via [`Client::pull`]. If the server is in the
+    /// [`Failed`](bolt_proto::ServerState::Failed) or
+    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `ROLLBACK` request will
+    /// be considered a protocol violation and will lead to connection closure.
+    ///
+    /// To instead persist pending changes, send a [`COMMIT`](Message::Commit) message.
     ///
     /// # Response
-    /// - `SUCCESS {…}` if transaction has been rolled back successfully
-    /// - `FAILURE {"code": …​, "message": …​}` if the request was malformed, or
-    ///   if transaction could not be rolled back
+    /// - [`Message::Success`] - the request has been successfully received and the server has
+    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state.
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
+    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
     pub async fn rollback(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Rollback).await?;
