@@ -1,28 +1,3 @@
-use bolt_client_macros::bolt_version;
-use bolt_proto::{message::Discard, Message};
-use futures_util::io::{AsyncRead, AsyncWrite};
-
-use crate::{error::CommunicationResult, Client, Metadata};
-
-impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
-    /// Send a `DISCARD` message to the server.
-    ///
-    /// # Description
-    /// This message is the equivalent of `DISCARD_ALL` for Bolt v4+ clients, but allows
-    /// passing an arbitrary metadata hash along with the request.
-    ///
-    /// # Response
-    /// - `SUCCESS {…}` if the result stream has been successfully discarded
-    /// - `FAILURE {"code": …​, "message": …​}` if no result stream is currently
-    ///   available
-    #[bolt_version(4, 4.1, 4.2, 4.3)]
-    pub async fn discard(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
-        let discard_msg = Discard::new(metadata.unwrap_or_default().value);
-        self.send_message(Message::Discard(discard_msg)).await?;
-        self.read_message().await
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -32,8 +7,6 @@ mod tests {
     use bolt_proto::{message::*, value::*, version::*, ServerState::*};
 
     use crate::{client::v1::tests::*, error::CommunicationError, skip_if_handshake_failed};
-
-    use super::*;
 
     #[tokio::test]
     async fn hello() {

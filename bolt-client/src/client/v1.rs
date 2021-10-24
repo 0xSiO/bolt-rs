@@ -129,20 +129,31 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a [`DISCARD_ALL`](Message::DiscardAll) message to the server.
-    /// _(Bolt v1 - v3 only. For Bolt v4+, see [`Client::discard`].)_
+    /// Send a [`DISCARD`](Message::Discard) (or [`DISCARD_ALL`](Message::DiscardAll)) message to
+    /// the server.
+    /// _(Sends a `DISCARD_ALL` for Bolt v1 - v3, and `DISCARD` for Bold v4+. For Bolt v1 - v3,
+    /// the `metadata` parameter is ignored.)_
     ///
     /// # Description
-    /// The `DISCARD_ALL` message issues a request to discard the outstanding result and return to
-    /// the [`Ready`](bolt_proto::ServerState::Ready) state. A receiving server will not abort the
+    /// The `DISCARD` message issues a request to discard the outstanding result and return to the
+    /// [`Ready`](bolt_proto::ServerState::Ready) state. A receiving server will not abort the
     /// request but continue to process it without streaming any detail messages to the client.
     ///
-    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) state to be
-    /// able to successfully process a `DISCARD_ALL` request. If the server is in the
+    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) or
+    /// [`TxStreaming`](bolt_proto::ServerState::TxStreaming) state to be able to successfully
+    /// process a `DISCARD` request. If the server is in the
     /// [`Failed`](bolt_proto::ServerState::Failed) state or
     /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
-    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `DISCARD_ALL` request
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `DISCARD` request
     /// will be considered a protocol violation and will lead to connection closure.
+    ///
+    /// # Fields
+    /// For Bolt v4+, additional metadata is passed along with this message:
+    /// - `n` is an integer specifying how many records to discard. `-1` will discard all records.
+    ///   `n` has no default and must be present.
+    /// - `qid` is an integer that specifies for which statement the `DISCARD` operation should be
+    ///   carried out within an explicit transaction. `-1` is the default, which denotes the last
+    ///   executed statement.
     ///
     /// # Response
     /// - [`Message::Success`] - the request has been successfully received and the server has
@@ -157,9 +168,13 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
     ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(1, 2, 3)]
-    pub async fn discard_all(&mut self) -> CommunicationResult<Message> {
-        self.send_message(Message::DiscardAll).await?;
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    pub async fn discard(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
+        let message = match self.version() {
+            V1_0 | V2_0 | V3_0 => Message::DiscardAll,
+            _ => Message::Discard(Discard::new(metadata.unwrap_or_default().value)),
+        };
+        self.send_message(message).await?;
         self.read_message().await
     }
 
