@@ -539,6 +539,56 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
+    /// Send a [`ROUTE`](Message::Route) message to the server.
+    /// _(Bolt v4.3+ only.)_
+    ///
+    /// # Description
+    /// The `ROUTE` message instructs the server to return the current routing table.
+    ///
+    /// The server must be in the [`Ready`](bolt_proto::ServerState::Ready) state to be able to
+    /// successfully process a `ROUTE` request. If the server is in the
+    /// [`Failed`](bolt_proto::ServerState::Failed) or
+    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `ROUTE` request will be
+    /// considered a protocol violation and will lead to connection closure.
+    ///
+    /// # Fields
+    /// - `context`, which should contain routing context information as well as an `address`
+    ///   field indicating to which address the client should initially connect.
+    /// - `bookmarks`, a list of strings containing some kind of bookmark identification, e.g
+    ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`. Default is `[]`.
+    /// - `database`, a string containing the name of the database for which this command should be
+    ///   run. `""` denotes the server-side configured default database.
+    ///
+    /// # Response
+    /// - [`Message::Success`] - the routing table has been successfully retrieved and the server
+    ///   has entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server sends the
+    ///   following metadata fields in the response:
+    ///   - `rt`, a map with the following fields:
+    ///     - `ttl`, an integer denoting the number of seconds this routing table should be
+    ///       considered valid
+    ///     - `servers`, a list of maps representing roles for one or more addresses. Each element
+    ///       will have the following fields:
+    ///       - `role`, a server role. Possible values are `"READ"`, `"WRITE"`, and `"ROUTE"`.
+    ///       - `addresses`, a list of strings representing the servers with the specified role
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
+    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   metadata to the message to provide more detail on the nature of the failure.
+    #[bolt_version(4.3)]
+    pub async fn route(
+        &mut self,
+        context: RoutingContext,
+        bookmarks: impl Into<Vec<String>>,
+        database: impl Into<String>,
+    ) -> CommunicationResult<Message> {
+        let route_msg = Route::new(context.value, bookmarks.into(), database.into());
+        self.send_message(Message::Route(route_msg)).await?;
+        self.read_message().await
+    }
+
     // TODO: Add additional allowed server states for `RUN`
     /// Send a [`RUN`](Message::Run) message to the server.
     /// _(Bolt v1+. For Bolt v1 - v2, the `metadata` parameter is ignored.)_
@@ -607,63 +657,6 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             )),
         };
 
-        self.send_message(message).await?;
-        self.read_message().await
-    }
-
-    /// Send a [`DISCARD`](Message::Discard) (or [`DISCARD_ALL`](Message::DiscardAll)) message to
-    /// the server.
-    /// _(Sends a `DISCARD_ALL` for Bolt v1 - v3, and `DISCARD` for Bold v4+. For Bolt v1 - v3,
-    /// the `metadata` parameter is ignored.)_
-    ///
-    /// # Description
-    /// The `DISCARD` message issues a request to discard the outstanding result and return to the
-    /// [`Ready`](bolt_proto::ServerState::Ready) state. A receiving server will not abort the
-    /// request but continue to process it without streaming any detail messages to the client.
-    ///
-    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) or
-    /// [`TxStreaming`](bolt_proto::ServerState::TxStreaming) state to be able to successfully
-    /// process a `DISCARD` request. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) state or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
-    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `DISCARD` request
-    /// will be considered a protocol violation and will lead to connection closure.
-    ///
-    /// # Fields
-    /// For Bolt v4+, additional metadata is passed along with this message:
-    /// - `n` is an integer specifying how many records to discard. `-1` will discard all records.
-    ///   `n` has no default and must be present.
-    /// - `qid` is an integer that specifies for which statement the `DISCARD` operation should be
-    ///   carried out within an explicit transaction. `-1` is the default, which denotes the last
-    ///   executed statement.
-    ///
-    /// # Response
-    /// - [`Message::Success`] - results have been successfully discarded and the server has
-    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
-    ///   metadata to the message to provide footer detail for the discarded results.
-    ///   The following fields are defined for inclusion in the metadata:
-    ///   - `type`, the type of query: read-only (`"r"`), write-only (`"w"`), read-write (`"rw"`),
-    ///     or schema (`"s"`)
-    ///   - `result_consumed_after`, the time in milliseconds after which the last record in the
-    ///     result stream is consumed. _(Bolt v1 - v2 only.)_
-    ///   - `t_last`, supercedes `result_consumed_after`. _(Bolt v3+ only.)_
-    ///   - `bookmark` (e.g. `"bookmark:1234"`). _(Bolt v3+ only.)_
-    ///   - `db`, a string containing the name of the database where the query was executed.
-    ///     _(Bolt v4+ only.)_
-    ///   - `has_more`, a boolean indicating whether there are still records left in the result
-    ///     stream. Default is `false`. _(Bolt v4+ only.)_
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
-    ///   discarded without being processed. No server state change has occurred.
-    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
-    ///   metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
-    pub async fn discard(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
-        let message = match self.version() {
-            V1_0 | V2_0 | V3_0 => Message::DiscardAll,
-            _ => Message::Discard(Discard::new(metadata.unwrap_or_default().value)),
-        };
         self.send_message(message).await?;
         self.read_message().await
     }
@@ -752,85 +745,61 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         }
     }
 
-    /// Send an [`ACK_FAILURE`](Message::AckFailure) message to the server.
-    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::reset`].)_
+    /// Send a [`DISCARD`](Message::Discard) (or [`DISCARD_ALL`](Message::DiscardAll)) message to
+    /// the server.
+    /// _(Sends a `DISCARD_ALL` for Bolt v1 - v3, and `DISCARD` for Bold v4+. For Bolt v1 - v3,
+    /// the `metadata` parameter is ignored.)_
     ///
     /// # Description
-    /// `ACK_FAILURE` signals to the server that the client has acknowledged a previous failure and
-    /// should return to the [`Ready`](bolt_proto::ServerState::Ready) state.
+    /// The `DISCARD` message issues a request to discard the outstanding result and return to the
+    /// [`Ready`](bolt_proto::ServerState::Ready) state. A receiving server will not abort the
+    /// request but continue to process it without streaming any detail messages to the client.
     ///
-    /// The server must be in the [`Failed`](bolt_proto::ServerState::Failed) state to be able to
-    /// successfully process an `ACK_FAILURE` request. For any other states, receipt of an
-    /// `ACK_FAILURE` request will be considered a protocol violation and will lead to connection
-    /// closure.
+    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) or
+    /// [`TxStreaming`](bolt_proto::ServerState::TxStreaming) state to be able to successfully
+    /// process a `DISCARD` request. If the server is in the
+    /// [`Failed`](bolt_proto::ServerState::Failed) state or
+    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `DISCARD` request
+    /// will be considered a protocol violation and will lead to connection closure.
+    ///
+    /// # Fields
+    /// For Bolt v4+, additional metadata is passed along with this message:
+    /// - `n` is an integer specifying how many records to discard. `-1` will discard all records.
+    ///   `n` has no default and must be present.
+    /// - `qid` is an integer that specifies for which statement the `DISCARD` operation should be
+    ///   carried out within an explicit transaction. `-1` is the default, which denotes the last
+    ///   executed statement.
     ///
     /// # Response
-    /// - [`Message::Success`] - failure has been successfully acknowledged and the server has
+    /// - [`Message::Success`] - results have been successfully discarded and the server has
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
-    ///   metadata to the `SUCCESS` message.
+    ///   metadata to the message to provide footer detail for the discarded results.
+    ///   The following fields are defined for inclusion in the metadata:
+    ///   - `type`, the type of query: read-only (`"r"`), write-only (`"w"`), read-write (`"rw"`),
+    ///     or schema (`"s"`)
+    ///   - `result_consumed_after`, the time in milliseconds after which the last record in the
+    ///     result stream is consumed. _(Bolt v1 - v2 only.)_
+    ///   - `t_last`, supercedes `result_consumed_after`. _(Bolt v3+ only.)_
+    ///   - `bookmark` (e.g. `"bookmark:1234"`). _(Bolt v3+ only.)_
+    ///   - `db`, a string containing the name of the database where the query was executed.
+    ///     _(Bolt v4+ only.)_
+    ///   - `has_more`, a boolean indicating whether there are still records left in the result
+    ///     stream. Default is `false`. _(Bolt v4+ only.)_
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   discarded without being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
-    ///   include metadata describing the nature of the failure but will immediately close the
-    ///   connection after the failure has been sent.
-    #[bolt_version(1, 2)]
-    pub async fn ack_failure(&mut self) -> CommunicationResult<Message> {
-        self.send_message(Message::AckFailure).await?;
-        self.read_message().await
-    }
-
-    /// Send a [`RESET`](Message::Reset) message to the server.
-    /// _(Bolt v1+. For Bolt v1 - v2, see [`Client::ack_failure`] for just clearing the
-    /// [`Failed`](bolt_proto::ServerState::Failed) state.)_
-    ///
-    /// # Description
-    /// The `RESET` message requests that the connection be set back to its initial state, as if
-    /// initialization had just been successfully completed. The `RESET` message is unique in that
-    /// it on arrival at the server, it jumps ahead in the message queue, stopping any unit of work
-    /// that happens to be executing. All the queued messages originally in front of the `RESET`
-    /// message will then be [`IGNORED`](Message::Ignored) until the `RESET` position is reached,
-    /// at which point the server will be ready for a new session.
-    ///
-    /// Specifically, `RESET` will:
-    /// - force any currently processing message to abort with [`IGNORED`](Message::Ignored)
-    /// - force any pending messages that have not yet started processing to be
-    ///   [`IGNORED`](Message::Ignored)
-    /// - clear any outstanding [`Failed`](bolt_proto::ServerState::Failed) state
-    /// - dispose of any outstanding result records
-    /// - cancel the current transaction, if any
-    ///
-    /// # Response
-    /// - [`Message::Success`] - the session has been successfully reset and the server has entered
-    ///   the [`Ready`](bolt_proto::ServerState::Ready) state.
-    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
-    ///   include metadata describing the nature of the failure but will immediately close the
-    ///   connection after the failure has been sent.
+    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
-    pub async fn reset(&mut self) -> CommunicationResult<Message> {
-        self.send_message(Message::Reset).await?;
-        loop {
-            match self.read_message().await? {
-                Message::Success(success) => return Ok(Message::Success(success)),
-                Message::Failure(failure) => return Ok(Message::Failure(failure)),
-                Message::Ignored => {}
-                _ => unreachable!(),
-            }
-        }
-    }
-
-    /// Send a [`GOODBYE`](Message::Goodbye) message to the server.
-    /// _(Bolt v3+ only.)_
-    ///
-    /// # Description
-    /// The `GOODBYE` message notifies the server that the connection is terminating gracefully. On
-    /// receipt of this message, the server will immediately shut down the socket on its side
-    /// without sending a response. A client may shut down the socket at any time after sending the
-    /// `GOODBYE` message. This message interrupts the server's current work, if any.
-    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
-    pub async fn goodbye(&mut self) -> CommunicationResult<()> {
-        self.send_message(Message::Goodbye).await?;
-        self.server_state = Defunct;
-        Ok(self.stream.close().await?)
+    pub async fn discard(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
+        let message = match self.version() {
+            V1_0 | V2_0 | V3_0 => Message::DiscardAll,
+            _ => Message::Discard(Discard::new(metadata.unwrap_or_default().value)),
+        };
+        self.send_message(message).await?;
+        self.read_message().await
     }
 
     /// Send a [`BEGIN`](Message::Begin) message to the server.
@@ -945,54 +914,85 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a [`ROUTE`](Message::Route) message to the server.
-    /// _(Bolt v4.3+ only.)_
+    /// Send an [`ACK_FAILURE`](Message::AckFailure) message to the server.
+    /// _(Bolt v1 - v2 only. For Bolt v3+, see [`Client::reset`].)_
     ///
     /// # Description
-    /// The `ROUTE` message instructs the server to return the current routing table.
+    /// `ACK_FAILURE` signals to the server that the client has acknowledged a previous failure and
+    /// should return to the [`Ready`](bolt_proto::ServerState::Ready) state.
     ///
-    /// The server must be in the [`Ready`](bolt_proto::ServerState::Ready) state to be able to
-    /// successfully process a `ROUTE` request. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
-    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `ROUTE` request will be
-    /// considered a protocol violation and will lead to connection closure.
-    ///
-    /// # Fields
-    /// - `context`, which should contain routing context information as well as an `address`
-    ///   field indicating to which address the client should initially connect.
-    /// - `bookmarks`, a list of strings containing some kind of bookmark identification, e.g
-    ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`. Default is `[]`.
-    /// - `database`, a string containing the name of the database for which this command should be
-    ///   run. `""` denotes the server-side configured default database.
+    /// The server must be in the [`Failed`](bolt_proto::ServerState::Failed) state to be able to
+    /// successfully process an `ACK_FAILURE` request. For any other states, receipt of an
+    /// `ACK_FAILURE` request will be considered a protocol violation and will lead to connection
+    /// closure.
     ///
     /// # Response
-    /// - [`Message::Success`] - the routing table has been successfully retrieved and the server
-    ///   has entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server sends the
-    ///   following metadata fields in the response:
-    ///   - `rt`, a map with the following fields:
-    ///     - `ttl`, an integer denoting the number of seconds this routing table should be
-    ///       considered valid
-    ///     - `servers`, a list of maps representing roles for one or more addresses. Each element
-    ///       will have the following fields:
-    ///       - `role`, a server role. Possible values are `"READ"`, `"WRITE"`, and `"ROUTE"`.
-    ///       - `addresses`, a list of strings representing the servers with the specified role
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
-    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Success`] - failure has been successfully acknowledged and the server has
+    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
+    ///   metadata to the `SUCCESS` message.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
-    ///   metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(4.3)]
-    pub async fn route(
-        &mut self,
-        context: RoutingContext,
-        bookmarks: impl Into<Vec<String>>,
-        database: impl Into<String>,
-    ) -> CommunicationResult<Message> {
-        let route_msg = Route::new(context.value, bookmarks.into(), database.into());
-        self.send_message(Message::Route(route_msg)).await?;
+    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
+    ///   include metadata describing the nature of the failure but will immediately close the
+    ///   connection after the failure has been sent.
+    #[bolt_version(1, 2)]
+    pub async fn ack_failure(&mut self) -> CommunicationResult<Message> {
+        self.send_message(Message::AckFailure).await?;
         self.read_message().await
+    }
+
+    /// Send a [`RESET`](Message::Reset) message to the server.
+    /// _(Bolt v1+. For Bolt v1 - v2, see [`Client::ack_failure`] for just clearing the
+    /// [`Failed`](bolt_proto::ServerState::Failed) state.)_
+    ///
+    /// # Description
+    /// The `RESET` message requests that the connection be set back to its initial state, as if
+    /// initialization had just been successfully completed. The `RESET` message is unique in that
+    /// it on arrival at the server, it jumps ahead in the message queue, stopping any unit of work
+    /// that happens to be executing. All the queued messages originally in front of the `RESET`
+    /// message will then be [`IGNORED`](Message::Ignored) until the `RESET` position is reached,
+    /// at which point the server will be ready for a new session.
+    ///
+    /// Specifically, `RESET` will:
+    /// - force any currently processing message to abort with [`IGNORED`](Message::Ignored)
+    /// - force any pending messages that have not yet started processing to be
+    ///   [`IGNORED`](Message::Ignored)
+    /// - clear any outstanding [`Failed`](bolt_proto::ServerState::Failed) state
+    /// - dispose of any outstanding result records
+    /// - cancel the current transaction, if any
+    ///
+    /// # Response
+    /// - [`Message::Success`] - the session has been successfully reset and the server has entered
+    ///   the [`Ready`](bolt_proto::ServerState::Ready) state.
+    /// - [`Message::Failure`] - the request could not be processed successfully and the server has
+    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
+    ///   include metadata describing the nature of the failure but will immediately close the
+    ///   connection after the failure has been sent.
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    pub async fn reset(&mut self) -> CommunicationResult<Message> {
+        self.send_message(Message::Reset).await?;
+        loop {
+            match self.read_message().await? {
+                Message::Success(success) => return Ok(Message::Success(success)),
+                Message::Failure(failure) => return Ok(Message::Failure(failure)),
+                Message::Ignored => {}
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    /// Send a [`GOODBYE`](Message::Goodbye) message to the server.
+    /// _(Bolt v3+ only.)_
+    ///
+    /// # Description
+    /// The `GOODBYE` message notifies the server that the connection is terminating gracefully. On
+    /// receipt of this message, the server will immediately shut down the socket on its side
+    /// without sending a response. A client may shut down the socket at any time after sending the
+    /// `GOODBYE` message. This message interrupts the server's current work, if any.
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
+    pub async fn goodbye(&mut self) -> CommunicationResult<()> {
+        self.send_message(Message::Goodbye).await?;
+        self.server_state = Defunct;
+        Ok(self.stream.close().await?)
     }
 
     /// Send multiple messages to the server without waiting for a response. Returns a
