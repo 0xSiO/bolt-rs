@@ -31,6 +31,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `scheme` is the authentication scheme. Predefined schemes are `"none"`, `"basic"`, or
     ///   `"kerberos"`.
     ///
+    /// If using Bolt v4.3 or later, the following additional `metadata` entries can be specified:
+    /// - `routing`, a map which should contain routing context information as well as an `address`
+    ///   field indicating to which address the client should initially connect. Leaving this
+    ///   unspecified indicates that the server should not carry out any routing.
+    ///   _(Bolt v4.3+ only.)_
+    ///
     /// Further entries in `metadata` are passed to the implementation of the chosen
     /// authentication scheme. Their names, types, and defaults depend on that choice. For
     /// example, the scheme `"basic"` requires `metadata` to contain the username and password in
@@ -41,8 +47,15 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may include
     ///   metadata that describes details of the server environment and/or the connection. The
     ///   following fields are defined for inclusion in the `SUCCESS` metadata:
-    ///   - `server` (e.g. `"Neo4j/4.3.0"`)
-    ///   - `connection_id` (e.g. `"bolt-61"`) _(Bolt v3+ only.)_
+    ///   - `server`, the server agent string (e.g. `"Neo4j/4.3.0"`)
+    ///   - `connection_id`, a unique identifier for the connection (e.g. `"bolt-61"`)
+    ///     _(Bolt v3+ only.)_
+    ///   - `hints`, a map of configuration hints (e.g. `{"connection.recv_timeout_seconds": 120}`)
+    ///     These hints may be interpreted or ignored by drivers at their own discretion in order
+    ///     to augment operations where applicable. Hints remain valid throughout the lifetime of a
+    ///     given connection and cannot be changed. As such, newly established connections may
+    ///     observe different hints as the server configuration is adjusted.
+    ///     _(Bolt v4.3+ only.)_
     /// - [`Message::Failure`] - initialization has failed and the server has entered the
     ///   [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to include
     ///   metadata describing the nature of the failure but will immediately close the connection
