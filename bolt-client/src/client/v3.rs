@@ -222,6 +222,26 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn run_and_pull() {
+        let client = get_initialized_client(V3_0).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
+        let response = client
+            .run("RETURN 3458376 as n;", None, None)
+            .await
+            .unwrap();
+        assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Streaming);
+
+        let (records, response) = client.pull(None).await.unwrap();
+        assert!(Success::try_from(response).is_ok());
+        assert_eq!(client.server_state(), Ready);
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].fields(), &[Value::from(3_458_376)]);
+    }
+
+    #[tokio::test]
     async fn discard_fail() {
         let client = get_initialized_client(V3_0).await;
         skip_if_handshake_failed!(client);
