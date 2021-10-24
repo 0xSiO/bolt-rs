@@ -189,8 +189,15 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
     ///   metadata to the message to provide footer detail for the discarded results.
     ///   The following fields are defined for inclusion in the metadata:
-    ///   - `bookmark` (e.g. `"bookmark:1234"`)
-    ///   - `result_consumed_after` (e.g. `123`)
+    ///   - `type`, the type of result discarded (e.g. `"r"`)
+    ///   - `result_consumed_after`, the time in milliseconds after which the last record in the
+    ///     result stream is consumed. _(Bolt v1 - v2 only.)_
+    ///   - `t_last`, supercedes `result_consumed_after`. _(Bolt v3+ only.)_
+    ///   - `bookmark` (e.g. `"bookmark:1234"`). _(Bolt v3+ only.)_
+    ///   - `db`, a string containing the name of the database where the command was run.
+    ///     _(Bolt v4+ only.)_
+    ///   - `has_more`, a boolean indicating whether there are still records left in the result
+    ///     stream. Default is `false`. _(Bolt v4+ only.)_
     /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
     ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
