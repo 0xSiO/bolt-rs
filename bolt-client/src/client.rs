@@ -605,15 +605,16 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    // TODO: Add additional allowed server states for `RUN`
     /// Send a [`RUN`](Message::Run) message to the server.
     /// _(Bolt v1+. For Bolt v1 - v2, the `metadata` parameter is ignored.)_
     ///
     /// # Description
     /// A `RUN` message submits a new query for execution, the result of which will be consumed by
-    /// a subsequent message, such as [`PULL_ALL`](Message::PullAll).
+    /// a subsequent message, such as [`PULL`](Message::Pull).
     ///
-    /// The server must be in the [`Ready`](bolt_proto::ServerState::Ready) state to be able to
+    /// The server must be in either the [`Ready`](bolt_proto::ServerState::Ready) state, the
+    /// [`TxReady`](bolt_proto::ServerState::TxReady) state (Bolt v3+), or the
+    /// [`TxStreaming`](bolt_proto::ServerState::TxStreaming) state (Bolt v4+) to be able to
     /// successfully process a `RUN` request. If the server is in the
     /// [`Failed`](bolt_proto::ServerState::Failed) or
     /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
