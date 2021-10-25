@@ -22,7 +22,7 @@ pub use bolt_proto;
 pub struct Manager {
     addr: SocketAddr,
     domain: Option<String>,
-    preferred_versions: [u32; 4],
+    version_specifiers: [u32; 4],
     metadata: Metadata,
 }
 
@@ -30,7 +30,7 @@ impl Manager {
     pub async fn new(
         addr: impl ToSocketAddrs,
         domain: Option<String>,
-        preferred_versions: [u32; 4],
+        version_specifiers: [u32; 4],
         metadata: Metadata,
     ) -> io::Result<Self> {
         Ok(Self {
@@ -39,7 +39,7 @@ impl Manager {
                 .next()
                 .ok_or_else(|| io::Error::from(io::ErrorKind::AddrNotAvailable))?,
             domain,
-            preferred_versions,
+            version_specifiers,
             metadata,
         })
     }
@@ -74,7 +74,7 @@ impl deadpool::managed::Manager for Manager {
     async fn create(&self) -> Result<Client, Error> {
         let mut client = Client::new(
             BufStream::new(Stream::connect(self.addr, self.domain.as_ref()).await?).compat(),
-            &self.preferred_versions,
+            &self.version_specifiers,
         )
         .await
         .map_err(ClientError::from)?;
@@ -112,7 +112,7 @@ mod tests {
 
     use super::*;
 
-    async fn get_connection_manager(preferred_versions: [u32; 4], succeed: bool) -> Manager {
+    async fn get_connection_manager(version_specifiers: [u32; 4], succeed: bool) -> Manager {
         let credentials = if succeed {
             env::var("BOLT_TEST_PASSWORD").unwrap()
         } else {
@@ -122,7 +122,7 @@ mod tests {
         Manager::new(
             env::var("BOLT_TEST_ADDR").unwrap(),
             env::var("BOLT_TEST_DOMAIN").ok(),
-            preferred_versions,
+            version_specifiers,
             Metadata::from_iter(vec![
                 ("user_agent", "bolt-client/X.Y.Z"),
                 ("scheme", "basic"),
@@ -138,7 +138,7 @@ mod tests {
     async fn basic_pool() {
         const MAX_CONNS: usize = 50;
 
-        for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1, V4_2, V4_3] {
+        for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1, V4_2, V4_3, V4] {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], true).await;
 
             // Don't even test connection pool if server doesn't support this Bolt version
@@ -175,7 +175,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_init_fails() {
-        for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1, V4_2, V4_3] {
+        for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1, V4_2, V4_3, V4] {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], false).await;
             match manager.create().await {
                 Ok(_) => panic!("initialization should have failed"),
