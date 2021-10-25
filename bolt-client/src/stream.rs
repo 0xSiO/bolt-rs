@@ -29,8 +29,8 @@ pub enum Stream {
 }
 
 impl Stream {
-    /// Establish a connection with a remote socket. If a domain is provided, TLS
-    /// negotiation will be attempted.
+    /// Establish a connection with a remote socket. If a domain is provided, TLS negotiation will
+    /// be attempted.
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio-stream")))]
     pub async fn connect(
         addr: impl ToSocketAddrs,

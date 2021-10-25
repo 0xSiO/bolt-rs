@@ -4,8 +4,8 @@
 //! An asynchronous client for Bolt-compatible servers.
 //!
 //! # Example
-//! The below example demonstrates how to communicate with a Neo4j server using Bolt
-//! protocol version 4.
+//! The below example demonstrates how to communicate with a Neo4j server using Bolt protocol
+//! version 4.
 //! ```
 //! use std::collections::HashMap;
 //! use std::convert::TryFrom;
@@ -210,8 +210,8 @@
 //! #     Ok(())
 //! # }
 //! ```
-//! See the documentation of the [`Client`] struct for information on transaction
-//! management, error handling, and more.
+//! See the documentation of the [`Client`] struct for information on transaction management, error
+//! handling, and more.
 #[doc(inline)]
 pub use self::client::Client;
 

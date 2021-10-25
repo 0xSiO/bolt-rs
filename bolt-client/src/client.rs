@@ -56,9 +56,9 @@ pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
 }
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
-    /// Attempt to create a new client from an asynchronous stream. A handshake will be
-    /// performed with the provided protocol version specifiers, and, if this succeeds, a Client
-    /// will be returned.
+    /// Attempt to create a new client from an asynchronous stream. A handshake will be performed
+    /// with the provided protocol version specifiers, and, if this succeeds, a Client will be
+    /// returned.
     pub async fn new(mut stream: S, version_specifiers: &[u32; 4]) -> ConnectionResult<Self> {
         let mut version_specifiers_bytes = BytesMut::with_capacity(16);
         version_specifiers
@@ -1017,20 +1017,20 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// were provided.
     ///
     /// # Description
-    /// The client is not required to wait for a response before sending more messages.
-    /// Sending multiple messages together like this is called _pipelining_. For performance
-    /// reasons, it is recommended that clients use pipelining wherever possible. Using
-    /// pipelining, multiple messages can be transmitted together in the same network package,
-    /// significantly reducing latency and increasing throughput.
+    /// The client is not required to wait for a response before sending more messages.  Sending
+    /// multiple messages together like this is called _pipelining_. For performance reasons, it is
+    /// recommended that clients use pipelining wherever possible. Using pipelining, multiple
+    /// messages can be transmitted together in the same network package, significantly reducing
+    /// latency and increasing throughput.
     ///
-    /// A common technique is to buffer outgoing messages on the client until the last
-    /// possible moment, such as when a commit is issued or a result is read by the
-    /// application, and then sending all messages in the buffer together.
+    /// A common technique is to buffer outgoing messages on the client until the last possible
+    /// moment, such as when a commit is issued or a result is read by the application, and then
+    /// sending all messages in the buffer together.
     ///
     /// # Failure Handling
-    /// Because the protocol leverages pipelining, the client and the server need to agree
-    /// on what happens when a failure occurs, otherwise messages that were sent assuming
-    /// no failure would occur might have unintended effects.
+    /// Because the protocol leverages pipelining, the client and the server need to agree on what
+    /// happens when a failure occurs, otherwise messages that were sent assuming no failure would
+    /// occur might have unintended effects.
     ///
     /// When requests fail on the server, the server will send the client a
     /// [`FAILURE`](Message::Failure) message. The client must clear the failure state by sending
