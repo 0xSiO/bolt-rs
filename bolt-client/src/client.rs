@@ -33,6 +33,19 @@ mod v4_3;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 
+/// Return whether a version is compatible with version specifier.
+fn is_compatible(version: u32, specifier: u32) -> bool {
+    let (major, minor) = (version & 0xff, version >> 8 & 0xff);
+    let (specified_major, specified_minor, range) = (
+        specifier & 0xff,
+        specifier >> 8 & 0xff,
+        specifier >> 16 & 0xff,
+    );
+
+    major == specified_major
+        && (specified_minor.saturating_sub(range)..=specified_minor).contains(&minor)
+}
+
 /// An asynchronous client for Bolt servers.
 #[derive(Debug)]
 pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
@@ -44,31 +57,34 @@ pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Attempt to create a new client from an asynchronous stream. A handshake will be
-    /// performed with the provided protocol versions, and, if this succeeds, a Client will be
-    /// returned.
-    pub async fn new(mut stream: S, preferred_versions: &[u32; 4]) -> ConnectionResult<Self> {
-        let mut preferred_versions_bytes = BytesMut::with_capacity(16);
-        preferred_versions
+    /// performed with the provided protocol version specifiers, and, if this succeeds, a Client
+    /// will be returned.
+    pub async fn new(mut stream: S, version_specifiers: &[u32; 4]) -> ConnectionResult<Self> {
+        let mut version_specifiers_bytes = BytesMut::with_capacity(16);
+        version_specifiers
             .iter()
-            .for_each(|&v| preferred_versions_bytes.put_u32(v));
+            .for_each(|&v| version_specifiers_bytes.put_u32(v));
         stream.write_all(&PREAMBLE).await?;
-        stream.write_all(&preferred_versions_bytes).await?;
+        stream.write_all(&version_specifiers_bytes).await?;
         stream.flush().await?;
 
         let mut u32_bytes = [0, 0, 0, 0];
         stream.read_exact(&mut u32_bytes).await?;
         let version = u32::from_be_bytes(u32_bytes);
-        // TODO: Update to handle ranges
-        if preferred_versions.contains(&version) && version > 0 {
-            Ok(Self {
-                stream,
-                version,
-                server_state: Connected,
-                sent_queue: Default::default(),
-            })
-        } else {
-            Err(ConnectionError::HandshakeFailed(*preferred_versions))
+
+        if version > 0 {
+            for &specifier in version_specifiers {
+                if is_compatible(version, specifier) {
+                    return Ok(Self {
+                        stream,
+                        version,
+                        server_state: Connected,
+                        sent_queue: Default::default(),
+                    });
+                }
+            }
         }
+        Err(ConnectionError::HandshakeFailed(*version_specifiers))
     }
 
     /// Get the current version of this client.

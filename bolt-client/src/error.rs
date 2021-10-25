@@ -1,4 +1,4 @@
-use bolt_proto::{error::Error as ProtocolError, version::*, Message, ServerState};
+use bolt_proto::{error::Error as ProtocolError, Message, ServerState};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -55,13 +55,11 @@ response: {response:?}"
 }
 
 fn format_version(version: u32) -> String {
-    match version {
-        V1_0 => String::from("1.0"),
-        V2_0 => String::from("2.0"),
-        V3_0 => String::from("3.0"),
-        V4_0 => String::from("4.0"),
-        V4_1 => String::from("4.1"),
-        _ => format!("{:#x}", version),
+    let (major, minor, range) = (version & 0xff, version >> 8 & 0xff, version >> 16 & 0xff);
+    if range > 0 {
+        format!("{}.{}-{}", major, minor.saturating_sub(range), minor)
+    } else {
+        format!("{}.{}", major, minor)
     }
 }
 
