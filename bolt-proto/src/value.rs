@@ -74,12 +74,12 @@ pub(crate) const SIGNATURE_POINT_3D: u8 = 0x59;
 /// An enum that can hold values of all Bolt-compatible types.
 ///
 /// Conversions are provided for most types, and are usually pretty intuitive ([`bool`] to
-/// [`Value::Boolean`], [`i32`] to [`Value::Integer`],
-/// [`HashMap`](std::collections::HashMap) to [`Value::Map`], etc.), but some types have
-/// no analog in Rust, like a timezone-aware time. For such types, conversions are still
-/// provided, but may feel a bit clunky (for example, you can convert a
-/// `(`[`NaiveTime`](chrono::NaiveTime)`, impl `[`Offset`](chrono::Offset)`)` tuple into a
-/// [`Value::Time`]).
+/// [`Value::Boolean`], [`i32`] to [`Value::Integer`], [`HashMap`](std::collections::HashMap) to
+/// [`Value::Map`], etc.), but some types have no analog in Rust, like a timezone-aware time. For
+/// such types, conversions are still provided, but may feel a bit clunky (for example, you can
+/// convert a `(`[`NaiveTime`](chrono::NaiveTime)`, impl `[`Offset`](chrono::Offset)`)` tuple into
+/// a [`Value::Time`]).
+// TODO: Implement serde traits
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     // V1-compatible value types

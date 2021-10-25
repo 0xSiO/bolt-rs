@@ -113,8 +113,7 @@ impl Message {
     pub fn into_chunks(self) -> SerializeResult<Vec<Bytes>> {
         let bytes = self.serialize()?;
 
-        // Big enough to hold all the chunks, plus a partial chunk, plus the message
-        // footer
+        // Big enough to hold all the chunks, plus a partial chunk, plus the message footer
         let mut result: Vec<Bytes> = Vec::with_capacity(bytes.len() / CHUNK_SIZE + 2);
         for slice in bytes.chunks(CHUNK_SIZE) {
             // 16-bit size, then the chunk data
