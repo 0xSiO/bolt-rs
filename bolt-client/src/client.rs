@@ -1012,16 +1012,16 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         Ok(self.stream.close().await?)
     }
 
-    /// Send multiple messages to the server without waiting for a response. Returns a
-    /// [`Vec`] containing the server's response messages for each of the sent messages,
-    /// in the order they were provided.
+    /// Send multiple messages to the server without waiting for a response. Returns a [`Vec`]
+    /// containing the server's response messages for each of the sent messages, in the order they
+    /// were provided.
     ///
     /// # Description
     /// The client is not required to wait for a response before sending more messages.
-    /// Sending multiple messages together like this is called pipelining. For performance
-    /// reasons, it is recommended that clients use pipelining as much as possible.
-    /// Through pipelining, multiple messages can be transmitted together in the same
-    /// network package, significantly reducing latency and increasing throughput.
+    /// Sending multiple messages together like this is called _pipelining_. For performance
+    /// reasons, it is recommended that clients use pipelining wherever possible. Using
+    /// pipelining, multiple messages can be transmitted together in the same network package,
+    /// significantly reducing latency and increasing throughput.
     ///
     /// A common technique is to buffer outgoing messages on the client until the last
     /// possible moment, such as when a commit is issued or a result is read by the
@@ -1032,12 +1032,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// on what happens when a failure occurs, otherwise messages that were sent assuming
     /// no failure would occur might have unintended effects.
     ///
-    /// When requests fail on the server, the server will send the client a `FAILURE`
-    /// message. The client must acknowledge the `FAILURE` message by sending a `RESET`
-    /// (Bolt v3+) or `ACK_FAILURE` (Bolt v1-2) message to the server. Until the server
-    /// receives the `RESET`/`ACK_FAILURE` message, it will send an `IGNORED` message in
-    /// response to any other message from the client, including messages that were sent
-    /// in a pipeline.
+    /// When requests fail on the server, the server will send the client a
+    /// [`FAILURE`](Message::Failure) message. The client must clear the failure state by sending
+    /// a [`RESET`](Message::Reset) (Bolt v3+) or [`ACK_FAILURE`](Message::AckFailure) (Bolt v1 -
+    /// v2) message to the server. Until the server receives the `RESET`/`ACK_FAILURE` message, it
+    /// will send an [`IGNORED`](Message::Ignored) message in response to any other message from
+    /// the client, including messages that were sent in a pipeline.
     pub async fn pipeline(&mut self, messages: Vec<Message>) -> CommunicationResult<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
