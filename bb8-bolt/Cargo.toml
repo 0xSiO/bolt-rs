@@ -6,7 +6,7 @@ repository = "https://github.com/0xSiO/bolt-rs"
 categories = ["asynchronous"]
 keywords = ["bolt", "database", "pool", "neo4j", "bb8"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 async-trait = "0.1.0"

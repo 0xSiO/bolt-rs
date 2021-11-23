@@ -64,7 +64,7 @@ pub fn bolt_structure(attr_args: TokenStream, item: TokenStream) -> TokenStream 
     quote!(
         #structure
 
-        impl#type_args crate::serialization::BoltValue for #name#type_args
+        impl #type_args crate::serialization::BoltValue for #name #type_args
         #where_clause
         {
             fn marker(&self) -> crate::error::SerializeResult<u8> {
@@ -92,13 +92,12 @@ pub fn bolt_structure(attr_args: TokenStream, item: TokenStream) -> TokenStream 
             fn deserialize<B>(mut bytes: B) -> crate::error::DeserializeResult<(Self, B)>
             where B: ::bytes::Buf + ::std::panic::UnwindSafe
             {
-                use ::std::convert::TryInto;
                 #(#deserialize_var_defs)*
                 Ok((Self { #(#deserialize_fields)* }, bytes))
             }
         }
 
-        impl#type_args crate::serialization::BoltStructure for #name#type_args
+        impl #type_args crate::serialization::BoltStructure for #name #type_args
         #where_clause
         {
             fn signature(&self) -> u8 {

@@ -5,7 +5,7 @@ description = "Procedural macros for bolt-client.\n"
 repository = "https://github.com/0xSiO/bolt-rs"
 keywords    = ["bolt", "client", "macros"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 
 [lib]
 proc-macro = true

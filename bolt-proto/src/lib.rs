@@ -54,7 +54,6 @@ macro_rules! impl_empty_message_tests {
     ($T:ident) => {
         mod tests {
             use ::bytes::Bytes;
-            use ::std::convert::TryFrom;
             use ::std::sync::{Arc, Mutex};
 
             use crate::serialization::*;

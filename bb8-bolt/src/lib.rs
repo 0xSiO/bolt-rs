@@ -1,6 +1,6 @@
 #![warn(rust_2018_idioms)]
 
-use std::{convert::TryFrom, io, net::SocketAddr};
+use std::{io, net::SocketAddr};
 
 use async_trait::async_trait;
 use bb8::{ManageConnection, PooledConnection};
@@ -99,7 +99,7 @@ impl ManageConnection for Manager {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, iter::FromIterator};
+    use std::env;
 
     use bb8::*;
     use bolt_proto::{version::*, Value};

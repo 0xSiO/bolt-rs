@@ -7,7 +7,7 @@ repository = "https://github.com/0xSiO/bolt-rs"
 categories  = ["network-programming", "database", "asynchronous", "encoding"]
 keywords    = ["bolt", "client", "neo4j"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 
 [features]
 tokio-stream = ["pin-project", "tokio", "tokio-rustls", "webpki-roots"]

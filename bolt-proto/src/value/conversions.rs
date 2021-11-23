@@ -1,4 +1,4 @@
-use std::{collections::HashMap, convert::TryFrom, hash::BuildHasher};
+use std::{collections::HashMap, hash::BuildHasher};
 
 use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone};
 use chrono_tz::Tz;

@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    use std::convert::TryFrom;
-    use std::iter::FromIterator;
 
     use bolt_proto::{message::*, value::*, version::*, ServerState::*};
 

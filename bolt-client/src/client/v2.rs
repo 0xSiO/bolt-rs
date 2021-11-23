@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
     use bolt_proto::{message::*, value::*, version::*, ServerState::*};

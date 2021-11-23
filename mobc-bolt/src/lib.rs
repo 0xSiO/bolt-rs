@@ -1,6 +1,6 @@
 #![warn(rust_2018_idioms)]
 
-use std::{convert::TryFrom, io, net::SocketAddr};
+use std::{io, net::SocketAddr};
 
 use async_trait::async_trait;
 use thiserror::Error;
@@ -96,7 +96,7 @@ impl mobc::Manager for Manager {
 
 #[cfg(test)]
 mod tests {
-    use std::{env, iter::FromIterator};
+    use std::env;
 
     use bolt_proto::{version::*, Value};
     use futures_util::{stream::FuturesUnordered, StreamExt};

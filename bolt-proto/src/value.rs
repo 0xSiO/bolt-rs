@@ -626,7 +626,7 @@ fn deserialize_structure<B: Buf + UnwindSafe>(
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, iter::FromIterator};
+    use std::collections::HashMap;
 
     use chrono::{FixedOffset, NaiveDate, NaiveTime, TimeZone, Utc};
 

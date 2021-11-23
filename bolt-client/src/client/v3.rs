@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-
     use bolt_proto::{message::*, value::*, version::*, ServerState::*};
 
     use crate::{client::v1::tests::*, error::CommunicationError, skip_if_handshake_failed};

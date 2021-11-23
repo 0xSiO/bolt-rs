@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::{convert::TryFrom, env, iter::FromIterator};
+    use std::env;
 
     use bolt_proto::{message::*, value::*, version::*, ServerState::*};
     use tokio::io::BufStream;

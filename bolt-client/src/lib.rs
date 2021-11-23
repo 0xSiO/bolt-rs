@@ -8,9 +8,7 @@
 //! version 4.
 //! ```
 //! use std::collections::HashMap;
-//! use std::convert::TryFrom;
 //! use std::env;
-//! use std::iter::FromIterator;
 //!
 //! use tokio::io::BufStream;
 //! use tokio_util::compat::*;
@@ -93,9 +91,7 @@
 //! all records are consumed.
 //! ```
 //! # use std::collections::HashMap;
-//! # use std::convert::TryFrom;
 //! # use std::env;
-//! # use std::iter::FromIterator;
 //! #
 //! # use tokio::io::BufStream;
 //! # use tokio_util::compat::*;
@@ -153,9 +149,7 @@
 //! For versions 1 and 2 of the protocol, there are a couple more differences:
 //! ```
 //! # use std::collections::HashMap;
-//! # use std::convert::TryFrom;
 //! # use std::env;
-//! # use std::iter::FromIterator;
 //! #
 //! # use tokio::io::BufStream;
 //! # use tokio_util::compat::*;

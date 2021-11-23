@@ -7,7 +7,7 @@
 //
 // The aforementioned documentation comments are thus licensed under CC BY-SA 4.0.
 
-use std::{collections::VecDeque, convert::TryInto, io};
+use std::{collections::VecDeque, io};
 
 use bytes::*;
 use futures_util::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
