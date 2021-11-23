@@ -53,6 +53,7 @@ pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
     version: u32,
     server_state: ServerState,
     sent_queue: VecDeque<Message>,
+    open_tx_streams: usize,
 }
 
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
@@ -80,6 +81,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                         version,
                         server_state: Connected,
                         sent_queue: Default::default(),
+                        open_tx_streams: 0,
                     });
                 }
             }
@@ -208,6 +210,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
             // TX_READY
             (TxReady, Some(Message::RunWithMetadata(_)), Message::Success(success)) => {
+                self.open_tx_streams += 1;
                 self.server_state = TxStreaming;
                 Ok(Message::Success(success))
             }
@@ -234,6 +237,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
             // TX_STREAMING
             (TxStreaming, Some(Message::RunWithMetadata(_)), Message::Success(success)) => {
+                self.open_tx_streams += 1;
                 self.server_state = TxStreaming;
                 Ok(Message::Success(success))
             }
@@ -242,6 +246,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Failure(failure))
             }
             (TxStreaming, Some(Message::PullAll), Message::Success(success)) => {
+                self.open_tx_streams -= 1;
                 self.server_state = TxReady;
                 Ok(Message::Success(success))
             }
@@ -258,7 +263,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (TxStreaming, Some(Message::Pull(_)), Message::Success(success)) => {
                 self.server_state = match success.metadata().get("has_more") {
                     Some(&Value::Boolean(true)) => TxStreaming,
-                    _ => TxReady, // TODO: Or TxStreaming, if there are other streams open?
+                    _ => {
+                        self.open_tx_streams -= 1;
+                        if self.open_tx_streams > 0 {
+                            TxStreaming
+                        } else {
+                            TxReady
+                        }
+                    }
                 };
                 Ok(Message::Success(success))
             }
@@ -273,6 +285,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Failure(failure))
             }
             (TxStreaming, Some(Message::DiscardAll), Message::Success(success)) => {
+                self.open_tx_streams -= 1;
                 self.server_state = TxReady;
                 Ok(Message::Success(success))
             }
@@ -283,7 +296,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (TxStreaming, Some(Message::Discard(_)), Message::Success(success)) => {
                 self.server_state = match success.metadata().get("has_more") {
                     Some(&Value::Boolean(true)) => TxStreaming,
-                    _ => TxReady, // TODO: Or TxStreaming, if there are other streams open?
+                    _ => {
+                        self.open_tx_streams -= 1;
+                        if self.open_tx_streams > 0 {
+                            TxStreaming
+                        } else {
+                            TxReady
+                        }
+                    }
                 };
                 Ok(Message::Success(success))
             }
@@ -380,6 +400,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Ignored)
             }
             (Interrupted, Some(Message::Reset), Message::Success(success)) => {
+                self.open_tx_streams = 0;
                 self.server_state = Ready;
                 Ok(Message::Success(success))
             }

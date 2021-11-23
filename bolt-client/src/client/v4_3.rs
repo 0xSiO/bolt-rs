@@ -335,6 +335,70 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn multiple_open_streams() {
+        let client = get_initialized_client(V4_3).await;
+        skip_if_handshake_failed!(client);
+        let mut client = client.unwrap();
+        assert_eq!(client.server_state(), Ready);
+        client.begin(None).await.unwrap();
+        assert_eq!(client.server_state(), TxReady);
+
+        client
+            .run(
+                "MATCH (n {test: 'v4.3-multi-stream'}) DETACH DELETE n;",
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        client
+            .pull(Some(Metadata::from_iter(vec![("n", -1)])))
+            .await
+            .unwrap();
+
+        const NUM_STREAMS: usize = 5;
+        let mut qids: HashMap<i32, i64> = HashMap::with_capacity(NUM_STREAMS);
+        for n in 1..=NUM_STREAMS {
+            let response = client
+                .run(
+                    format!(
+                        "CREATE (s:Stream {{number: {}, test: 'v4.3-multi-stream'}}) RETURN s",
+                        n
+                    ),
+                    None,
+                    None,
+                )
+                .await
+                .unwrap();
+            let success = Success::try_from(response).unwrap();
+            match success.metadata().get("qid").unwrap() {
+                Value::Integer(qid) => {
+                    qids.insert(n as i32, *qid);
+                }
+                _ => panic!("qid not returned"),
+            }
+        }
+
+        assert_eq!(client.open_tx_streams, NUM_STREAMS);
+
+        for (n, qid) in qids {
+            assert_eq!(client.server_state(), TxStreaming);
+
+            let (records, response) = client
+                .pull(Some(Metadata::from_iter(vec![("n", -1), ("qid", qid)])))
+                .await
+                .unwrap();
+
+            assert!(Success::try_from(response).is_ok());
+            let node = Node::try_from(records[0].fields()[0].clone()).unwrap();
+            assert_eq!(node.properties().get("number").unwrap(), &Value::from(n));
+        }
+
+        assert_eq!(client.server_state(), TxReady);
+        assert_eq!(client.open_tx_streams, 0);
+    }
+
+    #[tokio::test]
     async fn reset_internals_pipelined() {
         let client = get_initialized_client(V4_3).await;
         skip_if_handshake_failed!(client);
