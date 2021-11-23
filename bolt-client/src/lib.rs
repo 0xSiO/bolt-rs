@@ -45,7 +45,7 @@
 //! #   Success::try_from(response.clone()).unwrap();
 //!     assert!(Success::try_from(response).is_ok());
 //!
-//!     // Run a query on the server
+//!     // Submit a query for execution on the server
 //!     let response = client.run("RETURN 1 as num;", None, None).await?;
 //!
 //!     // Successful responses will include a SUCCESS message with related metadata
@@ -64,7 +64,7 @@
 //! #   client.run("MATCH (n) DETACH DELETE n;", None, None).await?;
 //! #   client.pull(Some(pull_meta.clone())).await?;
 //!
-//!     // Run a more complex query with parameters
+//!     // Submit a more complex query with parameters
 //!     let params = Params::from_iter(vec![("name", "Rust")]);
 //!     client.run(
 //!         "CREATE (:Client)-[:WRITTEN_IN]->(:Language {name: $name});",
@@ -227,6 +227,7 @@ mod stream;
 #[cfg(feature = "tokio-stream")]
 pub use stream::Stream;
 
+// TODO: Convert Client methods to return a builder-type object so we don't need these anymore
 define_value_map!(Metadata);
 define_value_map!(Params);
 define_value_map!(RoutingContext);
