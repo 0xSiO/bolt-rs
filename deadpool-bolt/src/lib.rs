@@ -150,7 +150,7 @@ mod tests {
                 continue;
             }
 
-            let pool = Pool::new(manager, 15);
+            let pool = Pool::builder(manager).max_size(15).build().unwrap();
 
             (0..MAX_CONNS)
                 .map(|i| {
