@@ -3,18 +3,21 @@
 use std::{io, net::SocketAddr};
 
 use async_trait::async_trait;
-use thiserror::Error;
 use tokio::{
     io::BufStream,
     net::{lookup_host, ToSocketAddrs},
 };
 use tokio_util::compat::*;
 
-use bolt_client::{error::Error as ClientError, Client, Metadata, Stream};
+use bolt_client::{
+    error::{CommunicationError, ConnectionError, Error as ClientError},
+    Client, Metadata, Stream,
+};
 use bolt_proto::{error::Error as ProtocolError, message, Message};
 
 pub use bolt_client;
-pub use bolt_proto;
+pub use bolt_client::bolt_proto;
+pub use mobc;
 
 pub struct Manager {
     addr: SocketAddr,
@@ -42,54 +45,38 @@ impl Manager {
     }
 }
 
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("invalid metadata: {0}")]
-    InvalidMetadata(String),
-    #[error("client initialization failed: received {0:?}")]
-    ClientInitFailed(Message),
-    #[error("unsupported client version: {0:#x}")]
-    UnsupportedClientVersion(u32),
-    #[error(transparent)]
-    ClientError(#[from] ClientError),
-    #[error(transparent)]
-    ProtocolError(#[from] ProtocolError),
-    #[error(transparent)]
-    IoError(#[from] io::Error),
-}
-
 #[async_trait]
 impl mobc::Manager for Manager {
+    // TODO: Make a runtime-agnostic stream wrapper
     type Connection = Client<Compat<BufStream<Stream>>>;
-    type Error = Error;
+    type Error = ClientError;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
         let mut client = Client::new(
-            BufStream::new(Stream::connect(self.addr, self.domain.as_ref()).await?).compat(),
+            BufStream::new(
+                Stream::connect(self.addr, self.domain.as_ref())
+                    .await
+                    .map_err(ConnectionError::from)?,
+            )
+            .compat(),
             &self.version_specifiers,
         )
-        .await
-        .map_err(ClientError::from)?;
+        .await?;
 
-        match client
-            .hello(self.metadata.clone())
-            .await
-            .map_err(ClientError::from)?
-        {
+        match client.hello(self.metadata.clone()).await? {
             Message::Success(_) => Ok(client),
-            other => Err(Error::ClientInitFailed(other)),
+            other => Err(CommunicationError::from(io::Error::new(
+                io::ErrorKind::ConnectionAborted,
+                format!("server responded with {:?}", other),
+            ))
+            .into()),
         }
     }
 
     async fn check(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
-        message::Success::try_from(
-            conn.reset()
-                .await
-                .map_err(ClientError::from)
-                .map_err::<Error, _>(Into::into)?,
-        )
-        .map_err(ProtocolError::from)
-        .map_err::<Error, _>(Into::into)?;
+        message::Success::try_from(conn.reset().await.map_err(Self::Error::from)?)
+            .map_err(ProtocolError::from)
+            .map_err(Self::Error::from)?;
         Ok(conn)
     }
 }
@@ -128,21 +115,26 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn basic_pool() {
+        const POOL_SIZE: u64 = 15;
         const MAX_CONNS: usize = 50;
 
         for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1, V4_2, V4_3, V4] {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], true).await;
 
             // Don't even test connection pool if server doesn't support this Bolt version
-            if manager.connect().await.is_err() {
-                println!(
-                    "Skipping test: server doesn't support Bolt version {:#x}.",
-                    bolt_version
-                );
-                continue;
+            match manager.connect().await {
+                Err(ClientError::ConnectionError(ConnectionError::HandshakeFailed(versions))) => {
+                    println!(
+                        "skipping test: {}",
+                        ConnectionError::HandshakeFailed(versions)
+                    );
+                    continue;
+                }
+                Err(other) => panic!("{}", other),
+                _ => {}
             }
 
-            let pool = Pool::new(manager);
+            let pool = Pool::builder().max_open(POOL_SIZE).build(manager);
 
             (0..MAX_CONNS)
                 .map(|i| {
@@ -171,19 +163,23 @@ mod tests {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], false).await;
             match manager.connect().await {
                 Ok(_) => panic!("initialization should have failed"),
-                Err(Error::ClientError(ClientError::ConnectionError(
-                    bolt_client::error::ConnectionError::HandshakeFailed(_),
-                ))) => {
+                Err(ClientError::ConnectionError(ConnectionError::HandshakeFailed(versions))) => {
                     println!(
-                        "Skipping test: server doesn't support Bolt version {:#x}.",
-                        bolt_version
+                        "skipping test: {}",
+                        ConnectionError::HandshakeFailed(versions)
                     );
                     continue;
                 }
-                Err(Error::ClientInitFailed(_)) => {
-                    // Test passed. We only check the first compatible version since sending too
-                    // many invalid credentials will cause us to get rate-limited.
-                    return;
+                Err(ClientError::CommunicationError(comm_err)) => {
+                    if let CommunicationError::IoError(io_err) = &*comm_err {
+                        if io_err.kind() == io::ErrorKind::ConnectionAborted {
+                            // Test passed. We only check the first compatible version since
+                            // sending too many invalid credentials will cause us to get
+                            // rate-limited.
+                            return;
+                        }
+                    }
+                    panic!("{}", comm_err);
                 }
                 Err(other) => panic!("{}", other),
             }
