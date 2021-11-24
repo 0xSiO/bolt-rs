@@ -118,21 +118,30 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn basic_pool() {
+        const POOL_SIZE: usize = 15;
         const MAX_CONNS: usize = 50;
 
         for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1, V4_2, V4_3, V4] {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], true).await;
 
             // Don't even test connection pool if server doesn't support this Bolt version
-            if manager.connect().await.is_err() {
-                println!(
-                    "Skipping test: server doesn't support Bolt version {:#x}.",
-                    bolt_version
-                );
-                continue;
+            match manager.connect().await {
+                Err(ClientError::ConnectionError(ConnectionError::HandshakeFailed(versions))) => {
+                    println!(
+                        "skipping test: {}",
+                        ConnectionError::HandshakeFailed(versions)
+                    );
+                    continue;
+                }
+                Err(other) => panic!("{}", other),
+                _ => {}
             }
 
-            let pool = Pool::builder().max_size(15).build(manager).await.unwrap();
+            let pool = Pool::builder()
+                .max_size(POOL_SIZE as u32)
+                .build(manager)
+                .await
+                .unwrap();
 
             (0..MAX_CONNS)
                 .map(|i| {
@@ -157,7 +166,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_init_fails() {
-        for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1, V4_2, V4_3] {
+        for &bolt_version in &[V1_0, V2_0, V3_0, V4_0, V4_1, V4_2, V4_3, V4] {
             let manager = get_connection_manager([bolt_version, 0, 0, 0], false).await;
             match manager.connect().await {
                 Ok(_) => panic!("initialization should have failed"),
