@@ -1,7 +1,7 @@
 [package]
 name = "bolt-client-macros"
 version = "0.2.1"
-description = "Procedural macros for bolt-client.\n"
+description = "Procedural macros for bolt-client."
 repository = "https://github.com/0xSiO/bolt-rs"
 keywords    = ["bolt", "client", "macros"]
 license = "MIT"

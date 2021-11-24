@@ -1,7 +1,7 @@
 [package]
 name = "bolt-client"
 version = "0.9.1"
-description = "A client that sends messages using the Bolt protocol.\n"
+description = "A client that sends messages using the Bolt protocol."
 readme = "README.md"
 repository = "https://github.com/0xSiO/bolt-rs"
 categories  = ["network-programming", "database", "asynchronous", "encoding"]

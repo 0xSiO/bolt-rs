@@ -1,7 +1,7 @@
 [package]
 name = "bolt-proto-derive"
 version = "0.5.2"
-description = "Procedural macros for bolt-proto.\n"
+description = "Procedural macros for bolt-proto."
 repository = "https://github.com/0xSiO/bolt-rs"
 keywords    = ["bolt", "derive"]
 license = "MIT"

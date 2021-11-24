@@ -1,7 +1,7 @@
 [package]
 name = "bb8-bolt"
 version = "0.6.1"
-description = "A bolt-client adaptor for the bb8 connection pool.\n"
+description = "A bolt-client adaptor for the bb8 connection pool."
 repository = "https://github.com/0xSiO/bolt-rs"
 categories = ["asynchronous"]
 keywords = ["bolt", "database", "pool", "neo4j", "bb8"]
