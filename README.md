@@ -13,9 +13,8 @@ versions 1 through 4.3 of the protocol, which includes Neo4j 3.1 through 4.3.
 [![crates.io](https://img.shields.io/crates/v/bolt-proto.svg)](https://crates.io/crates/bolt-proto)
 [![Released API docs](https://docs.rs/bolt-proto/badge.svg)](https://docs.rs/bolt-proto)
 
-Contains the traits and primitives used in the protocol. The `Message` and `Value` enums are of
-particular importance, and are the primary units of information sent and consumed by Bolt
-clients/servers.
+Contains the primitives used in the protocol. The `Message` and `Value` enums are of particular
+importance, and are the primary units of information sent and consumed by Bolt clients/servers.
 
 ### bolt-client
 [![crates.io](https://img.shields.io/crates/v/bolt-client.svg)](https://crates.io/crates/bolt-client)

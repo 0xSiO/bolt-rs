@@ -51,7 +51,7 @@
 //!     assert!(Success::try_from(response).is_ok());
 //!
 //!     // Use PULL to retrieve results of the query, organized into RECORD messages
-//!     // We get a (Message, Vec<Record>) returned from a PULL
+//!     // We get a (Vec<Record>, Message) returned from a PULL
 //!     let pull_meta = Metadata::from_iter(vec![("n", 1)]);
 //!     let (records, response) = client.pull(Some(pull_meta.clone())).await?;
 //! #   Success::try_from(response).unwrap();
@@ -119,6 +119,8 @@
 //! #
 //! #     let response = client.run("RETURN 1 as num;", None, None).await?;
 //! #     Success::try_from(response).unwrap();
+//!
+//! // Use `None` for the PULL metadata
 //! let (records, response) = client.pull(None).await?;
 //! #     Success::try_from(response).unwrap();
 //! #
@@ -161,7 +163,7 @@
 //! #     let stream = Stream::connect(env::var("BOLT_TEST_ADDR")?,
 //! #                                  env::var("BOLT_TEST_DOMAIN").ok()).await?;
 //! #     let stream = BufStream::new(stream).compat();
-//! // For the handshake we want to support versions 1 and 2 only, preferring version 2.
+//! // For the handshake, we can support versions 1 and 2 only, preferring version 2.
 //! let mut result = Client::new(stream, &[V2_0, V1_0, 0, 0]).await;
 //! #     skip_if_handshake_failed!(result, Ok(()));
 //! #     let mut client = result.unwrap();

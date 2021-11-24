@@ -15,7 +15,7 @@ use bolt_client::{
     error::{CommunicationError, ConnectionError, Error as ClientError},
     Client, Metadata, Stream,
 };
-use bolt_proto::{error::Error as ProtocolError, message, Message};
+use bolt_proto::{error::Error as ProtocolError, message, Message, ServerState};
 
 pub use bolt_client;
 pub use bolt_client::bolt_proto;
@@ -80,6 +80,10 @@ impl mobc::Manager for Manager {
             .map_err(ProtocolError::from)
             .map_err(Self::Error::from)?;
         Ok(conn)
+    }
+
+    fn validate(&self, conn: &mut Self::Connection) -> bool {
+        conn.server_state() != ServerState::Defunct
     }
 }
 
