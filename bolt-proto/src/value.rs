@@ -97,12 +97,12 @@ pub enum Value {
     UnboundRelationship(UnboundRelationship),
 
     // V2+-compatible value types
-    Date(NaiveDate),              // A date without a time zone, a.k.a. LocalDate
-    Time(NaiveTime, FixedOffset), // A time with a UTC offset, a.k.a. OffsetTime
-    DateTimeOffset(DateTime<FixedOffset>), // A date-time with a UTC offset, a.k.a. OffsetDateTime
-    DateTimeZoned(DateTime<Tz>),  // A date-time with a time zone ID, a.k.a. ZonedDateTime
-    LocalTime(NaiveTime),         // A time without a time zone
-    LocalDateTime(NaiveDateTime), // A date-time without a time zone
+    Date(NaiveDate),              // A date without a time zone, i.e. LocalDate
+    Time(NaiveTime, FixedOffset), // A time with UTC offset, i.e. OffsetTime
+    DateTimeOffset(DateTime<FixedOffset>), // A date-time with UTC offset, i.e. OffsetDateTime
+    DateTimeZoned(DateTime<Tz>),  // A date-time with time zone ID, i.e. ZonedDateTime
+    LocalTime(NaiveTime),         // A time without time zone
+    LocalDateTime(NaiveDateTime), // A date-time without time zone
     Duration(Duration),
     Point2D(Point2D),
     Point3D(Point3D),

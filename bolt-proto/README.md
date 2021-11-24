@@ -1,6 +1,5 @@
-This crate contains the traits and primitives used in the
-[Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29)
-protocol. The `Message` and `Value` enums are of particular importance, and are the primary units of
+This crate contains the traits and primitives used in the [Bolt](https://7687.org/#bolt) protocol.
+The `Message` and `Value` enums are of particular importance, and are the primary units of
 information sent and consumed by Bolt clients/servers.
 
 The `Message` enum encapsulates all possible messages that can be sent between client and server.
@@ -29,22 +28,25 @@ pub enum Message {
     // V4+-compatible message types
     Discard(Discard),
     Pull(Pull),
+
+    // V4.3+-compatible message types
+    Route(Route),
 }
 ```
 See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/message/enum.Message.html) for more
 details.
 
-The `Value` enum encapsulates all possible values that can be stored in data from each kind of
-`Message`. Structures like `List` and `Map` allow `Value`s to be nested with arbitrary complexity.
+The `Value` enum encapsulates all possible values that can be sent in each kind of `Message`.
+Structures like `List` and `Map` allow `Value`s to be nested with arbitrary complexity.
 ```rust
 pub enum Value {
     // V1-compatible value types
-    Boolean(Boolean),
-    Integer(Integer),
-    Float(Float),
-    Bytes(ByteArray), // Added with Neo4j 3.2, no mention of it in the Bolt v1 docs!
-    List(List),
-    Map(Map),
+    Boolean(bool),
+    Integer(i64),
+    Float(f64),
+    Bytes(Vec<u8>),
+    List(Vec<Value>),
+    Map(HashMap<String, Value>),
     Null,
     String(String),
     Node(Node),
@@ -53,12 +55,12 @@ pub enum Value {
     UnboundRelationship(UnboundRelationship),
 
     // V2+-compatible value types
-    Date(Date),                     // A date without a time zone, a.k.a. LocalDate
-    Time(Time),                     // A time with a UTC offset, a.k.a. OffsetTime
-    DateTimeOffset(DateTimeOffset), // A date-time with a UTC offset, a.k.a. OffsetDateTime
-    DateTimeZoned(DateTimeZoned),   // A date-time with a time zone ID, a.k.a. ZonedDateTime
-    LocalTime(LocalTime),           // A time without a time zone
-    LocalDateTime(LocalDateTime),   // A date-time without a time zone
+    Date(NaiveDate),                       // A date without a time zone, i.e. LocalDate
+    Time(NaiveTime, FixedOffset),          // A time with UTC offset, i.e. OffsetTime
+    DateTimeOffset(DateTime<FixedOffset>), // A date-time with UTC offset, i.e. OffsetDateTime
+    DateTimeZoned(DateTime<Tz>),           // A date-time with time zone ID, i.e. ZonedDateTime
+    LocalTime(NaiveTime),                  // A time without time zone
+    LocalDateTime(NaiveDateTime),          // A date-time without time zone
     Duration(Duration),
     Point2D(Point2D),
     Point3D(Point3D),
