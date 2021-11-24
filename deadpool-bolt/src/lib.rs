@@ -57,6 +57,7 @@ impl Manager {
 
 #[async_trait]
 impl deadpool::managed::Manager for Manager {
+    // TODO: Make a runtime-agnostic stream wrapper
     type Type = Client<Compat<BufStream<Stream>>>;
     type Error = ClientError;
 
