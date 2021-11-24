@@ -1,5 +1,7 @@
 #![warn(rust_2018_idioms)]
 
+//! [`bolt_client`] support for the [`mobc`] connection pool.
+
 use std::{io, net::SocketAddr};
 
 use async_trait::async_trait;

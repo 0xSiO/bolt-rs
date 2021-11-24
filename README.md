@@ -5,9 +5,9 @@
 ## Overview
 
 This project aims to provide a comprehensive set of libraries that allow for interaction with graph
-database servers that support the [Bolt](https://en.wikipedia.org/wiki/Bolt_%28network_protocol%29)
-protocol, namely, [Neo4j](https://neo4j.com). This set of libraries allows interacting with servers
-supporting versions 1 through 4.3 of the protocol, which includes Neo4j 3.1 through 4.3.
+database servers that support the [Bolt](https://7687.org/#bolt) protocol, namely,
+[Neo4j](https://neo4j.com). This set of libraries allows interacting with servers supporting
+versions 1 through 4.3 of the protocol, which includes Neo4j 3.1 through 4.3.
 
 ### bolt-proto
 [![crates.io](https://img.shields.io/crates/v/bolt-proto.svg)](https://crates.io/crates/bolt-proto)

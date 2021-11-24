@@ -7,8 +7,7 @@
 //! The below example demonstrates how to communicate with a Neo4j server using Bolt protocol
 //! version 4.
 //! ```
-//! use std::collections::HashMap;
-//! use std::env;
+//! use std::{collections::HashMap, env};
 //!
 //! use tokio::io::BufStream;
 //! use tokio_util::compat::*;

@@ -1,5 +1,9 @@
 #![warn(rust_2018_idioms)]
 
+//! This crate contains the traits and primitives used in the [Bolt](https://7687.org/#bolt)
+//! protocol. The [`Message`] and [`Value`] enums are of particular importance, and are the primary
+//! units of information sent and consumed by Bolt clients/servers.
+
 pub use message::Message;
 pub use server_state::ServerState;
 pub use value::Value;

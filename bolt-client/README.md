@@ -1,5 +1,5 @@
-This crate contains an asynchronous client for graph database servers that support the
-[Bolt](https://7687.org/#bolt) protocol.
+This crate contains a runtime-agnostic asynchronous client for graph database servers that support
+the [Bolt](https://7687.org/#bolt) protocol.
 
 The central feature of this library is the
 [`Client`](https://docs.rs/bolt-client/*/bolt_client/struct.Client.html) struct, which allows

@@ -1,5 +1,6 @@
-//! [`bolt_client`] support for the [`bb8`] connection pool.
 #![warn(rust_2018_idioms)]
+
+//! [`bolt_client`] support for the [`bb8`] connection pool.
 
 use std::{io, net::SocketAddr};
 

@@ -1,5 +1,7 @@
 #![warn(rust_2018_idioms)]
 
+//! [`bolt_client`] support for the [`deadpool`] connection pool.
+
 use std::{convert::Infallible, io, net::SocketAddr};
 
 use async_trait::async_trait;
