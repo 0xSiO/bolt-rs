@@ -329,8 +329,8 @@ impl BoltValue for Value {
                     // Nanoseconds since midnight
                     // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
                     Value::from(
-                        time.num_seconds_from_midnight() as i64 * 1_000_000_000
-                            + time.nanosecond() as i64,
+                        i64::from(time.num_seconds_from_midnight()) * 1_000_000_000
+                            + i64::from(time.nanosecond()),
                     )
                     .serialize()?,
                 )
@@ -347,7 +347,7 @@ impl BoltValue for Value {
                 )
                 .chain(
                     // Nanoseconds
-                    Value::from(date_time_offset.nanosecond() as i64).serialize()?,
+                    Value::from(i64::from(date_time_offset.nanosecond())).serialize()?,
                 )
                 .chain(
                     // Timezone offset
@@ -360,7 +360,7 @@ impl BoltValue for Value {
                     // Seconds since UNIX epoch
                     .chain(Value::from(date_time_zoned.timestamp()).serialize()?)
                     // Nanoseconds
-                    .chain(Value::from(date_time_zoned.nanosecond() as i64).serialize()?)
+                    .chain(Value::from(i64::from(date_time_zoned.nanosecond())).serialize()?)
                     // Timezone ID
                     .chain(Value::from(date_time_zoned.timezone().name().to_string()).serialize()?)
                     .collect())
@@ -370,8 +370,8 @@ impl BoltValue for Value {
                 .chain(
                     Value::from(
                         // Will not overflow: u32::MAX * 1_000_000_000 + u32::MAX < i64::MAX
-                        local_time.num_seconds_from_midnight() as i64 * 1_000_000_000
-                            + local_time.nanosecond() as i64,
+                        i64::from(local_time.num_seconds_from_midnight()) * 1_000_000_000
+                            + i64::from(local_time.nanosecond()),
                     )
                     .serialize()?,
                 )
@@ -381,7 +381,7 @@ impl BoltValue for Value {
                 // Seconds since UNIX epoch
                 .chain(Value::from(local_date_time.timestamp()).serialize()?)
                 // Nanoseconds
-                .chain(Value::from(local_date_time.nanosecond() as i64).serialize()?)
+                .chain(Value::from(i64::from(local_date_time.nanosecond())).serialize()?)
                 .collect()),
             Value::Duration(duration) => duration.serialize(),
             Value::Point2D(point_2d) => point_2d.serialize(),
@@ -398,12 +398,12 @@ impl BoltValue for Value {
                 MARKER_FALSE => Ok((Value::Boolean(false), bytes)),
                 // Tiny int
                 marker if (-16..=127).contains(&(marker as i8)) => {
-                    Ok((Value::Integer(marker as i8 as i64), bytes))
+                    Ok((Value::Integer(i64::from(marker as i8)), bytes))
                 }
                 // Other int types
-                MARKER_INT_8 => Ok((Value::Integer(bytes.get_i8() as i64), bytes)),
-                MARKER_INT_16 => Ok((Value::Integer(bytes.get_i16() as i64), bytes)),
-                MARKER_INT_32 => Ok((Value::Integer(bytes.get_i32() as i64), bytes)),
+                MARKER_INT_8 => Ok((Value::Integer(i64::from(bytes.get_i8())), bytes)),
+                MARKER_INT_16 => Ok((Value::Integer(i64::from(bytes.get_i16())), bytes)),
+                MARKER_INT_32 => Ok((Value::Integer(i64::from(bytes.get_i32())), bytes)),
                 MARKER_INT_64 => Ok((Value::Integer(bytes.get_i64()), bytes)),
                 // Float
                 MARKER_FLOAT => Ok((Value::Float(bytes.get_f64()), bytes)),

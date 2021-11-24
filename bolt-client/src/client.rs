@@ -80,7 +80,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                         stream,
                         version,
                         server_state: Connected,
-                        sent_queue: Default::default(),
+                        sent_queue: VecDeque::default(),
                         open_tx_streams: 0,
                     });
                 }
