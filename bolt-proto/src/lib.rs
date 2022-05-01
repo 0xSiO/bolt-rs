@@ -15,6 +15,9 @@ mod server_state;
 pub mod value;
 pub mod version;
 
+#[cfg(feature = "serde")]
+pub mod serde;
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_message_with_metadata {

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use thiserror::Error;
 
 use crate::{Message, Value};
@@ -23,6 +25,8 @@ pub enum ConversionError {
     FromValue(Value),
     #[error("invalid conversion from message {0:?}")]
     FromMessage(Message),
+    #[error("failed deserialization {0}")]
+    Serde(String),
     #[error(transparent)]
     TryFromIntError(#[from] std::num::TryFromIntError),
     #[error(transparent)]
@@ -51,4 +55,23 @@ pub enum DeserializationError {
     ConversionError(#[from] ConversionError),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+}
+
+impl serde::de::Error for Error {
+    #[cold]
+    fn custom<T: Display>(msg: T) -> Error {
+        make_error(msg.to_string())
+    }
+
+    #[cold]
+    fn invalid_type<'a>(unexp: serde::de::Unexpected<'a>, exp: &dyn serde::de::Expected) -> Self {
+        if let serde::de::Unexpected::Unit = unexp {
+            serde::de::Error::custom(format_args!("invalid type: null, expected {}", exp))
+        } else {
+            serde::de::Error::custom(format_args!("invalid type: {}, expected {}", unexp, exp))
+        }
+    }
+}
+fn make_error(mut msg: String) -> Error {
+    Error::ConversionError(ConversionError::Serde(msg))
 }
