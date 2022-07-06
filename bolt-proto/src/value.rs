@@ -79,7 +79,6 @@ pub(crate) const SIGNATURE_POINT_3D: u8 = 0x59;
 /// such types, conversions are still provided, but may feel a bit clunky (for example, you can
 /// convert a `(`[`NaiveTime`](chrono::NaiveTime)`, impl `[`Offset`](chrono::Offset)`)` tuple into
 /// a [`Value::Time`]).
-// TODO: Implement serde traits
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     // V1-compatible value types

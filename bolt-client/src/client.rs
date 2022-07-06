@@ -57,6 +57,7 @@ pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
     open_tx_streams: usize,
 }
 
+// TODO: Update docs for v4.4
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Attempt to create a new client from an asynchronous stream. A handshake will be performed
     /// with the provided protocol version specifiers, and, if this succeeds, a Client will be
