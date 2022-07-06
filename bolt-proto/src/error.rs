@@ -51,4 +51,6 @@ pub enum DeserializationError {
     ConversionError(#[from] ConversionError),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+    #[error(transparent)]
+    Infallible(#[from] std::convert::Infallible),
 }

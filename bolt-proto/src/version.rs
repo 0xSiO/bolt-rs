@@ -12,5 +12,7 @@ pub const V4_1: u32 = 0x0104;
 pub const V4_2: u32 = 0x0204;
 /// Protocol version 4.3
 pub const V4_3: u32 = 0x0304;
-/// Protocol version 4.0, 4.1, 4.2, or 4.3
-pub const V4: u32 = 0x030304;
+/// Protocol version 4.4
+pub const V4_4: u32 = 0x0404;
+/// Protocol version 4.0, 4.1, 4.2, 4.3, or 4.4
+pub const V4: u32 = 0x040404;

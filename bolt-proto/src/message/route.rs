@@ -9,15 +9,19 @@ use crate::{impl_try_from_message, message::SIGNATURE_ROUTE, Value};
 pub struct Route {
     pub(crate) context: HashMap<String, Value>,
     pub(crate) bookmarks: Vec<String>,
-    pub(crate) database: String,
+    pub(crate) database: Value,
 }
 
 impl Route {
-    pub fn new(context: HashMap<String, Value>, bookmarks: Vec<String>, database: String) -> Self {
+    pub fn new(
+        context: HashMap<String, Value>,
+        bookmarks: Vec<String>,
+        database: Option<String>,
+    ) -> Self {
         Self {
             context,
             bookmarks,
-            database,
+            database: Value::from(database),
         }
     }
 
@@ -29,7 +33,7 @@ impl Route {
         &self.bookmarks
     }
 
-    pub fn database(&self) -> &str {
+    pub fn database(&self) -> &Value {
         &self.database
     }
 }

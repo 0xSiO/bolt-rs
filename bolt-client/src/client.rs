@@ -30,6 +30,7 @@ mod v4;
 mod v4_1;
 mod v4_2;
 mod v4_3;
+mod v4_4;
 
 const PREAMBLE: [u8; 4] = [0x60, 0x60, 0xB0, 0x17];
 
@@ -155,9 +156,17 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 self.server_state = Ready;
                 Ok(Message::Success(success))
             }
+            (Ready, Some(Message::Route(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
+            }
             (Ready, Some(Message::RouteWithMetadata(_)), Message::Success(success)) => {
                 self.server_state = Ready;
                 Ok(Message::Success(success))
+            }
+            (Ready, Some(Message::RouteWithMetadata(_)), Message::Failure(failure)) => {
+                self.server_state = Failed;
+                Ok(Message::Failure(failure))
             }
 
             // STREAMING
@@ -341,6 +350,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 self.server_state = Failed;
                 Ok(Message::Ignored)
             }
+            (Failed, Some(Message::Route(_)), Message::Ignored) => {
+                self.server_state = Failed;
+                Ok(Message::Ignored)
+            }
+            (Failed, Some(Message::RouteWithMetadata(_)), Message::Ignored) => {
+                self.server_state = Failed;
+                Ok(Message::Ignored)
+            }
             (Failed, Some(Message::AckFailure), Message::Success(success)) => {
                 self.server_state = Ready;
                 Ok(Message::Success(success))
@@ -400,6 +417,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 Ok(Message::Ignored)
             }
             (Interrupted, Some(Message::AckFailure), _) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::Route(_)), _) => {
+                self.server_state = Interrupted;
+                Ok(Message::Ignored)
+            }
+            (Interrupted, Some(Message::RouteWithMetadata(_)), _) => {
                 self.server_state = Interrupted;
                 Ok(Message::Ignored)
             }
@@ -556,7 +581,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to include
     ///   metadata describing the nature of the failure but will immediately close the connection
     ///   after the failure has been sent.
-    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn hello(&mut self, mut metadata: Metadata) -> CommunicationResult<Message> {
         let message = match self.version() {
             V1_0 | V2_0 => {
@@ -629,13 +654,20 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         let mut metadata = metadata.unwrap_or_default().value;
         let message = match self.version() {
             V4_3 => {
-                let database = metadata
-                    .remove("db")
-                    .unwrap_or_else(|| Value::from(""))
-                    .try_into()
-                    .map_err(|_| {
-                        io::Error::new(io::ErrorKind::InvalidInput, "db must be a string")
-                    })?;
+                let database = match metadata.remove("db") {
+                    Some(value) => match value {
+                        Value::String(string) => Some(string),
+                        Value::Null => None,
+                        _ => {
+                            return Err(io::Error::new(
+                                io::ErrorKind::InvalidInput,
+                                "db must be either a string or null",
+                            )
+                            .into())
+                        }
+                    },
+                    None => None,
+                };
 
                 Message::Route(Route::new(context.value, bookmarks.into(), database))
             }
@@ -701,7 +733,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Failure`] - the request could not be processed successfully or is invalid, and
     ///   the server has entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server
     ///   may attach metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn run(
         &mut self,
         query: impl Into<String>,
@@ -783,7 +815,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   state. The server may attach metadata to the message to provide more detail on the
     ///   nature of the failure. Failure may occur at any time during result streaming, so any
     ///   records returned in the response should be considered invalid.
-    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn pull(
         &mut self,
         metadata: Option<Metadata>,
@@ -854,7 +886,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
     ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn discard(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let message = match self.version() {
             V1_0 | V2_0 | V3_0 => Message::DiscardAll,
@@ -902,7 +934,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
     ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let begin_msg = Begin::new(metadata.unwrap_or_default().value);
         self.send_message(Message::Begin(begin_msg)).await?;
@@ -937,7 +969,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
     ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn commit(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Commit).await?;
         self.read_message().await
@@ -970,7 +1002,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
     ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn rollback(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Rollback).await?;
         self.read_message().await
@@ -1029,7 +1061,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
     ///   include metadata describing the nature of the failure but will immediately close the
     ///   connection after the failure has been sent.
-    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn reset(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Reset).await?;
         loop {
@@ -1050,7 +1082,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// receipt of this message, the server will immediately shut down the socket on its side
     /// without sending a response. A client may shut down the socket at any time after sending the
     /// `GOODBYE` message. This message interrupts the server's current work, if any.
-    #[bolt_version(3, 4, 4.1, 4.2, 4.3)]
+    #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn goodbye(&mut self) -> CommunicationResult<()> {
         self.send_message(Message::Goodbye).await?;
         self.server_state = Defunct;

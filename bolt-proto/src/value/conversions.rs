@@ -123,6 +123,15 @@ impl_from!(Point2D, Point2D);
 
 impl_from!(Point3D, Point3D);
 
+impl<T: Into<Value>> From<Option<T>> for Value {
+    fn from(option: Option<T>) -> Self {
+        match option {
+            Some(v) => v.into(),
+            None => Value::Null,
+        }
+    }
+}
+
 // ------------------------- From Value -------------------------
 
 #[doc(hidden)]
