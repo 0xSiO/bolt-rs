@@ -155,6 +155,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
                 self.server_state = Ready;
                 Ok(Message::Success(success))
             }
+            (Ready, Some(Message::RouteWithMetadata(_)), Message::Success(success)) => {
+                self.server_state = Ready;
+                Ok(Message::Success(success))
+            }
 
             // STREAMING
             (Streaming, Some(Message::PullAll), Message::Success(success)) => {
@@ -427,6 +431,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
             (Ready, Message::RunWithMetadata(_)) => {}
             (Ready, Message::Begin(_)) => {}
             (Ready, Message::Route(_)) => {}
+            (Ready, Message::RouteWithMetadata(_)) => {}
             (Ready, Message::Reset) => {}
             (Ready, Message::Goodbye) => {}
             (Streaming, Message::PullAll) => {}
@@ -614,15 +619,34 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
     ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
-    #[bolt_version(4.3)]
+    #[bolt_version(4.3, 4.4)]
     pub async fn route(
         &mut self,
         context: RoutingContext,
         bookmarks: impl Into<Vec<String>>,
-        database: impl Into<String>,
+        metadata: Option<Metadata>,
     ) -> CommunicationResult<Message> {
-        let route_msg = Route::new(context.value, bookmarks.into(), database.into());
-        self.send_message(Message::Route(route_msg)).await?;
+        let mut metadata = metadata.unwrap_or_default().value;
+        let message = match self.version() {
+            V4_3 => {
+                let database = metadata
+                    .remove("db")
+                    .unwrap_or_else(|| Value::from(""))
+                    .try_into()
+                    .map_err(|_| {
+                        io::Error::new(io::ErrorKind::InvalidInput, "db must be a string")
+                    })?;
+
+                Message::Route(Route::new(context.value, bookmarks.into(), database))
+            }
+            _ => Message::RouteWithMetadata(RouteWithMetadata::new(
+                context.value,
+                bookmarks.into(),
+                metadata,
+            )),
+        };
+
+        self.send_message(message).await?;
         self.read_message().await
     }
 
