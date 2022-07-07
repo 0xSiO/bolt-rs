@@ -778,12 +778,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// accompanied by a [`SUCCESS`](Message::Success) summary message.
     ///
     /// The server must be in the [`Streaming`](ServerState::Streaming) or
-    /// [`TxStreaming`](ServerState::TxStreaming) state to be able to successfully
-    /// process a `PULL` request. If the server is in the
-    /// [`Failed`](ServerState::Failed) state or
+    /// [`TxStreaming`](ServerState::TxStreaming) state to be able to successfully process a `PULL`
+    /// request. If the server is in the [`Failed`](ServerState::Failed) state or
     /// [`Interrupted`](ServerState::Interrupted) state, the response will be
-    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `PULL` request will
-    /// be considered a protocol violation and will lead to connection closure.
+    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `PULL` request will be
+    /// considered a protocol violation and will lead to connection closure.
     ///
     /// # Fields
     /// For Bolt v4+, additional metadata is passed along with this message:
@@ -795,9 +794,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - `(_, `[`Message::Success`]`)` - results have been successfully pulled and the server has
-    ///   entered the [`Ready`](ServerState::Ready) state. The server may attach
-    ///   metadata to the `SUCCESS` message to provide footer detail for the results. The
-    ///   following fields are defined for inclusion in the metadata:
+    ///   entered the [`Ready`](ServerState::Ready) state. The server may attach metadata to the
+    ///   `SUCCESS` message to provide footer detail for the results. The following fields are
+    ///   defined for inclusion in the metadata:
     ///   - `type`, the type of query: read-only (`"r"`), write-only (`"w"`), read-write (`"rw"`),
     ///     or schema (`"s"`)
     ///   - `result_consumed_after`, the time in milliseconds after which the last record in the
@@ -813,15 +812,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///     _(Bolt v4+ only.)_
     ///   - `has_more`, a boolean indicating whether there are still records left in the result
     ///     stream. Default is `false`. _(Bolt v4+ only.)_
-    /// - `(_, `[`Message::Ignored`]`)` - the server is in the
-    ///   [`Failed`](ServerState::Failed) or
-    ///   [`Interrupted`](ServerState::Interrupted) state, and the request was
-    ///   discarded without being processed. No server state change has occurred.
-    /// - `(_, `[`Message::Failure`]`)` - the request could not be processed
-    ///   successfully and the server has entered the [`Failed`](ServerState::Failed)
-    ///   state. The server may attach metadata to the message to provide more detail on the
-    ///   nature of the failure. Failure may occur at any time during result streaming, so any
-    ///   records returned in the response should be considered invalid.
+    /// - `(_, `[`Message::Ignored`]`)` - the server is in the [`Failed`](ServerState::Failed) or
+    ///   [`Interrupted`](ServerState::Interrupted) state, and the request was discarded without
+    ///   being processed. No server state change has occurred.
+    /// - `(_, `[`Message::Failure`]`)` - the request could not be processed successfully and the
+    ///   server has entered the [`Failed`](ServerState::Failed) state. The server may attach
+    ///   metadata to the message to provide more detail on the nature of the failure. Failure may
+    ///   occur at any time during result streaming, so any records returned in the response should
+    ///   be considered invalid.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn pull(
         &mut self,
