@@ -696,9 +696,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// The server must be in either the [`Ready`](ServerState::Ready) state, the
     /// [`TxReady`](ServerState::TxReady) state (Bolt v3+), or the
-    /// [`TxStreaming`](ServerState::TxStreaming) state (Bolt v4+) to be able to
-    /// successfully process a `RUN` request. If the server is in the
-    /// [`Failed`](ServerState::Failed) or
+    /// [`TxStreaming`](ServerState::TxStreaming) state (Bolt v4+) to be able to successfully
+    /// process a `RUN` request. If the server is in the [`Failed`](ServerState::Failed) or
     /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `RUN` request will be
     /// considered a protocol violation and will lead to connection closure.
@@ -713,34 +712,34 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `tx_timeout`, an integer specifying a transaction timeout in milliseconds. Default is the
     ///   server-side configured timeout.
     /// - `tx_metadata`, a map containing some metadata information, mainly used for logging.
-    /// - `mode`, a string which specifies what kind of server should be used for this
-    ///   transaction. For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
+    /// - `mode`, a string which specifies what kind of server should be used for this transaction.
+    ///   For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
     /// - `db`, a string containing the name of the database where the transaction should take
-    ///   place. [`null`](Value::Null) and `""` denote the server-side configured
-    ///   default database. _(Bolt v4+ only.)_
+    ///   place. [`null`](Value::Null) and `""` denote the server-side configured default database.
+    ///   _(Bolt v4+ only.)_
     /// - `imp_user`, a string specifying the impersonated user which executes this transaction.
     ///   [`null`](Value::Null) denotes no impersonation (i.e., execution takes place as the
     ///   current user). _(Bolt v4.4+ only.)_
     ///
     /// # Response
     /// - [`Message::Success`] - the request has been successfully received and the server has
-    ///   entered the [`Streaming`](ServerState::Streaming) state. Clients should not
-    ///   consider a `SUCCESS` response to indicate completion of the execution of the query,
-    ///   merely acceptance of it. The server may attach metadata to the message to provide header
-    ///   detail for the results that follow. The following fields are defined for inclusion in the
+    ///   entered the [`Streaming`](ServerState::Streaming) state. Clients should not consider a
+    ///   `SUCCESS` response to indicate completion of the execution of the query, merely
+    ///   acceptance of it. The server may attach metadata to the message to provide header detail
+    ///   for the results that follow. The following fields are defined for inclusion in the
     ///   metadata:
     ///   - `fields`, the fields included in the result (e.g. `["name", "age"]`)
     ///   - `result_available_after`, the time in milliseconds after which the first record in the
     ///     result stream is available. _(Bolt v1 - v2 only.)_
     ///   - `t_first`, supercedes `result_available_after`. _(Bolt v3+ only.)_
-    ///   - `qid`, an integer that specifies the server-assigned query ID. This is sent for
-    ///     queries submitted within an explicit transaction. _(Bolt v4+ only.)_
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
-    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
-    ///   discarded without being processed. No server state change has occurred.
+    ///   - `qid`, an integer that specifies the server-assigned query ID. This is sent for queries
+    ///     submitted within an explicit transaction. _(Bolt v4+ only.)_
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed) or
+    ///   [`Interrupted`](ServerState::Interrupted) state, and the request was discarded without
+    ///   being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully or is invalid, and
-    ///   the server has entered the [`Failed`](ServerState::Failed) state. The server
-    ///   may attach metadata to the message to provide more detail on the nature of the failure.
+    ///   the server has entered the [`Failed`](ServerState::Failed) state. The server may attach
+    ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn run(
         &mut self,
