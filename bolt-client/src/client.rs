@@ -625,8 +625,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   field indicating to which address the client should initially connect.
     /// - `bookmarks`, a list of strings containing some kind of bookmark identification, e.g
     ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`. Default is `[]`.
-    /// - `database`, a string containing the name of the database for which this command should be
-    ///   run. `""` denotes the server-side configured default database.
+    /// - `metadata`, a map which can contain the following entries:
+    ///   - `db`, a string containing the name of the database for which this command should be
+    ///     run. [`Value::Null`] denotes the server-side configured default database.
+    ///   - `imp_user`, a string specifying the impersonated user for the purposes of resolving
+    ///     their home database. [`Value::Null`] denotes no impersonation (i.e., execution takes
+    ///     place as the current user). _(Bolt v4.4+ only.)_
     ///
     /// # Response
     /// - [`Message::Success`] - the routing table has been successfully retrieved and the server
