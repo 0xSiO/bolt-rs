@@ -984,28 +984,28 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `ROLLBACK` message requests to cancel a transaction and transition the server back to
-    /// the [`Ready`](ServerState::Ready) state. Any changes made since the transaction
-    /// was started will be undone.
+    /// the [`Ready`](ServerState::Ready) state. Any changes made since the transaction was started
+    /// will be undone.
     ///
     /// The server must be in the [`TxReady`](ServerState::TxReady) state to be able to
     /// successfully process a `ROLLBACK` request, which means that any outstanding results in the
     /// result stream must be consumed via [`Client::pull`]. If the server is in the
-    /// [`Failed`](ServerState::Failed) or
-    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
-    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `ROLLBACK` request will
-    /// be considered a protocol violation and will lead to connection closure.
+    /// [`Failed`](ServerState::Failed) or [`Interrupted`](ServerState::Interrupted) state, the
+    /// response will be [`IGNORED`](Message::Ignored). For any other states, receipt of a
+    /// `ROLLBACK` request will be considered a protocol violation and will lead to connection
+    /// closure.
     ///
     /// To instead persist pending changes, send a [`COMMIT`](Message::Commit) message.
     ///
     /// # Response
     /// - [`Message::Success`] - the transaction has been successfully reverted and the server has
     ///   entered the [`Ready`](ServerState::Ready) state.
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
-    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
-    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed) or
+    ///   [`Interrupted`](ServerState::Interrupted) state, and the request was discarded without
+    ///   being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
-    ///   metadata to the message to provide more detail on the nature of the failure.
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach metadata to the
+    ///   message to provide more detail on the nature of the failure.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn rollback(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Rollback).await?;
