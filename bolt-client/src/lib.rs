@@ -1,22 +1,21 @@
 #![warn(rust_2018_idioms)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-//! This crate contains a runtime-agnostic asynchronous client for graph database servers that support
-//! the [Bolt](https://7687.org/#bolt) protocol.
+//! This crate contains a runtime-agnostic asynchronous client for graph database servers that
+//! support the [Bolt](https://7687.org/#bolt) protocol.
 //!
 //! The central feature of this library is the
 //! [`Client`] struct, which allows sending Bolt messages to a compatible server. Clients can
-//! operate over any type that implements
-//! [AsyncRead](https://docs.rs/futures-io/*/futures_io/trait.AsyncRead.html) and
-//! [AsyncWrite](https://docs.rs/futures-io/*/futures_io/trait.AsyncRead.html).
+//! operate over any type that implements [`AsyncRead`](futures_util::AsyncRead) and
+//! [`AsyncWrite`](futures_util::AsyncWrite).
 //!
-//! If you want to connect to a Bolt-compatible server from your application, you probably want to use
-//! a connection pool - see [bb8-bolt](https://crates.io/crates/bb8-bolt),
+//! If you want to connect to a Bolt-compatible server from your application, you probably want to
+//! use a connection pool - see [bb8-bolt](https://crates.io/crates/bb8-bolt),
 //! [deadpool-bolt](https://crates.io/crates/deadpool-bolt), or
 //! [mobc-bolt](https://crates.io/crates/mobc-bolt).
 //!
-//! If you'd rather manage your own connections, an asynchronous TCP/TLS
-//! [`Stream`] wrapper is also available, if you're using the [tokio](https://tokio.rs/) runtime.
+//! If you'd rather manage your own connections, an asynchronous TCP/TLS [`Stream`] wrapper is also
+//! available, if you're using the [tokio](https://tokio.rs/) runtime.
 //!
 //! # Features
 //! - `tokio-stream` - enables the [`Stream`] type
