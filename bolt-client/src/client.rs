@@ -57,7 +57,6 @@ pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
     open_tx_streams: usize,
 }
 
-// TODO: Update docs for v4.4
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Attempt to create a new client from an asynchronous stream. A handshake will be performed
     /// with the provided protocol version specifiers, and, if this succeeds, a Client will be
@@ -537,7 +536,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// database. Clients should send a `HELLO` message to the server immediately after connection
     /// and process the response before using that connection in any other way.
     ///
-    /// The server must be in the [`Connected`](bolt_proto::ServerState::Connected) state to be
+    /// The server must be in the [`Connected`](ServerState::Connected) state to be
     /// able to process a `HELLO` message. For any other states, receipt of a `HELLO` message is
     /// considered a protocol violation and leads to connection closure.
     ///
@@ -566,7 +565,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - [`Message::Success`] - initialization has completed successfully and the server has
-    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may include
+    ///   entered the [`Ready`](ServerState::Ready) state. The server may include
     ///   metadata that describes details of the server environment and/or the connection. The
     ///   following fields are defined for inclusion in the `SUCCESS` metadata:
     ///   - `server`, the server agent string (e.g. `"Neo4j/4.3.0"`)
@@ -579,7 +578,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///     observe different hints as the server configuration is adjusted.
     ///     _(Bolt v4.3+ only.)_
     /// - [`Message::Failure`] - initialization has failed and the server has entered the
-    ///   [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to include
+    ///   [`Defunct`](ServerState::Defunct) state. The server may choose to include
     ///   metadata describing the nature of the failure but will immediately close the connection
     ///   after the failure has been sent.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
@@ -613,10 +612,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// # Description
     /// The `ROUTE` message instructs the server to return the current routing table.
     ///
-    /// The server must be in the [`Ready`](bolt_proto::ServerState::Ready) state to be able to
+    /// The server must be in the [`Ready`](ServerState::Ready) state to be able to
     /// successfully process a `ROUTE` request. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`Failed`](ServerState::Failed) or
+    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `ROUTE` request will be
     /// considered a protocol violation and will lead to connection closure.
     ///
@@ -634,7 +633,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - [`Message::Success`] - the routing table has been successfully retrieved and the server
-    ///   has entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server sends the
+    ///   has entered the [`Ready`](ServerState::Ready) state. The server sends the
     ///   following metadata fields in the response:
     ///   - `rt`, a map with the following fields:
     ///     - `ttl`, an integer denoting the number of seconds this routing table should be
@@ -643,11 +642,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///       will have the following fields:
     ///       - `role`, a server role. Possible values are `"READ"`, `"WRITE"`, and `"ROUTE"`.
     ///       - `addresses`, a list of strings representing the servers with the specified role
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
+    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(4.3, 4.4)]
     pub async fn route(
@@ -694,12 +693,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// A `RUN` message submits a new query for execution, the result of which will be consumed by
     /// a subsequent message, such as [`PULL`](Message::Pull).
     ///
-    /// The server must be in either the [`Ready`](bolt_proto::ServerState::Ready) state, the
-    /// [`TxReady`](bolt_proto::ServerState::TxReady) state (Bolt v3+), or the
-    /// [`TxStreaming`](bolt_proto::ServerState::TxStreaming) state (Bolt v4+) to be able to
+    /// The server must be in either the [`Ready`](ServerState::Ready) state, the
+    /// [`TxReady`](ServerState::TxReady) state (Bolt v3+), or the
+    /// [`TxStreaming`](ServerState::TxStreaming) state (Bolt v4+) to be able to
     /// successfully process a `RUN` request. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`Failed`](ServerState::Failed) or
+    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `RUN` request will be
     /// considered a protocol violation and will lead to connection closure.
     ///
@@ -716,12 +715,15 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `mode`, a string which specifies what kind of server should be used for this
     ///   transaction. For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
     /// - `db`, a string containing the name of the database where the transaction should take
-    ///   place. [`null`](bolt_proto::Value::Null) and `""` denote the server-side configured
+    ///   place. [`null`](Value::Null) and `""` denote the server-side configured
     ///   default database. Default is `null`. _(Bolt v4+ only.)_
+    /// - `imp_user`, a string specifying the impersonated user which executes this transaction.
+    ///   [`Value::Null`] denotes no impersonation (i.e., execution takes place as the current
+    ///   user). _(Bolt v4.4+ only.)_
     ///
     /// # Response
     /// - [`Message::Success`] - the request has been successfully received and the server has
-    ///   entered the [`Streaming`](bolt_proto::ServerState::Streaming) state. Clients should not
+    ///   entered the [`Streaming`](ServerState::Streaming) state. Clients should not
     ///   consider a `SUCCESS` response to indicate completion of the execution of the query,
     ///   merely acceptance of it. The server may attach metadata to the message to provide header
     ///   detail for the results that follow. The following fields are defined for inclusion in the
@@ -732,11 +734,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   - `t_first`, supercedes `result_available_after`. _(Bolt v3+ only.)_
     ///   - `qid`, an integer that specifies the server-assigned query ID. This is sent for
     ///     queries submitted within an explicit transaction. _(Bolt v4+ only.)_
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
+    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully or is invalid, and
-    ///   the server has entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server
+    ///   the server has entered the [`Failed`](ServerState::Failed) state. The server
     ///   may attach metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn run(
@@ -766,7 +768,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `PULL` message issues a request to stream outstanding results back to the client,
-    /// before returning to the [`Ready`](bolt_proto::ServerState::Ready) state.
+    /// before returning to the [`Ready`](ServerState::Ready) state.
     ///
     /// Result details consist of zero or more [`RECORD`](Message::Record) messages and a summary
     /// message. Each record carries with it a list of values which form the data content of the
@@ -775,11 +777,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// the order of records within the result. A record should only be considered valid if
     /// accompanied by a [`SUCCESS`](Message::Success) summary message.
     ///
-    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) or
-    /// [`TxStreaming`](bolt_proto::ServerState::TxStreaming) state to be able to successfully
+    /// The server must be in the [`Streaming`](ServerState::Streaming) or
+    /// [`TxStreaming`](ServerState::TxStreaming) state to be able to successfully
     /// process a `PULL` request. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) state or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`Failed`](ServerState::Failed) state or
+    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `PULL` request will
     /// be considered a protocol violation and will lead to connection closure.
     ///
@@ -793,7 +795,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - `(_, `[`Message::Success`]`)` - results have been successfully pulled and the server has
-    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
+    ///   entered the [`Ready`](ServerState::Ready) state. The server may attach
     ///   metadata to the `SUCCESS` message to provide footer detail for the results. The
     ///   following fields are defined for inclusion in the metadata:
     ///   - `type`, the type of query: read-only (`"r"`), write-only (`"w"`), read-write (`"rw"`),
@@ -812,11 +814,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   - `has_more`, a boolean indicating whether there are still records left in the result
     ///     stream. Default is `false`. _(Bolt v4+ only.)_
     /// - `(_, `[`Message::Ignored`]`)` - the server is in the
-    ///   [`Failed`](bolt_proto::ServerState::Failed) or
-    ///   [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   [`Failed`](ServerState::Failed) or
+    ///   [`Interrupted`](ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
     /// - `(_, `[`Message::Failure`]`)` - the request could not be processed
-    ///   successfully and the server has entered the [`Failed`](bolt_proto::ServerState::Failed)
+    ///   successfully and the server has entered the [`Failed`](ServerState::Failed)
     ///   state. The server may attach metadata to the message to provide more detail on the
     ///   nature of the failure. Failure may occur at any time during result streaming, so any
     ///   records returned in the response should be considered invalid.
@@ -851,14 +853,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `DISCARD` message issues a request to discard the outstanding result and return to the
-    /// [`Ready`](bolt_proto::ServerState::Ready) state. A receiving server will not abort the
+    /// [`Ready`](ServerState::Ready) state. A receiving server will not abort the
     /// request but continue to process it without streaming any detail messages to the client.
     ///
-    /// The server must be in the [`Streaming`](bolt_proto::ServerState::Streaming) or
-    /// [`TxStreaming`](bolt_proto::ServerState::TxStreaming) state to be able to successfully
+    /// The server must be in the [`Streaming`](ServerState::Streaming) or
+    /// [`TxStreaming`](ServerState::TxStreaming) state to be able to successfully
     /// process a `DISCARD` request. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) state or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`Failed`](ServerState::Failed) state or
+    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `DISCARD` request
     /// will be considered a protocol violation and will lead to connection closure.
     ///
@@ -872,7 +874,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - [`Message::Success`] - results have been successfully discarded and the server has
-    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
+    ///   entered the [`Ready`](ServerState::Ready) state. The server may attach
     ///   metadata to the message to provide footer detail for the discarded results.
     ///   The following fields are defined for inclusion in the metadata:
     ///   - `type`, the type of query: read-only (`"r"`), write-only (`"w"`), read-write (`"rw"`),
@@ -885,11 +887,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///     _(Bolt v4+ only.)_
     ///   - `has_more`, a boolean indicating whether there are still records left in the result
     ///     stream. Default is `false`. _(Bolt v4+ only.)_
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
+    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn discard(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
@@ -906,14 +908,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `BEGIN` message starts a new explicit transaction and transitions the server to the
-    /// [`TxReady`](bolt_proto::ServerState::TxReady) state. The explicit transaction is closed
+    /// [`TxReady`](ServerState::TxReady) state. The explicit transaction is closed
     /// with either the [`COMMIT`](Message::Commit) message or [`ROLLBACK`](Message::Rollback)
     /// message.
     ///
-    /// The server must be in the [`Ready`](bolt_proto::ServerState::Ready) state to be able to
+    /// The server must be in the [`Ready`](ServerState::Ready) state to be able to
     /// successfully process a `BEGIN` request. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`Failed`](ServerState::Failed) or
+    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `BEGIN` request will be
     /// considered a protocol violation and will lead to connection closure.
     ///
@@ -927,17 +929,20 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `mode`, a string which specifies what kind of server should be used for this
     ///   transaction. For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
     /// - `db`, a string containing the name of the database where the transaction should take
-    ///   place. [`null`](bolt_proto::Value::Null) and `""` denote the server-side configured
+    ///   place. [`null`](Value::Null) and `""` denote the server-side configured
     ///   default database. Default is `null`. _(Bolt v4+ only.)_
+    /// - `imp_user`, a string specifying the impersonated user which executes this transaction.
+    ///   [`Value::Null`] denotes no impersonation (i.e., execution takes place as the current
+    ///   user). _(Bolt v4.4+ only.)_
     ///
     /// # Response
     /// - [`Message::Success`] - the transaction has been successfully started and the server has
-    ///   entered the [`TxReady`](bolt_proto::ServerState::Ready) state.
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   entered the [`TxReady`](ServerState::Ready) state.
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
+    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
@@ -951,13 +956,13 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `COMMIT` message requests to commit the results of an explicit transaction and
-    /// transition the server back to the [`Ready`](bolt_proto::ServerState::Ready) state.
+    /// transition the server back to the [`Ready`](ServerState::Ready) state.
     ///
-    /// The server must be in the [`TxReady`](bolt_proto::ServerState::TxReady) state to be able to
+    /// The server must be in the [`TxReady`](ServerState::TxReady) state to be able to
     /// successfully process a `COMMIT` request, which means that any outstanding results in the
     /// result stream must be consumed via [`Client::pull`]. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`Failed`](ServerState::Failed) or
+    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `COMMIT` request will be
     /// considered a protocol violation and will lead to connection closure.
     ///
@@ -965,14 +970,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - [`Message::Success`] - the transaction has been successfully committed and the server has
-    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server sends the
+    ///   entered the [`Ready`](ServerState::Ready) state. The server sends the
     ///   following metadata fields in the response:
     ///   - `bookmark` (e.g. `"bookmark:1234"`)
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
+    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn commit(&mut self) -> CommunicationResult<Message> {
@@ -985,14 +990,14 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `ROLLBACK` message requests to cancel a transaction and transition the server back to
-    /// the [`Ready`](bolt_proto::ServerState::Ready) state. Any changes made since the transaction
+    /// the [`Ready`](ServerState::Ready) state. Any changes made since the transaction
     /// was started will be undone.
     ///
-    /// The server must be in the [`TxReady`](bolt_proto::ServerState::TxReady) state to be able to
+    /// The server must be in the [`TxReady`](ServerState::TxReady) state to be able to
     /// successfully process a `ROLLBACK` request, which means that any outstanding results in the
     /// result stream must be consumed via [`Client::pull`]. If the server is in the
-    /// [`Failed`](bolt_proto::ServerState::Failed) or
-    /// [`Interrupted`](bolt_proto::ServerState::Interrupted) state, the response will be
+    /// [`Failed`](ServerState::Failed) or
+    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `ROLLBACK` request will
     /// be considered a protocol violation and will lead to connection closure.
     ///
@@ -1000,12 +1005,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - [`Message::Success`] - the transaction has been successfully reverted and the server has
-    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state.
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](bolt_proto::ServerState::Failed)
-    ///   or [`Interrupted`](bolt_proto::ServerState::Interrupted) state, and the request was
+    ///   entered the [`Ready`](ServerState::Ready) state.
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
+    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
     ///   discarded without being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](bolt_proto::ServerState::Failed) state. The server may attach
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
     ///   metadata to the message to provide more detail on the nature of the failure.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn rollback(&mut self) -> CommunicationResult<Message> {
@@ -1018,19 +1023,19 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// `ACK_FAILURE` signals to the server that the client has acknowledged a previous failure and
-    /// should return to the [`Ready`](bolt_proto::ServerState::Ready) state.
+    /// should return to the [`Ready`](ServerState::Ready) state.
     ///
-    /// The server must be in the [`Failed`](bolt_proto::ServerState::Failed) state to be able to
+    /// The server must be in the [`Failed`](ServerState::Failed) state to be able to
     /// successfully process an `ACK_FAILURE` request. For any other states, receipt of an
     /// `ACK_FAILURE` request will be considered a protocol violation and will lead to connection
     /// closure.
     ///
     /// # Response
     /// - [`Message::Success`] - failure has been successfully acknowledged and the server has
-    ///   entered the [`Ready`](bolt_proto::ServerState::Ready) state. The server may attach
+    ///   entered the [`Ready`](ServerState::Ready) state. The server may attach
     ///   metadata to the `SUCCESS` message.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
+    ///   entered the [`Defunct`](ServerState::Defunct) state. The server may choose to
     ///   include metadata describing the nature of the failure but will immediately close the
     ///   connection after the failure has been sent.
     #[bolt_version(1, 2)]
@@ -1041,7 +1046,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
 
     /// Send a [`RESET`](Message::Reset) message to the server.
     /// _(Bolt v1+. For Bolt v1 - v2, see [`Client::ack_failure`] for just clearing the
-    /// [`Failed`](bolt_proto::ServerState::Failed) state.)_
+    /// [`Failed`](ServerState::Failed) state.)_
     ///
     /// # Description
     /// The `RESET` message requests that the connection be set back to its initial state, as if
@@ -1055,15 +1060,15 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - force any currently processing message to abort with [`IGNORED`](Message::Ignored)
     /// - force any pending messages that have not yet started processing to be
     ///   [`IGNORED`](Message::Ignored)
-    /// - clear any outstanding [`Failed`](bolt_proto::ServerState::Failed) state
+    /// - clear any outstanding [`Failed`](ServerState::Failed) state
     /// - dispose of any outstanding result records
     /// - cancel the current transaction, if any
     ///
     /// # Response
     /// - [`Message::Success`] - the session has been successfully reset and the server has entered
-    ///   the [`Ready`](bolt_proto::ServerState::Ready) state.
+    ///   the [`Ready`](ServerState::Ready) state.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Defunct`](bolt_proto::ServerState::Defunct) state. The server may choose to
+    ///   entered the [`Defunct`](ServerState::Defunct) state. The server may choose to
     ///   include metadata describing the nature of the failure but will immediately close the
     ///   connection after the failure has been sent.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
