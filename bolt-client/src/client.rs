@@ -1019,19 +1019,18 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// `ACK_FAILURE` signals to the server that the client has acknowledged a previous failure and
     /// should return to the [`Ready`](ServerState::Ready) state.
     ///
-    /// The server must be in the [`Failed`](ServerState::Failed) state to be able to
-    /// successfully process an `ACK_FAILURE` request. For any other states, receipt of an
-    /// `ACK_FAILURE` request will be considered a protocol violation and will lead to connection
-    /// closure.
+    /// The server must be in the [`Failed`](ServerState::Failed) state to be able to successfully
+    /// process an `ACK_FAILURE` request. For any other states, receipt of an `ACK_FAILURE` request
+    /// will be considered a protocol violation and will lead to connection closure.
     ///
     /// # Response
     /// - [`Message::Success`] - failure has been successfully acknowledged and the server has
-    ///   entered the [`Ready`](ServerState::Ready) state. The server may attach
-    ///   metadata to the `SUCCESS` message.
+    ///   entered the [`Ready`](ServerState::Ready) state. The server may attach metadata to the
+    ///   `SUCCESS` message.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Defunct`](ServerState::Defunct) state. The server may choose to
-    ///   include metadata describing the nature of the failure but will immediately close the
-    ///   connection after the failure has been sent.
+    ///   entered the [`Defunct`](ServerState::Defunct) state. The server may choose to include
+    ///   metadata describing the nature of the failure but will immediately close the connection
+    ///   after the failure has been sent.
     #[bolt_version(1, 2)]
     pub async fn ack_failure(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::AckFailure).await?;
