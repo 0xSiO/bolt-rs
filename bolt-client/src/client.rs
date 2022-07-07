@@ -57,6 +57,7 @@ pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
     open_tx_streams: usize,
 }
 
+// TODO: Reflow doc comments
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Attempt to create a new client from an asynchronous stream. A handshake will be performed
     /// with the provided protocol version specifiers, and, if this succeeds, a Client will be
@@ -624,12 +625,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   field indicating to which address the client should initially connect.
     /// - `bookmarks`, a list of strings containing some kind of bookmark identification, e.g
     ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`. Default is `[]`.
-    /// - `metadata`, a map which can contain the following entries:
+    /// - `metadata`, a map which can contain the following optional entries:
     ///   - `db`, a string containing the name of the database for which this command should be
-    ///     run. [`Value::Null`] denotes the server-side configured default database.
+    ///     run. [`null`](Value::Null) denotes the server-side configured default database.
     ///   - `imp_user`, a string specifying the impersonated user for the purposes of resolving
-    ///     their home database. [`Value::Null`] denotes no impersonation (i.e., execution takes
-    ///     place as the current user). _(Bolt v4.4+ only.)_
+    ///     their home database. [`null`](Value::Null) denotes no impersonation (i.e., execution
+    ///     takes place as the current user). _(Bolt v4.4+ only.)_
     ///
     /// # Response
     /// - [`Message::Success`] - the routing table has been successfully retrieved and the server
@@ -716,10 +717,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   transaction. For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
     /// - `db`, a string containing the name of the database where the transaction should take
     ///   place. [`null`](Value::Null) and `""` denote the server-side configured
-    ///   default database. Default is `null`. _(Bolt v4+ only.)_
+    ///   default database. _(Bolt v4+ only.)_
     /// - `imp_user`, a string specifying the impersonated user which executes this transaction.
-    ///   [`Value::Null`] denotes no impersonation (i.e., execution takes place as the current
-    ///   user). _(Bolt v4.4+ only.)_
+    ///   [`null`](Value::Null) denotes no impersonation (i.e., execution takes place as the
+    ///   current user). _(Bolt v4.4+ only.)_
     ///
     /// # Response
     /// - [`Message::Success`] - the request has been successfully received and the server has
@@ -930,10 +931,10 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   transaction. For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
     /// - `db`, a string containing the name of the database where the transaction should take
     ///   place. [`null`](Value::Null) and `""` denote the server-side configured
-    ///   default database. Default is `null`. _(Bolt v4+ only.)_
+    ///   default database. _(Bolt v4+ only.)_
     /// - `imp_user`, a string specifying the impersonated user which executes this transaction.
-    ///   [`Value::Null`] denotes no impersonation (i.e., execution takes place as the current
-    ///   user). _(Bolt v4.4+ only.)_
+    ///   [`null`](Value::Null) denotes no impersonation (i.e., execution takes place as the
+    ///   current user). _(Bolt v4.4+ only.)_
     ///
     /// # Response
     /// - [`Message::Success`] - the transaction has been successfully started and the server has
