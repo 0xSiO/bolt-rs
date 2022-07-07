@@ -956,24 +956,23 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// The server must be in the [`TxReady`](ServerState::TxReady) state to be able to
     /// successfully process a `COMMIT` request, which means that any outstanding results in the
     /// result stream must be consumed via [`Client::pull`]. If the server is in the
-    /// [`Failed`](ServerState::Failed) or
-    /// [`Interrupted`](ServerState::Interrupted) state, the response will be
-    /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `COMMIT` request will be
-    /// considered a protocol violation and will lead to connection closure.
+    /// [`Failed`](ServerState::Failed) or [`Interrupted`](ServerState::Interrupted) state, the
+    /// response will be [`IGNORED`](Message::Ignored). For any other states, receipt of a `COMMIT`
+    /// request will be considered a protocol violation and will lead to connection closure.
     ///
     /// To instead cancel pending changes, send a [`ROLLBACK`](Message::Rollback) message.
     ///
     /// # Response
     /// - [`Message::Success`] - the transaction has been successfully committed and the server has
-    ///   entered the [`Ready`](ServerState::Ready) state. The server sends the
-    ///   following metadata fields in the response:
+    ///   entered the [`Ready`](ServerState::Ready) state. The server sends the following metadata
+    ///   fields in the response:
     ///   - `bookmark` (e.g. `"bookmark:1234"`)
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
-    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
-    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed) or
+    ///   [`Interrupted`](ServerState::Interrupted) state, and the request was discarded without
+    ///   being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
-    ///   metadata to the message to provide more detail on the nature of the failure.
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach metadata to the
+    ///   message to provide more detail on the nature of the failure.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn commit(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Commit).await?;
