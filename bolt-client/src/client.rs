@@ -537,9 +537,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// database. Clients should send a `HELLO` message to the server immediately after connection
     /// and process the response before using that connection in any other way.
     ///
-    /// The server must be in the [`Connected`](ServerState::Connected) state to be
-    /// able to process a `HELLO` message. For any other states, receipt of a `HELLO` message is
-    /// considered a protocol violation and leads to connection closure.
+    /// The server must be in the [`Connected`](ServerState::Connected) state to be able to process
+    /// a `HELLO` message. For any other states, receipt of a `HELLO` message is considered a
+    /// protocol violation and leads to connection closure.
     ///
     /// If authentication fails, the server will respond with a [`FAILURE`](Message::Failure)
     /// message and immediately close the connection. Clients wishing to retry initialization
@@ -559,16 +559,16 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   unspecified indicates that the server should not carry out any routing.
     ///   _(Bolt v4.1+ only.)_
     ///
-    /// Further entries in `metadata` are passed to the implementation of the chosen
-    /// authentication scheme. Their names, types, and defaults depend on that choice. For
-    /// example, the scheme `"basic"` requires `metadata` to contain the username and password in
-    /// the form `{"principal": "<username>", "credentials": "<password>"}`.
+    /// Further entries in `metadata` are passed to the implementation of the chosen authentication
+    /// scheme. Their names, types, and defaults depend on that choice. For example, the scheme
+    /// `"basic"` requires `metadata` to contain the username and password in the form
+    /// `{"principal": "<username>", "credentials": "<password>"}`.
     ///
     /// # Response
     /// - [`Message::Success`] - initialization has completed successfully and the server has
-    ///   entered the [`Ready`](ServerState::Ready) state. The server may include
-    ///   metadata that describes details of the server environment and/or the connection. The
-    ///   following fields are defined for inclusion in the `SUCCESS` metadata:
+    ///   entered the [`Ready`](ServerState::Ready) state. The server may include metadata that
+    ///   describes details of the server environment and/or the connection. The following fields
+    ///   are defined for inclusion in the `SUCCESS` metadata:
     ///   - `server`, the server agent string (e.g. `"Neo4j/4.3.0"`)
     ///   - `connection_id`, a unique identifier for the connection (e.g. `"bolt-61"`)
     ///     _(Bolt v3+ only.)_
@@ -579,9 +579,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///     observe different hints as the server configuration is adjusted.
     ///     _(Bolt v4.3+ only.)_
     /// - [`Message::Failure`] - initialization has failed and the server has entered the
-    ///   [`Defunct`](ServerState::Defunct) state. The server may choose to include
-    ///   metadata describing the nature of the failure but will immediately close the connection
-    ///   after the failure has been sent.
+    ///   [`Defunct`](ServerState::Defunct) state. The server may choose to include metadata
+    ///   describing the nature of the failure but will immediately close the connection after the
+    ///   failure has been sent.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn hello(&mut self, mut metadata: Metadata) -> CommunicationResult<Message> {
         let message = match self.version() {
