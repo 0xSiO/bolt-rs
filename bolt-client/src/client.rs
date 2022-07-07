@@ -57,7 +57,6 @@ pub struct Client<S: AsyncRead + AsyncWrite + Unpin> {
     open_tx_streams: usize,
 }
 
-// TODO: Reflow doc comments
 impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// Attempt to create a new client from an asynchronous stream. A handshake will be performed
     /// with the provided protocol version specifiers, and, if this succeeds, a Client will be
@@ -1113,11 +1112,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// occur might have unintended effects.
     ///
     /// When requests fail on the server, the server will send the client a
-    /// [`FAILURE`](Message::Failure) message. The client must clear the failure state by sending
-    /// a [`RESET`](Message::Reset) (Bolt v3+) or [`ACK_FAILURE`](Message::AckFailure) (Bolt v1 -
-    /// v2) message to the server. Until the server receives the `RESET`/`ACK_FAILURE` message, it
-    /// will send an [`IGNORED`](Message::Ignored) message in response to any other message from
-    /// the client, including messages that were sent in a pipeline.
+    /// [`FAILURE`](Message::Failure) message. The client must clear the failure state by sending a
+    /// [`RESET`](Message::Reset) (Bolt v3+) or [`ACK_FAILURE`](Message::AckFailure) (Bolt v1 - v2)
+    /// message to the server. Until the server receives the `RESET`/`ACK_FAILURE` message, it will
+    /// send an [`IGNORED`](Message::Ignored) message in response to any other message from the
+    /// client, including messages that were sent in a pipeline.
     pub async fn pipeline(&mut self, messages: Vec<Message>) -> CommunicationResult<Vec<Message>> {
         // This Vec is too small if we're expecting some RECORD messages, so there's no "good" size
         let mut responses = Vec::with_capacity(messages.len());
