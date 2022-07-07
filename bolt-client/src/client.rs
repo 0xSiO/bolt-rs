@@ -905,13 +905,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Description
     /// The `BEGIN` message starts a new explicit transaction and transitions the server to the
-    /// [`TxReady`](ServerState::TxReady) state. The explicit transaction is closed
-    /// with either the [`COMMIT`](Message::Commit) message or [`ROLLBACK`](Message::Rollback)
-    /// message.
+    /// [`TxReady`](ServerState::TxReady) state. The explicit transaction is closed with either the
+    /// [`COMMIT`](Message::Commit) message or [`ROLLBACK`](Message::Rollback) message.
     ///
-    /// The server must be in the [`Ready`](ServerState::Ready) state to be able to
-    /// successfully process a `BEGIN` request. If the server is in the
-    /// [`Failed`](ServerState::Failed) or
+    /// The server must be in the [`Ready`](ServerState::Ready) state to be able to successfully
+    /// process a `BEGIN` request. If the server is in the [`Failed`](ServerState::Failed) or
     /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `BEGIN` request will be
     /// considered a protocol violation and will lead to connection closure.
@@ -923,11 +921,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `tx_timeout`, an integer specifying a transaction timeout in milliseconds. Default is the
     ///   server-side configured timeout.
     /// - `tx_metadata`, a map containing some metadata information, mainly used for logging.
-    /// - `mode`, a string which specifies what kind of server should be used for this
-    ///   transaction. For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
+    /// - `mode`, a string which specifies what kind of server should be used for this transaction.
+    ///   For write access, use `"w"` and for read access use `"r"`. Default is `"w"`.
     /// - `db`, a string containing the name of the database where the transaction should take
-    ///   place. [`null`](Value::Null) and `""` denote the server-side configured
-    ///   default database. _(Bolt v4+ only.)_
+    ///   place. [`null`](Value::Null) and `""` denote the server-side configured default database.
+    ///   _(Bolt v4+ only.)_
     /// - `imp_user`, a string specifying the impersonated user which executes this transaction.
     ///   [`null`](Value::Null) denotes no impersonation (i.e., execution takes place as the
     ///   current user). _(Bolt v4.4+ only.)_
@@ -935,12 +933,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// # Response
     /// - [`Message::Success`] - the transaction has been successfully started and the server has
     ///   entered the [`TxReady`](ServerState::Ready) state.
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
-    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
-    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed) or
+    ///   [`Interrupted`](ServerState::Interrupted) state, and the request was discarded without
+    ///   being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
-    ///   metadata to the message to provide more detail on the nature of the failure.
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach metadata to the
+    ///   message to provide more detail on the nature of the failure.
     #[bolt_version(3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn begin(&mut self, metadata: Option<Metadata>) -> CommunicationResult<Message> {
         let begin_msg = Begin::new(metadata.unwrap_or_default().value);
