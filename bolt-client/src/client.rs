@@ -1061,9 +1061,9 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - [`Message::Success`] - the session has been successfully reset and the server has entered
     ///   the [`Ready`](ServerState::Ready) state.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Defunct`](ServerState::Defunct) state. The server may choose to
-    ///   include metadata describing the nature of the failure but will immediately close the
-    ///   connection after the failure has been sent.
+    ///   entered the [`Defunct`](ServerState::Defunct) state. The server may choose to include
+    ///   metadata describing the nature of the failure but will immediately close the connection
+    ///   after the failure has been sent.
     #[bolt_version(1, 2, 3, 4, 4.1, 4.2, 4.3, 4.4)]
     pub async fn reset(&mut self) -> CommunicationResult<Message> {
         self.send_message(Message::Reset).await?;
