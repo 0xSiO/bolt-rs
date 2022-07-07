@@ -607,22 +607,22 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
         self.read_message().await
     }
 
-    /// Send a [`ROUTE`](Message::Route) message to the server.
-    /// _(Bolt v4.3+ only.)_
+    /// Send a [`ROUTE`](Message::RouteWithMetadata) message to the server.
+    /// _(Bolt v4.3+ only. For Bolt v4.3, an [alternate version](Message::Route) of the message is
+    /// sent.)_
     ///
     /// # Description
     /// The `ROUTE` message instructs the server to return the current routing table.
     ///
-    /// The server must be in the [`Ready`](ServerState::Ready) state to be able to
-    /// successfully process a `ROUTE` request. If the server is in the
-    /// [`Failed`](ServerState::Failed) or
+    /// The server must be in the [`Ready`](ServerState::Ready) state to be able to successfully
+    /// process a `ROUTE` request. If the server is in the [`Failed`](ServerState::Failed) or
     /// [`Interrupted`](ServerState::Interrupted) state, the response will be
     /// [`IGNORED`](Message::Ignored). For any other states, receipt of a `ROUTE` request will be
     /// considered a protocol violation and will lead to connection closure.
     ///
     /// # Fields
-    /// - `context`, which should contain routing context information as well as an `address`
-    ///   field indicating to which address the client should initially connect.
+    /// - `context`, which should contain routing context information as well as an `address` field
+    ///   indicating to which address the client should initially connect.
     /// - `bookmarks`, a list of strings containing some kind of bookmark identification, e.g
     ///   `["bkmk-transaction:1", "bkmk-transaction:2"]`. Default is `[]`.
     /// - `metadata`, a map which can contain the following optional entries:
@@ -634,8 +634,8 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///
     /// # Response
     /// - [`Message::Success`] - the routing table has been successfully retrieved and the server
-    ///   has entered the [`Ready`](ServerState::Ready) state. The server sends the
-    ///   following metadata fields in the response:
+    ///   has entered the [`Ready`](ServerState::Ready) state. The server sends the following
+    ///   metadata fields in the response:
     ///   - `rt`, a map with the following fields:
     ///     - `ttl`, an integer denoting the number of seconds this routing table should be
     ///       considered valid
@@ -643,12 +643,12 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///       will have the following fields:
     ///       - `role`, a server role. Possible values are `"READ"`, `"WRITE"`, and `"ROUTE"`.
     ///       - `addresses`, a list of strings representing the servers with the specified role
-    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed)
-    ///   or [`Interrupted`](ServerState::Interrupted) state, and the request was
-    ///   discarded without being processed. No server state change has occurred.
+    /// - [`Message::Ignored`] - the server is in the [`Failed`](ServerState::Failed) or
+    ///   [`Interrupted`](ServerState::Interrupted) state, and the request was discarded without
+    ///   being processed. No server state change has occurred.
     /// - [`Message::Failure`] - the request could not be processed successfully and the server has
-    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach
-    ///   metadata to the message to provide more detail on the nature of the failure.
+    ///   entered the [`Failed`](ServerState::Failed) state. The server may attach metadata to the
+    ///   message to provide more detail on the nature of the failure.
     #[bolt_version(4.3, 4.4)]
     pub async fn route(
         &mut self,
