@@ -8,8 +8,8 @@ sending Bolt messages to a compatible server. Clients can operate over any type 
 [AsyncWrite](https://docs.rs/futures-io/*/futures_io/trait.AsyncRead.html).
 
 If you want to connect to a Bolt-compatible server from your application, you probably want to use
-a connection pool - see [bb8-bolt](https://crates.io/crates/bb8-bolt), 
-[deadpool-bolt](https://crates.io/crates/deadpool-bolt), or 
+a connection pool - see [bb8-bolt](https://crates.io/crates/bb8-bolt),
+[deadpool-bolt](https://crates.io/crates/deadpool-bolt), or
 [mobc-bolt](https://crates.io/crates/mobc-bolt).
 
 If you'd rather manage your own connections, an asynchronous TCP/TLS

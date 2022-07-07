@@ -4,10 +4,9 @@
 //! This crate contains a runtime-agnostic asynchronous client for graph database servers that
 //! support the [Bolt](https://7687.org/#bolt) protocol.
 //!
-//! The central feature of this library is the
-//! [`Client`] struct, which allows sending Bolt messages to a compatible server. Clients can
-//! operate over any type that implements [`AsyncRead`](futures_util::AsyncRead) and
-//! [`AsyncWrite`](futures_util::AsyncWrite).
+//! The central feature of this library is the [`Client`] struct, which allows sending Bolt
+//! messages to a compatible server. Clients can operate over any type that implements
+//! [`AsyncRead`](futures_util::AsyncRead) and [`AsyncWrite`](futures_util::AsyncWrite).
 //!
 //! If you want to connect to a Bolt-compatible server from your application, you probably want to
 //! use a connection pool - see [bb8-bolt](https://crates.io/crates/bb8-bolt),

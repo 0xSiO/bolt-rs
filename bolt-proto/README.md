@@ -1,6 +1,6 @@
 This crate contains the primitives used in the [Bolt](https://7687.org/#bolt) protocol. The
-`Message` and `Value` enums are of particular importance, and are the primary units of
-information sent and consumed by Bolt clients/servers.
+`Message` and `Value` enums are of particular importance, and are the primary units of information
+sent and consumed by Bolt clients/servers.
 
 The `Message` enum encapsulates all possible messages that can be sent between client and server.
 ```rust
