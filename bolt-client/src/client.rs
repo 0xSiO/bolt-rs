@@ -553,11 +553,11 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     /// - `scheme` is the authentication scheme. Predefined schemes are `"none"`, `"basic"`, or
     ///   `"kerberos"`.
     ///
-    /// If using Bolt v4.3 or later, the following additional `metadata` entries can be specified:
+    /// If using Bolt v4.1 or later, the following additional `metadata` entries can be specified:
     /// - `routing`, a map which should contain routing context information as well as an `address`
     ///   field indicating to which address the client should initially connect. Leaving this
     ///   unspecified indicates that the server should not carry out any routing.
-    ///   _(Bolt v4.3+ only.)_
+    ///   _(Bolt v4.1+ only.)_
     ///
     /// Further entries in `metadata` are passed to the implementation of the chosen
     /// authentication scheme. Their names, types, and defaults depend on that choice. For
