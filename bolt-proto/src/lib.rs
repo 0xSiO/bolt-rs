@@ -60,7 +60,7 @@ macro_rules! impl_empty_message_tests {
             use ::bytes::Bytes;
             use ::std::sync::{Arc, Mutex};
 
-            use crate::serialization::*;
+            use $crate::serialization::*;
 
             use super::*;
 
