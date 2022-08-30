@@ -31,6 +31,9 @@ pub enum Message {
 
     // V4.3+-compatible message types
     Route(Route),
+
+    // v4.4-compatible message types
+    RouteWithMetadata(RouteWithMetadata),
 }
 ```
 See the [documentation](https://docs.rs/bolt-proto/*/bolt_proto/message/enum.Message.html) for more

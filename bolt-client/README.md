@@ -3,7 +3,7 @@ the [Bolt](https://7687.org/#bolt) protocol.
 
 The central feature of this library is the
 [`Client`](https://docs.rs/bolt-client/*/bolt_client/struct.Client.html) struct, which allows
-sending Bolt messages to a compatible server. Clients can operate over any type that implements
+sending Bolt messages to a compatible server. Clients can be created from any type that implements
 [AsyncRead](https://docs.rs/futures-io/*/futures_io/trait.AsyncRead.html) and
 [AsyncWrite](https://docs.rs/futures-io/*/futures_io/trait.AsyncRead.html).
 

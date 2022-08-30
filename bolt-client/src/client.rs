@@ -805,7 +805,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> Client<S> {
     ///   - `stats`, a map containing counter information, such as DB hits, etc. _(Bolt v3+ only.)_
     ///   - `plan`, a map containing the query plan result. _(Bolt v3+ only.)_
     ///   - `profile`, a map containing the query profile result. _(Bolt v3+ only.)_
-    ///   - `notifications`: a map containing any notifications generated during execution of the
+    ///   - `notifications`, a map containing any notifications generated during execution of the
     ///     query. _(Bolt v3+ only.)_
     ///   - `db`, a string containing the name of the database where the query was executed.
     ///     _(Bolt v4+ only.)_
