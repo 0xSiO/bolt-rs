@@ -1,6 +1,58 @@
 #![warn(rust_2018_idioms)]
 
 //! [`bolt_client`] support for the [`mobc`] connection pool.
+//!
+//! # Example
+//! ```
+//! use std::env;
+//!
+//! # use mobc::Manager as MobcManager;
+//! use mobc_bolt::{
+//!     mobc::Pool,
+//!     bolt_client::Metadata,
+//!     bolt_proto::{version::*, Value},
+//!     Manager,
+//! #   bolt_client::error::{ConnectionError, Error as ClientError},
+//! #   bolt_proto::message::Success,
+//! };
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     // Configure a connection manager. We'll request Bolt v4.4 or v4.3.
+//!     let manager = Manager::new(
+//!         env::var("BOLT_TEST_ADDR")?,
+//!         env::var("BOLT_TEST_DOMAIN").ok(),
+//!         [V4_4, V4_3, 0, 0],
+//!         Metadata::from_iter(vec![
+//!             ("user_agent", "bolt-client/X.Y.Z"),
+//!             ("scheme", "basic"),
+//!             ("principal", &env::var("BOLT_TEST_USERNAME")?),
+//!             ("credentials", &env::var("BOLT_TEST_PASSWORD")?),
+//!         ]),
+//!     ).await?;
+//!
+//! #   match manager.connect().await {
+//! #       Err(ClientError::ConnectionError(ConnectionError::HandshakeFailed(versions))) => {
+//! #           println!("skipping test: {}", ConnectionError::HandshakeFailed(versions));
+//! #           return Ok(());
+//! #       }
+//! #       Err(other) => panic!("{}", other),
+//! #       _ => {}
+//! #   }
+//!     // Create a connection pool. This should be shared across your application.
+//!     let pool = Pool::builder().build(manager);
+//!
+//!     // Fetch and use a connection from the pool
+//!     let mut conn = pool.get().await?;
+//!     let response = conn.run("RETURN 1 as num;", None, None).await?;
+//! #   Success::try_from(response.clone()).unwrap();
+//!     let pull_meta = Metadata::from_iter(vec![("n", 1)]);
+//!     let (records, response) = conn.pull(Some(pull_meta)).await?;
+//! #   Success::try_from(response).unwrap();
+//!     assert_eq!(records[0].fields(), &[Value::from(1)]);
+//!
+//!     Ok(())
+//! }
 
 use std::{io, net::SocketAddr};
 
