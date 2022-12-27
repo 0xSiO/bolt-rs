@@ -128,7 +128,7 @@ impl ManageConnection for Manager {
         }
     }
 
-    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+    async fn is_valid(&self, conn: &mut Self::Connection) -> Result<(), Self::Error> {
         message::Success::try_from(conn.reset().await?).map_err(ProtocolError::from)?;
         Ok(())
     }

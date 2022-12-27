@@ -11,9 +11,9 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.0"
 bolt-client = { path = "../bolt-client", version = "0.10.0", features = ["tokio-stream"] }
-bb8 = "0.7.0"
+bb8 = "0.8.0"
 tokio = { version = "1.14.0", features = ["io-util", "net"] }
-tokio-util = { version = "0.6.0", features = ["compat"] }
+tokio-util = { version = "0.7.0", features = ["compat"] }
 
 [dev-dependencies]
 futures-util = { version = "0.3.0", default-features = false, features = ["alloc"] }

@@ -28,7 +28,7 @@ webpki-roots = { version = "0.22.0", optional = true }
 [dev-dependencies]
 chrono = { version = "0.4.0", default-features = false, features = ["std"] }
 tokio = { version = "1.14.0", features = ["macros", "net", "rt-multi-thread"] }
-tokio-util = { version = "0.6.0", features = ["compat"] }
+tokio-util = { version = "0.7.0", features = ["compat"] }
 
 [package.metadata.docs.rs]
 all-features = true
