@@ -138,8 +138,8 @@ mod tests {
         assert_eq!(
             records[0].fields(),
             &[Value::from(NaiveDateTime::new(
-                NaiveDate::from_ymd(2010, 3, 5),
-                NaiveTime::from_hms_nano(12, 30, 1, 500),
+                NaiveDate::from_ymd_opt(2010, 3, 5).unwrap(),
+                NaiveTime::from_hms_nano_opt(12, 30, 1, 500).unwrap(),
             ))]
         );
 
@@ -199,8 +199,11 @@ mod tests {
         assert_eq!(
             c.properties().get("starting"),
             Some(&Value::from(
-                FixedOffset::east(-8 * 3600).from_utc_datetime(
-                    &NaiveDate::from_ymd(2019, 12, 19).and_hms_milli(16, 8, 4, 322)
+                FixedOffset::east_opt(-8 * 3600).unwrap().from_utc_datetime(
+                    &NaiveDate::from_ymd_opt(2019, 12, 19)
+                        .unwrap()
+                        .and_hms_milli_opt(16, 8, 4, 322)
+                        .unwrap()
                 )
             ))
         );

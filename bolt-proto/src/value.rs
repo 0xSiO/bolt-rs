@@ -319,7 +319,8 @@ impl BoltValue for Value {
                 .into_iter()
                 .chain(
                     // Days since UNIX epoch
-                    Value::from((date - NaiveDate::from_ymd(1970, 1, 1)).num_days()).serialize()?,
+                    Value::from((date - NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()).num_days())
+                        .serialize()?,
                 )
                 .collect()),
             Value::Time(time, offset) => Ok(vec![marker, SIGNATURE_TIME]
@@ -557,7 +558,8 @@ fn deserialize_structure<B: Buf + UnwindSafe>(
             let days_since_epoch: i64 = deserialize_variant!(Integer, bytes);
             Ok((
                 Value::Date(
-                    NaiveDate::from_ymd(1970, 1, 1) + chrono::Duration::days(days_since_epoch),
+                    NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()
+                        + chrono::Duration::days(days_since_epoch),
                 ),
                 bytes,
             ))
@@ -567,11 +569,12 @@ fn deserialize_structure<B: Buf + UnwindSafe>(
             let zone_offset: i32 = deserialize_variant!(Integer, bytes) as i32;
             Ok((
                 Value::Time(
-                    NaiveTime::from_num_seconds_from_midnight(
+                    NaiveTime::from_num_seconds_from_midnight_opt(
                         (nanos_since_midnight / 1_000_000_000) as u32,
                         (nanos_since_midnight % 1_000_000_000) as u32,
-                    ),
-                    FixedOffset::east(zone_offset),
+                    )
+                    .unwrap(),
+                    FixedOffset::east_opt(zone_offset).unwrap(),
                 ),
                 bytes,
             ))
@@ -582,8 +585,8 @@ fn deserialize_structure<B: Buf + UnwindSafe>(
             let offset_seconds: i32 = deserialize_variant!(Integer, bytes) as i32;
             Ok((
                 Value::DateTimeOffset(DateTime::from_utc(
-                    NaiveDateTime::from_timestamp(epoch_seconds, nanos as u32),
-                    FixedOffset::east(offset_seconds),
+                    NaiveDateTime::from_timestamp_opt(epoch_seconds, nanos as u32).unwrap(),
+                    FixedOffset::east_opt(offset_seconds).unwrap(),
                 )),
                 bytes,
             ))
@@ -594,17 +597,20 @@ fn deserialize_structure<B: Buf + UnwindSafe>(
             let timezone_id: String = deserialize_variant!(String, bytes);
             let timezone: Tz = timezone_id.parse().unwrap();
             Ok((
-                Value::DateTimeZoned(timezone.timestamp(epoch_seconds, nanos as u32)),
+                Value::DateTimeZoned(timezone.timestamp_opt(epoch_seconds, nanos as u32).unwrap()),
                 bytes,
             ))
         }
         SIGNATURE_LOCAL_TIME => {
             let nanos_since_midnight: i64 = deserialize_variant!(Integer, bytes);
             Ok((
-                Value::LocalTime(NaiveTime::from_num_seconds_from_midnight(
-                    (nanos_since_midnight / 1_000_000_000) as u32,
-                    (nanos_since_midnight % 1_000_000_000) as u32,
-                )),
+                Value::LocalTime(
+                    NaiveTime::from_num_seconds_from_midnight_opt(
+                        (nanos_since_midnight / 1_000_000_000) as u32,
+                        (nanos_since_midnight % 1_000_000_000) as u32,
+                    )
+                    .unwrap(),
+                ),
                 bytes,
             ))
         }
@@ -612,7 +618,9 @@ fn deserialize_structure<B: Buf + UnwindSafe>(
             let epoch_seconds: i64 = deserialize_variant!(Integer, bytes);
             let nanos: i64 = deserialize_variant!(Integer, bytes);
             Ok((
-                Value::LocalDateTime(NaiveDateTime::from_timestamp(epoch_seconds, nanos as u32)),
+                Value::LocalDateTime(
+                    NaiveDateTime::from_timestamp_opt(epoch_seconds, nanos as u32).unwrap(),
+                ),
                 bytes,
             ))
         }
@@ -809,7 +817,7 @@ mod tests {
 
     value_test!(
         small_string,
-        Value::String(String::from("string".repeat(10))),
+        Value::String("string".repeat(10)),
         MARKER_SMALL_STRING,
         60_u8.to_be_bytes(),
         b"string".repeat(10)
@@ -817,7 +825,7 @@ mod tests {
 
     value_test!(
         medium_string,
-        Value::String(String::from("string".repeat(1000))),
+        Value::String("string".repeat(1000)),
         MARKER_MEDIUM_STRING,
         6000_u16.to_be_bytes(),
         b"string".repeat(1000)
@@ -825,7 +833,7 @@ mod tests {
 
     value_test!(
         large_string,
-        Value::String(String::from("string".repeat(100_000))),
+        Value::String("string".repeat(100_000)),
         MARKER_LARGE_STRING,
         600_000_u32.to_be_bytes(),
         b"string".repeat(100_000)
@@ -946,7 +954,7 @@ mod tests {
 
     value_test!(
         date,
-        Value::Date(NaiveDate::from_ymd(2020, 12, 25)),
+        Value::Date(NaiveDate::from_ymd_opt(2020, 12, 25).unwrap()),
         MARKER_TINY_STRUCT | 1,
         &[SIGNATURE_DATE],
         &[MARKER_INT_16],
@@ -955,7 +963,7 @@ mod tests {
 
     value_test!(
         past_date,
-        Value::Date(NaiveDate::from_ymd(1901, 12, 31)),
+        Value::Date(NaiveDate::from_ymd_opt(1901, 12, 31).unwrap()),
         MARKER_TINY_STRUCT | 1,
         &[SIGNATURE_DATE],
         &[MARKER_INT_16],
@@ -964,7 +972,7 @@ mod tests {
 
     value_test!(
         future_date,
-        Value::Date(NaiveDate::from_ymd(3000, 5, 23)),
+        Value::Date(NaiveDate::from_ymd_opt(3000, 5, 23).unwrap()),
         MARKER_TINY_STRUCT | 1,
         &[SIGNATURE_DATE],
         &[MARKER_INT_32],
@@ -973,7 +981,7 @@ mod tests {
 
     value_test!(
         time,
-        Value::Time(NaiveTime::from_hms_nano(0, 0, 0, 0), Utc.fix()),
+        Value::Time(NaiveTime::from_hms_nano_opt(0, 0, 0, 0).unwrap(), Utc.fix()),
         MARKER_TINY_STRUCT | 2,
         &[SIGNATURE_TIME],
         &[0, 0]
@@ -982,8 +990,8 @@ mod tests {
     value_test!(
         about_four_pm_pacific,
         Value::Time(
-            NaiveTime::from_hms_nano(16, 4, 35, 235),
-            FixedOffset::east(-8 * 3600),
+            NaiveTime::from_hms_nano_opt(16, 4, 35, 235).unwrap(),
+            FixedOffset::east_opt(-8 * 3600).unwrap(),
         ),
         MARKER_TINY_STRUCT | 2,
         &[SIGNATURE_TIME],
@@ -996,8 +1004,12 @@ mod tests {
     value_test!(
         date_time_offset,
         Value::DateTimeOffset(
-            FixedOffset::east(-5 * 3600)
-                .from_utc_datetime(&NaiveDate::from_ymd(2050, 12, 31).and_hms_nano(23, 59, 59, 10)),
+            FixedOffset::east_opt(-5 * 3600).unwrap().from_utc_datetime(
+                &NaiveDate::from_ymd_opt(2050, 12, 31)
+                    .unwrap()
+                    .and_hms_nano_opt(23, 59, 59, 10)
+                    .unwrap()
+            ),
         ),
         MARKER_TINY_STRUCT | 3,
         &[SIGNATURE_DATE_TIME_OFFSET],
@@ -1012,22 +1024,24 @@ mod tests {
         date_time_zoned,
         Value::DateTimeZoned(
             chrono_tz::Asia::Ulaanbaatar
-                .ymd(2030, 8, 3)
-                .and_hms_milli(14, 30, 1, 2),
+                .with_ymd_and_hms(2030, 8, 3, 14, 30, 1)
+                .unwrap()
+                .with_nanosecond(12345)
+                .unwrap(),
         ),
         MARKER_TINY_STRUCT | 3,
         &[SIGNATURE_DATE_TIME_ZONED],
         &[MARKER_INT_32],
         1911969001_i32.to_be_bytes(),
-        &[MARKER_INT_32],
-        2000000_i32.to_be_bytes(),
+        &[MARKER_INT_16],
+        12345_i16.to_be_bytes(),
         &[MARKER_SMALL_STRING, 16],
         b"Asia/Ulaanbaatar"
     );
 
     value_test!(
         local_time,
-        Value::LocalTime(NaiveTime::from_hms_nano(23, 59, 59, 999)),
+        Value::LocalTime(NaiveTime::from_hms_nano_opt(23, 59, 59, 999).unwrap()),
         MARKER_TINY_STRUCT | 1,
         &[SIGNATURE_LOCAL_TIME],
         &[MARKER_INT_64],
@@ -1036,7 +1050,12 @@ mod tests {
 
     value_test!(
         local_date_time,
-        Value::LocalDateTime(NaiveDate::from_ymd(1999, 2, 27).and_hms_nano(1, 0, 0, 9999)),
+        Value::LocalDateTime(
+            NaiveDate::from_ymd_opt(1999, 2, 27)
+                .unwrap()
+                .and_hms_nano_opt(1, 0, 0, 9999)
+                .unwrap()
+        ),
         MARKER_TINY_STRUCT | 2,
         &[SIGNATURE_LOCAL_DATE_TIME],
         &[MARKER_INT_32],

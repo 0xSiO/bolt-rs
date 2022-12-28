@@ -57,7 +57,7 @@
 use std::{io, net::SocketAddr};
 
 use async_trait::async_trait;
-use bb8::{ManageConnection, PooledConnection};
+use bb8::ManageConnection;
 use tokio::{
     io::BufStream,
     net::{lookup_host, ToSocketAddrs},
