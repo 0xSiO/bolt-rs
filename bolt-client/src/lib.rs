@@ -2,7 +2,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! This crate contains a runtime-agnostic asynchronous client for graph database servers that
-//! support the [Bolt](https://7687.org/#bolt) protocol.
+//! support the [Bolt](https://neo4j.com/docs/bolt/current) protocol.
 //!
 //! The central feature of this library is the [`Client`] struct, which allows sending Bolt
 //! messages to a compatible server. Clients can operate over any type that implements

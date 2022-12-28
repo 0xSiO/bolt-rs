@@ -1,11 +1,11 @@
 // Much of the documentation comments in this module are copied from the descriptions on
-// https://7687.org, with minor modifications.
+// https://neo4j.com/docs/bolt/current, with minor modifications.
 //
 // Original copyright and license information for these descriptions:
-// Copyright © 2002-2020 Neo4j, Inc.
-// CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
+// Copyright © Neo4j Sweden AB [http://neo4j.com]
+// CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)
 //
-// The aforementioned documentation comments are thus licensed under CC BY-SA 4.0.
+// The aforementioned documentation comments are thus licensed under CC BY-NC-SA 4.0.
 
 use std::{collections::VecDeque, io};
 

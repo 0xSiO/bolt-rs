@@ -5,7 +5,7 @@
 ## Overview
 
 This project aims to provide a comprehensive set of libraries that allow for interaction with graph
-database servers that support the [Bolt](https://7687.org/#bolt) protocol, namely,
+database servers that support the [Bolt](https://neo4j.com/docs/bolt/current) protocol, namely,
 [Neo4j](https://neo4j.com). This set of libraries allows interacting with servers supporting
 versions 1 through 4.4 of the protocol, which includes Neo4j 3.1 through 4.4.
 
@@ -54,7 +54,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/0xSiO/
 
 These crates are available as open source under the terms of the
 [MIT License](http://opensource.org/licenses/MIT), with portions of the documentation licensed under
-the [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/)
+the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 license.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in
