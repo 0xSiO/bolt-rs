@@ -83,6 +83,7 @@ deadpool::managed_reexports!(
     Infallible
 );
 
+#[derive(Debug)]
 pub struct Manager {
     addr: SocketAddr,
     domain: Option<String>,

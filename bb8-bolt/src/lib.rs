@@ -74,6 +74,7 @@ pub use bb8;
 pub use bolt_client;
 pub use bolt_client::bolt_proto;
 
+#[derive(Debug)]
 pub struct Manager {
     addr: SocketAddr,
     domain: Option<String>,
