@@ -6,7 +6,7 @@ readme = "README.md"
 repository = "https://github.com/0xSiO/bolt-rs"
 categories  = ["network-programming", "database", "asynchronous", "encoding"]
 keywords    = ["bolt", "client", "neo4j"]
-license = "MIT"
+license = "MPL-2.0"
 edition = "2021"
 
 [features]
@@ -15,19 +15,19 @@ tokio-stream = ["pin-project", "tokio", "tokio-rustls", "webpki-roots"]
 [dependencies]
 bolt-client-macros = { path = "../bolt-client-macros", version = "0.3.0" }
 bolt-proto = { path = "../bolt-proto", version = "0.12.0" }
-bytes = "1.3.0"
+bytes = "1.5.0"
 futures-util = { version = "0.3.0", default-features = false, features = ["io"] }
 thiserror = "1.0.0"
 
 # Feature: tokio-stream
-pin-project = { version = "1.0.0", optional = true }
-tokio = { version = "1.23.0", features = ["io-util", "net"], optional = true }
-tokio-rustls = { version = "0.23.0", optional = true }
-webpki-roots = { version = "0.22.0", optional = true }
+pin-project = { version = "1.1.0", optional = true }
+tokio = { version = "1.33.0", features = ["io-util", "net"], optional = true }
+tokio-rustls = { version = "0.24.0", optional = true }
+webpki-roots = { version = "0.23.0", optional = true }
 
 [dev-dependencies]
 chrono = { version = "0.4.0", default-features = false, features = ["std"] }
-tokio = { version = "1.23.0", features = ["macros", "net", "rt-multi-thread"] }
+tokio = { version = "1.33.0", features = ["macros", "net", "rt-multi-thread"] }
 tokio-util = { version = "0.7.0", features = ["compat"] }
 
 [package.metadata.docs.rs]

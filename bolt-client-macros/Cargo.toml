@@ -4,7 +4,7 @@ version = "0.3.0"
 description = "Procedural macros for bolt-client."
 repository = "https://github.com/0xSiO/bolt-rs"
 keywords    = ["bolt", "client", "macros"]
-license = "MIT"
+license = "MPL-2.0"
 edition = "2021"
 
 [lib]

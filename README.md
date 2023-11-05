@@ -1,6 +1,5 @@
 # bolt-rs
 [![CI](https://github.com/0xSiO/bolt-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSiO/bolt-rs/actions/workflows/ci.yml)
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 ## Overview
 
@@ -44,18 +43,6 @@ A bolt-client manager for the [mobc](https://crates.io/crates/mobc) connection p
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/0xSiO/bolt-rs.
-
-## Donations
-
-- XMR: `87abVq8rrb2QVDz9m63ZXeRB3efHxSWVjGisVWaeviuTU7aMNXEAi4wjoYpSzBn7vY7ikB62vRA8g8L75krFYMPs1ob5reh`
-
-## License
-
-These crates are available as open source under the terms of the
-[MIT License](http://opensource.org/licenses/MIT), with portions of the documentation licensed under
-the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-license.
-
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in
-`bolt-rs` by you shall be licensed as MIT, without any additional terms or conditions.
+- Contributions to this project must be submitted under the [project's license](./LICENSE).
+- Contributors to this project must attest to the [Developer Certificate of Origin](https://developercertificate.org/) by including a `Signed-off-by` statement in all commit messages.
+- All commits must have a valid digital signature.
