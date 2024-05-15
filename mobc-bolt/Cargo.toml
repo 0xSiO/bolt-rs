@@ -12,9 +12,9 @@ edition = "2021"
 async-trait = "0.1.0"
 bolt-client = { path = "../bolt-client", version = "0.11.0", features = ["tokio-stream"] }
 mobc = "0.8.0"
-tokio = { version = "1.33.0", features = ["io-util", "net"] }
+tokio = { version = "1.37.0", features = ["io-util", "net"] }
 tokio-util = { version = "0.7.0", features = ["compat"] }
 
 [dev-dependencies]
 futures-util = { version = "0.3.0", default-features = false, features = ["alloc"] }
-tokio = { version = "1.33.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
