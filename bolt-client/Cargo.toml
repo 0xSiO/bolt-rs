@@ -1,16 +1,17 @@
 [package]
 name = "bolt-client"
 version = "0.11.0"
+edition = "2021"
 description = "A client that sends messages using the Bolt protocol."
 readme = "README.md"
 repository = "https://github.com/0xSiO/bolt-rs"
-categories  = ["network-programming", "database", "asynchronous", "encoding"]
-keywords    = ["bolt", "client", "neo4j"]
 license = "MPL-2.0"
-edition = "2021"
+keywords = ["bolt", "client", "neo4j"]
+categories = ["asynchronous", "database", "encoding", "network-programming"]
 
-[features]
-tokio-stream = ["pin-project", "tokio", "tokio-rustls", "webpki-roots"]
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 bolt-client-macros = { path = "../bolt-client-macros", version = "0.3.0" }
@@ -22,14 +23,13 @@ thiserror = "1.0.0"
 # Feature: tokio-stream
 pin-project = { version = "1.1.0", optional = true }
 tokio = { version = "1.37.0", features = ["io-util", "net"], optional = true }
-tokio-rustls = { version = "0.24.0", optional = true }
-webpki-roots = { version = "0.24.0", optional = true }
+tokio-rustls = { version = "0.26", optional = true }
+webpki-roots = { version = "1", optional = true }
 
 [dev-dependencies]
 chrono = { version = "0.4.0", default-features = false, features = ["std"] }
 tokio = { version = "1.37.0", features = ["macros", "net", "rt-multi-thread"] }
 tokio-util = { version = "0.7.0", features = ["compat"] }
 
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
+[features]
+tokio-stream = ["pin-project", "tokio", "tokio-rustls", "webpki-roots"]

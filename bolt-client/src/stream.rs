@@ -13,7 +13,7 @@ use tokio::{
 };
 use tokio_rustls::{
     client::TlsStream,
-    rustls::{ClientConfig, OwnedTrustAnchor, RootCertStore, ServerName},
+    rustls::{pki_types::ServerName, ClientConfig, RootCertStore},
     TlsConnector,
 };
 
@@ -37,23 +37,15 @@ impl Stream {
     ) -> io::Result<Self> {
         match domain {
             Some(domain) => {
-                let mut root_cert_store = RootCertStore::empty();
-                root_cert_store.add_server_trust_anchors(
-                    webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|anchor| {
-                        OwnedTrustAnchor::from_subject_spki_name_constraints(
-                            anchor.subject,
-                            anchor.spki,
-                            anchor.name_constraints,
-                        )
-                    }),
-                );
+                let root_store = RootCertStore {
+                    roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+                };
 
                 let config = ClientConfig::builder()
-                    .with_safe_defaults()
-                    .with_root_certificates(root_cert_store)
+                    .with_root_certificates(root_store)
                     .with_no_client_auth();
 
-                let server_name = ServerName::try_from(domain.as_ref())
+                let server_name = ServerName::try_from(domain.as_ref().to_string())
                     .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, domain.as_ref()))?;
 
                 let stream = TcpStream::connect(addr).await?;
